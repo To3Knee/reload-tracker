@@ -64,9 +64,11 @@ Pull requests welcome! Especially:
 - Dark/light theme toggle
 - Export to PDF load labels
 
-### License
 
-MIT © 2025 — Fork it, modify it, sell it, make it yours.
+## 📜 License
+
+Licensed under the [High Five License](LICENSE) 🙌  
+Give a high five to download, and a **super high, LOUD high five** to use **Reload Tracker**! 🎉 See the [LICENSE](LICENSE) file for the full, fist-bumping details!
 
 ---
 
