@@ -12,7 +12,7 @@ Track every penny you spend on powder, primers, bullets, and brass. Know exactly
 
 Works perfectly on **desktop** and **iPhone** (installable as a PWA — feels like a native app).
 
-Live Demo → https://reloading-tracker.netlify.app  
+Live Demo → https://reload-tracker.netlify.app  
 
 ### Features
 
