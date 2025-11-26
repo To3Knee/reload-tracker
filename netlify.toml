@@ -1,7 +1,33 @@
+#===============================================================
+#Script Name: Netlify Build & Functions Config
+#Script Location: netlify.toml
+#Date: 11/26/2025
+#Created By: T03KNEE
+#Github: https://github.com/To3Knee/reload-tracker
+#Version: 0.2.0
+#About: Netlify configuration for Reload Tracker. Builds the Vite
+#       frontend and exposes Netlify Functions behind a clean /api
+#       prefix so the UI can call /api/purchases and /api/recipes
+#       regardless of hosting environment.
+#===============================================================
+
 [build]
   publish = "dist"
   command = "npm run build"
 
+[functions]
+  directory = "netlify/functions"
+
+# Proxy all /api/* requests to the corresponding Netlify Function.
+# Example:
+#   /api/purchases -> /.netlify/functions/purchases
+#   /api/recipes   -> /.netlify/functions/recipes
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# SPA fallback for React Router (keeps existing UI behavior).
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -4,6 +4,7 @@ import {
   calculatePerUnit,
   formatCurrency,
   getAllRecipes,
+  saveRecipe,
 } from '../lib/db'
 
 export default function Dashboard({
@@ -19,6 +20,7 @@ export default function Dashboard({
   const [recipes, setRecipes] = useState([])
   const [selectedRecipeId, setSelectedRecipeId] = useState('')
   const [scenarios, setScenarios] = useState([])
+  const [savingScenarioId, setSavingScenarioId] = useState(null)
 
   // Load recipes once
   useEffect(() => {
@@ -127,9 +129,7 @@ export default function Dashboard({
     const numericLot = Math.max(Number(lotSize) || 0, 0)
 
     const per = p =>
-      p
-        ? calculatePerUnit(p.price, p.shipping, p.tax, p.qty)
-        : 0
+      p ? calculatePerUnit(p.price, p.shipping, p.tax, p.qty) : 0
 
     const powderPerRound = (() => {
       if (!powder) return 0
@@ -286,9 +286,9 @@ export default function Dashboard({
   // Header line: always label the value, never render a bare `0` on its own
   const headerRounds =
     selectedRecipe && capacity && !capacity.needsCharge
-      ? (typeof capacity.roundsPossible === 'number'
-          ? capacity.roundsPossible
-          : 0)
+      ? typeof capacity.roundsPossible === 'number'
+        ? capacity.roundsPossible
+        : 0
       : null
 
   function handleSaveScenario() {
@@ -325,11 +325,56 @@ export default function Dashboard({
     setScenarios(prev => prev.filter(s => s.id !== id))
   }
 
+  // NEW: Save a saved config as a Recipe in the Recipes store
+  async function handleSaveScenarioAsRecipe(scenario) {
+    if (!scenario) return
+    setSavingScenarioId(scenario.id)
+    try {
+      const payload = {
+        name: scenario.name || 'Saved config',
+        caliber: scenario.caliber || caliber || '',
+        profileType: 'custom',
+        chargeGrains:
+          scenario.chargeGrains != null
+            ? Number(scenario.chargeGrains)
+            : Number(chargeGrains) || 0,
+        brassReuse:
+          scenario.caseReuse != null
+            ? Number(scenario.caseReuse)
+            : Number(caseReuse) || 1,
+        lotSize:
+          scenario.lotSize != null
+            ? Number(scenario.lotSize)
+            : Number(lotSize) || 0,
+        notes: '',
+        // Ballistics left empty; can be filled in the Recipes tab later
+        bulletWeightGr: null,
+        muzzleVelocityFps: null,
+        zeroDistanceYards: null,
+        groupSizeInches: null,
+        rangeNotes: '',
+        powerFactor: 0,
+        archived: false,
+      }
+
+      await saveRecipe(payload)
+      const data = await getAllRecipes()
+      setRecipes(data)
+    } catch (err) {
+      // Keep it quiet visually, but log for debugging
+      // eslint-disable-next-line no-console
+      console.error('Failed to save scenario as recipe', err)
+    } finally {
+      setSavingScenarioId(null)
+    }
+  }
+
   const sectionLabelClass =
     'text-xs uppercase tracking-[0.25em] text-slate-500 mb-2'
 
+  // smaller text on mobile so selects/inputs fit better
   const inputClass =
-    'w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/60'
+    'w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-[6px] text-[11px] md:text-sm focus:outline-none focus:ring-2 focus:ring-red-500/60'
 
   const renderOptionLabel = p =>
     `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'}${
@@ -341,12 +386,14 @@ export default function Dashboard({
   const calibers = Array.from(
     new Set(
       recipes
+        .filter(r => !r.archived)
         .map(r => r.caliber)
         .filter(c => c && c.trim().length > 0)
     )
   ).sort()
 
   const recipesForCaliber = recipes.filter(r => {
+    if (r.archived) return false
     if (!caliber) return true
     if (!r.caliber) return true
     return r.caliber === caliber
@@ -499,12 +546,20 @@ export default function Dashboard({
               </p>
             </div>
 
-            {/* Recipe selector */}
-            {recipes.length > 0 && (
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-400 mb-1">
-                  Recipe (optional)
-                </label>
+            {/* Recipe selector – always present */}
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-slate-400 mb-1">
+                Recipe (optional)
+              </label>
+              {recipes.length === 0 ? (
+                <div className="text-[11px] text-slate-500 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-lg px-3 py-2">
+                  No recipes found yet. Create or edit them on the{' '}
+                  <span className="font-semibold text-red-400">
+                    Recipes
+                  </span>{' '}
+                  tab, and they’ll show up here for quick selection.
+                </div>
+              ) : (
                 <select
                   className={inputClass}
                   value={selectedRecipeId}
@@ -520,8 +575,8 @@ export default function Dashboard({
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Powder lot */}
             <div>
@@ -705,7 +760,7 @@ export default function Dashboard({
               <button
                 type="button"
                 onClick={handleSaveScenario}
-                className="text-[10px] px-2 py-[2px] rounded-full border border-emerald-500/60 text-emerald-300 hover:bg-emerald-900/40 transition"
+                className="text-[10px] md:text-xs px-2 py-[1px] md:py-[3px] rounded-full border border-emerald-500/60 text-emerald-300 hover:bg-emerald-900/40 transition whitespace-nowrap"
               >
                 + Save config
               </button>
@@ -833,13 +888,27 @@ export default function Dashboard({
                         </span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteScenario(s.id)}
-                      className="ml-3 text-[10px] px-2 py-1 rounded-full border border-red-700/70 text-red-300 hover:bg-red-900/40 transition"
-                    >
-                      Remove
-                    </button>
+                    <div className="flex flex-col items-end gap-1 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleSaveScenarioAsRecipe(s)
+                        }
+                        disabled={savingScenarioId === s.id}
+                        className="text-[10px] px-2 py-1 rounded-full border border-emerald-500/70 text-emerald-300 hover:bg-emerald-900/40 transition disabled:opacity-60"
+                      >
+                        {savingScenarioId === s.id
+                          ? 'Saving…'
+                          : 'Save recipe'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteScenario(s.id)}
+                        className="text-[10px] px-2 py-1 rounded-full border border-red-700/70 text-red-300 hover:bg-red-900/40 transition"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

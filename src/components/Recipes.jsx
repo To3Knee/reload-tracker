@@ -30,6 +30,9 @@ const DEFAULT_FORM = {
   zeroDistanceYards: '',
   groupSizeInches: '',
   rangeNotes: '',
+
+  // archive flag (recipes created from here start as active)
+  archived: false,
 }
 
 export function Recipes({ onUseRecipe }) {
@@ -38,6 +41,7 @@ export function Recipes({ onUseRecipe }) {
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [editingRecipe, setEditingRecipe] = useState(null)
+  const [archivingId, setArchivingId] = useState(null)
 
   useEffect(() => {
     loadRecipes()
@@ -71,14 +75,66 @@ export function Recipes({ onUseRecipe }) {
     e.preventDefault()
     setSaving(true)
     try {
-      if (editingRecipe) {
-        await saveRecipe({
-          ...editingRecipe,
-          ...form,
-        })
-      } else {
-        await saveRecipe(form)
+      // Normalize & compute numeric fields
+      const base = {
+        name: form.name?.trim() || '',
+        caliber: form.caliber?.trim() || '',
+        profileType: form.profileType || 'custom',
+        chargeGrains:
+          form.chargeGrains !== ''
+            ? Number(form.chargeGrains)
+            : null,
+        brassReuse:
+          form.brassReuse !== ''
+            ? Number(form.brassReuse)
+            : null,
+        lotSize:
+          form.lotSize !== ''
+            ? Number(form.lotSize)
+            : null,
+        notes: form.notes || '',
+
+        bulletWeightGr:
+          form.bulletWeightGr !== ''
+            ? Number(form.bulletWeightGr)
+            : null,
+        muzzleVelocityFps:
+          form.muzzleVelocityFps !== ''
+            ? Number(form.muzzleVelocityFps)
+            : null,
+        zeroDistanceYards:
+          form.zeroDistanceYards !== ''
+            ? Number(form.zeroDistanceYards)
+            : null,
+        groupSizeInches:
+          form.groupSizeInches !== ''
+            ? Number(form.groupSizeInches)
+            : null,
+        rangeNotes: form.rangeNotes || '',
       }
+
+      const powerFactor =
+        base.bulletWeightGr && base.muzzleVelocityFps
+          ? (base.bulletWeightGr * base.muzzleVelocityFps) / 1000
+          : 0
+
+      const payload = editingRecipe
+        ? {
+            ...editingRecipe,
+            ...base,
+            archived:
+              typeof editingRecipe.archived === 'boolean'
+                ? editingRecipe.archived
+                : false,
+            powerFactor,
+          }
+        : {
+            ...base,
+            archived: false,
+            powerFactor,
+          }
+
+      await saveRecipe(payload)
       resetForm()
       await loadRecipes()
     } finally {
@@ -117,6 +173,10 @@ export function Recipes({ onUseRecipe }) {
           ? String(recipe.groupSizeInches)
           : '',
       rangeNotes: recipe.rangeNotes || '',
+      archived:
+        typeof recipe.archived === 'boolean'
+          ? recipe.archived
+          : false,
     })
   }
 
@@ -133,6 +193,24 @@ export function Recipes({ onUseRecipe }) {
       await loadRecipes()
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  async function handleArchiveToggle(recipe) {
+    if (!recipe) return
+    setArchivingId(recipe.id)
+    try {
+      const updated = {
+        ...recipe,
+        archived: !recipe.archived,
+      }
+      await saveRecipe(updated)
+      if (editingRecipe && editingRecipe.id === recipe.id) {
+        setEditingRecipe(updated)
+      }
+      await loadRecipes()
+    } finally {
+      setArchivingId(null)
     }
   }
 
@@ -247,7 +325,9 @@ export function Recipes({ onUseRecipe }) {
               step="1"
               className={inputClass}
               value={form.lotSize}
-              onChange={e => updateField('lotSize', e.target.value)}
+              onChange={e =>
+                updateField('lotSize', e.target.value)
+              }
             />
           </div>
 
@@ -288,7 +368,9 @@ export function Recipes({ onUseRecipe }) {
 
           {/* Muzzle velocity */}
           <div>
-            <label className={labelClass}>Muzzle Velocity (fps)</label>
+            <label className={labelClass}>
+              Muzzle Velocity (fps)
+            </label>
             <input
               type="number"
               min="0"
@@ -423,17 +505,25 @@ export function Recipes({ onUseRecipe }) {
                   ? r.powerFactor.toFixed(1)
                   : null
 
+              const isArchived =
+                typeof r.archived === 'boolean' && r.archived
+
               return (
                 <div
                   key={r.id}
                   className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 bg-black/40 rounded-xl px-3 py-2"
                 >
                   <div>
-                    <div className="text-sm font-semibold text-slate-100">
-                      {r.name}{' '}
+                    <div className="text-sm font-semibold text-slate-100 flex flex-wrap items-center gap-1">
+                      <span>{r.name}</span>
                       {r.caliber && (
-                        <span className="text-[11px] text-slate-400 ml-1">
+                        <span className="text-[11px] text-slate-400">
                           ({r.caliber})
+                        </span>
+                      )}
+                      {isArchived && (
+                        <span className="ml-1 text-[10px] uppercase tracking-[0.15em] text-amber-300">
+                          ARCHIVED
                         </span>
                       )}
                     </div>
@@ -478,7 +568,7 @@ export function Recipes({ onUseRecipe }) {
                   </div>
 
                   <div className="flex gap-2 justify-end">
-                    {onUseRecipe && (
+                    {onUseRecipe && !isArchived && (
                       <button
                         type="button"
                         onClick={() => onUseRecipe(r)}
@@ -493,6 +583,20 @@ export function Recipes({ onUseRecipe }) {
                       className="text-[11px] px-3 py-1 rounded-full border border-slate-600 text-slate-200 hover:bg-slate-800/60 transition"
                     >
                       Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={archivingId === r.id}
+                      onClick={() => handleArchiveToggle(r)}
+                      className="text-[11px] px-3 py-1 rounded-full border border-amber-500/70 text-amber-300 hover:bg-amber-900/40 transition disabled:opacity-50"
+                    >
+                      {archivingId === r.id
+                        ? isArchived
+                          ? 'Unarchiving…'
+                          : 'Archiving…'
+                        : isArchived
+                        ? 'Unarchive'
+                        : 'Archive'}
                     </button>
                     <button
                       type="button"
