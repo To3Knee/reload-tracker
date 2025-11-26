@@ -7,13 +7,16 @@ import { Inventory } from './components/Inventory'
 import { Recipes } from './components/Recipes'
 import { getAllPurchases, seedData } from './lib/db'
 import logo from './assets/logo.png'
+import { APP_VERSION_LABEL } from './version'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('calculator')
   const [purchases, setPurchases] = useState([])
   const [selectedRecipe, setSelectedRecipe] = useState(null)
   const [ageConfirmed, setAgeConfirmed] = useState(
-    localStorage.getItem('ageConfirmed') === 'true'
+    typeof window !== 'undefined'
+      ? localStorage.getItem('ageConfirmed') === 'true'
+      : false
   )
 
   useEffect(() => {
@@ -60,6 +63,11 @@ export default function App() {
           >
             I am 21 or older
           </button>
+
+          {/* Optional: show version even on age gate */}
+          <div className="mt-4 text-[10px] text-slate-600">
+            Reload Tracker {APP_VERSION_LABEL}
+          </div>
         </div>
       </div>
     )
@@ -71,7 +79,7 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-4 pt-24 pb-24">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 mb-10">
-          {/* Logo on the LEFT now */}
+          {/* Logo on the LEFT */}
           <div className="flex justify-center md:justify-start">
             <img
               src={logo}
@@ -104,13 +112,18 @@ export default function App() {
         {activeTab === 'purchases' && (
           <Purchases onChanged={refreshPurchases} />
         )}
-        {activeTab === 'inventory' && (
-          <Inventory purchases={purchases} />
-        )}
+        {activeTab === 'inventory' && <Inventory purchases={purchases} />}
         {activeTab === 'recipes' && (
           <Recipes onUseRecipe={handleUseRecipe} />
         )}
       </main>
+
+      {/* Fixed version badge – no layout impact, no click blocking */}
+      <div className="fixed bottom-2 right-3 z-50 text-[10px] text-slate-500 pointer-events-none">
+        <span className="px-2 py-[2px] rounded-full border border-red-600/40 bg-black/70 backdrop-blur">
+          Reload Tracker {APP_VERSION_LABEL}
+        </span>
+      </div>
     </div>
   )
 }
