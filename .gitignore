@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+dist/
+target/
+
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.dbwebview2.exe
