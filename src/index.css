@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  letter-spacing: 0.02em;
+}
+
+body {
+  background: #000;
+  color: #e8e1d4;
+  line-height: 1.6;
+}
+
+input, select, button {
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px !important;
+}
+
+label {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: #ff4444 !important;
+}
+
+h1 {
+  font-size: 3.5rem !important;
+  font-weight: 900 !important;
+  letter-spacing: -1px !important;
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: 2.8rem !important; }
+}
+
+.glass {
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid #b33c3c44;
+  box-shadow: 0 8px 32px #8b2a2a22;
+  padding: 2rem !important;
+  border-radius: 1.5rem;
+}
+
+.glow-red {
+  text-shadow: 0 0 20px #b33c3c, 0 0 40px #b33c3c;
+  filter: drop-shadow(0 0 8px #b33c3c44);
+}
