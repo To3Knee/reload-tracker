@@ -10,16 +10,22 @@
   Track every LOT, every recipe, and exactly what each round really costs.
 </p>
 
+[![ChatGPT](https://img.shields.io/badge/ChatGPT-74aa9c?logo=openai&logoColor=white)](#)
+[![Firefox](https://img.shields.io/badge/Firefox-FF7139?logo=firefoxbrowser&logoColor=white)](#)
+[![Netlify](https://img.shields.io/badge/Netlify-%23000000.svg?logo=netlify&logoColor=#00C7B7)](#)
+[![Notepad++](https://img.shields.io/badge/Notepad++-90E59A.svg?&logo=notepad%2b%2b&logoColor=black)](#)
+[![Postgres](https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white)](#)
+[![npm](https://img.shields.io/badge/npm-CB3837?logo=npm&logoColor=fff)](#)
+[![Node.js](https://img.shields.io/badge/Node.js-6DA55F?logo=node.js&logoColor=white)](#)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff)](#)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-%2338B2AC.svg?logo=tailwind-css&logoColor=white)](#)
+[![TOML](https://img.shields.io/badge/TOML-9C4121?logo=toml&logoColor=fff)](#)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=fff)](#)
+[![iOS](https://img.shields.io/badge/iOS-000000?&logo=apple&logoColor=white)](#)
+[![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white)](#)
+
 <p align="center">
-
-[![Netlify Status](https://api.netlify.com/api/v1/badges/fcaa3310-d64d-4f6c-af56-bbc08cfedcf2/deploy-status)](https://app.netlify.com/projects/reload-tracker/deploys)
-
- <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-5.4+-blue?style=flat-square" alt="Vite Version"></a>
- <a href="https://github.com/To3Knee/tsv-editor/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-High%20Five-yellow?style=flat-square" alt="License"></a>
-</p>
-
-<p align="center">
- [![Live App Demo](img.shields.io)](https://reload-tracker.netlify.app)
+🧮<a href="https://reload-tracker.netlify.app/" target="_blank"><img alt="Live Demo " src="https://img.shields.io/static/v1?style=&label=Live Demo"></a>🧮
 </p>
 
 ---
