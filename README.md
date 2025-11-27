@@ -2,7 +2,7 @@
   <img src="src/assets/logo.png" alt="Reload Tracker logo" width="260">
 </p>
 
-<h1 align="center">🔫 Reload Tracker 🔫</h1>
+<h1 align="center">💥 Reload Tracker 💥</h1>
 
 <p align="center">
   <strong>Beautiful, professional ammo cost & inventory tracking — without spreadsheets.</strong><br>
