@@ -23,16 +23,11 @@ const DEFAULT_FORM = {
   brassReuse: 5,
   lotSize: 200,
   notes: '',
-
-  // ballistics
   bulletWeightGr: '',
   muzzleVelocityFps: '',
   zeroDistanceYards: '',
   groupSizeInches: '',
   rangeNotes: '',
-
-  // archive flag (recipes created from here start as active)
-  archived: false,
 }
 
 export function Recipes({ onUseRecipe }) {
@@ -74,30 +69,21 @@ export function Recipes({ onUseRecipe }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
+
     try {
-      // Normalize & compute numeric fields
       const base = {
         name: form.name?.trim() || '',
         caliber: form.caliber?.trim() || '',
         profileType: form.profileType || 'custom',
         chargeGrains:
-          form.chargeGrains !== ''
-            ? Number(form.chargeGrains)
-            : null,
+          form.chargeGrains !== '' ? Number(form.chargeGrains) : null,
         brassReuse:
-          form.brassReuse !== ''
-            ? Number(form.brassReuse)
-            : null,
+          form.brassReuse !== '' ? Number(form.brassReuse) : null,
         lotSize:
-          form.lotSize !== ''
-            ? Number(form.lotSize)
-            : null,
+          form.lotSize !== '' ? Number(form.lotSize) : null,
         notes: form.notes || '',
-
         bulletWeightGr:
-          form.bulletWeightGr !== ''
-            ? Number(form.bulletWeightGr)
-            : null,
+          form.bulletWeightGr !== '' ? Number(form.bulletWeightGr) : null,
         muzzleVelocityFps:
           form.muzzleVelocityFps !== ''
             ? Number(form.muzzleVelocityFps)
@@ -149,11 +135,8 @@ export function Recipes({ onUseRecipe }) {
       caliber: recipe.caliber || '',
       profileType: recipe.profileType || 'custom',
       chargeGrains:
-        recipe.chargeGrains != null
-          ? String(recipe.chargeGrains)
-          : '',
-      brassReuse:
-        recipe.brassReuse != null ? recipe.brassReuse : 5,
+        recipe.chargeGrains != null ? String(recipe.chargeGrains) : '',
+      brassReuse: recipe.brassReuse != null ? recipe.brassReuse : 5,
       lotSize: recipe.lotSize != null ? recipe.lotSize : 200,
       notes: recipe.notes || '',
       bulletWeightGr:
@@ -173,23 +156,15 @@ export function Recipes({ onUseRecipe }) {
           ? String(recipe.groupSizeInches)
           : '',
       rangeNotes: recipe.rangeNotes || '',
-      archived:
-        typeof recipe.archived === 'boolean'
-          ? recipe.archived
-          : false,
     })
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this recipe? This cannot be undone.')) {
-      return
-    }
+    if (!window.confirm('Delete this recipe? This cannot be undone.')) return
     setDeletingId(id)
     try {
       await deleteRecipe(id)
-      if (editingRecipe && editingRecipe.id === id) {
-        resetForm()
-      }
+      if (editingRecipe && editingRecipe.id === id) resetForm()
       await loadRecipes()
     } finally {
       setDeletingId(null)
@@ -214,9 +189,220 @@ export function Recipes({ onUseRecipe }) {
     }
   }
 
+  function escapeHtml(value) {
+    if (value == null) return ''
+    return String(value).replace(/[&<>"]/g, ch => {
+      if (ch === '&') return '&amp;'
+      if (ch === '<') return '&lt;'
+      if (ch === '>') return '&gt;'
+      if (ch === '"') return '&quot;'
+      return ch
+    })
+  }
+
+  function handleExportPdf(recipe) {
+    if (!recipe) return
+
+    const profileLabel =
+      PROFILE_TYPES.find(p => p.value === recipe.profileType)?.label ||
+      'Custom'
+
+    const pfLabel =
+      recipe.powerFactor && recipe.powerFactor > 0
+        ? recipe.powerFactor.toFixed(1)
+        : ''
+
+    const bulletText = recipe.bulletWeightGr
+      ? `${recipe.bulletWeightGr}gr${
+          recipe.caliber ? ` • ${recipe.caliber}` : ''
+        }`
+      : recipe.caliber || ''
+
+    const powderText = recipe.notes || ''
+
+    const velocityText =
+      recipe.muzzleVelocityFps != null &&
+      recipe.muzzleVelocityFps !== ''
+        ? `${recipe.muzzleVelocityFps} fps`
+        : ''
+
+    const zeroText =
+      recipe.zeroDistanceYards != null &&
+      recipe.zeroDistanceYards !== ''
+        ? `${recipe.zeroDistanceYards} yd`
+        : ''
+
+    const groupText =
+      recipe.groupSizeInches != null &&
+      recipe.groupSizeInches !== ''
+        ? `${recipe.groupSizeInches}"`
+        : ''
+
+    const energy =
+      recipe.bulletWeightGr && recipe.muzzleVelocityFps
+        ? ((Number(recipe.bulletWeightGr) || 0) *
+            Math.pow(
+              Number(recipe.muzzleVelocityFps) || 0,
+              2
+            )) /
+          450240
+        : 0
+    const energyText = energy ? `${energy.toFixed(0)} ft-lbs` : ''
+
+    const usesText = profileLabel
+    const rangeNotesText = recipe.rangeNotes || ''
+    const nameText = recipe.name || 'Recipe'
+
+    const bulletRow = `<div class="row"><span class="label">Bullet:</span> ${escapeHtml(
+      bulletText
+    )}</div>`
+    const powderRow = `<div class="row"><span class="label">Powder:</span> ${escapeHtml(
+      powderText
+    )}</div>`
+    const chargeRow = `<div class="row"><span class="label">Charge (grains):</span> ${escapeHtml(
+      recipe.chargeGrains != null ? recipe.chargeGrains : ''
+    )}</div>`
+    const pfRow = pfLabel
+      ? `<div class="row"><span class="label">Power Factor:</span> ${escapeHtml(
+          pfLabel
+        )}</div>`
+      : ''
+    const velocityRow = velocityText
+      ? `<div class="row"><span class="label">Velocity (fps):</span> ${escapeHtml(
+          velocityText
+        )}</div>`
+      : ''
+    const energyRow = energyText
+      ? `<div class="row"><span class="label">Muzzle Energy (ft-lbs):</span> ${escapeHtml(
+          energyText
+        )}</div>`
+      : ''
+    const zeroRow = zeroText
+      ? `<div class="row"><span class="label">Zero Distance:</span> ${escapeHtml(
+          zeroText
+        )}</div>`
+      : ''
+    const groupRow = groupText
+      ? `<div class="row"><span class="label">Group Size:</span> ${escapeHtml(
+          groupText
+        )}</div>`
+      : ''
+    const usesRow = `<div class="row"><span class="label">Uses:</span> ${escapeHtml(
+      usesText
+    )}</div>`
+    const rangeNotesRow = rangeNotesText
+      ? `<div class="row notes"><span class="label">Range Notes:</span> ${escapeHtml(
+          rangeNotesText
+        )}</div>`
+      : ''
+
+    const logoUrl = `${window.location.origin}/logo.png`
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(nameText)} - Reload Tracker Recipe</title>
+  <style>
+    @page {
+      size: 4in 6in;
+      margin: 0.5in;
+    }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #281219 0, #0d0b10 40%, #050406 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .card {
+      background: #f4f0e9;
+      color: #221b16;
+      max-width: 320px;
+      margin: 0 auto;
+      padding: 12px 14px 14px;
+      box-sizing: border-box;
+      font-size: 11px;
+      line-height: 1.4;
+      border-radius: 6px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .banner {
+      display: inline-block;
+      background: #b3342a;
+      color: #fff;
+      padding: 3px 9px;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .logo {
+      height: 26px;
+    }
+    .title {
+      font-weight: 700;
+      font-size: 12px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    .row {
+      margin: 1px 0;
+    }
+    .label {
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .notes {
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="banner">RECIPE</div>
+      <img src="${logoUrl}" alt="Reload Tracker" class="logo" />
+    </div>
+    <div class="title">${escapeHtml(nameText)}</div>
+    ${bulletRow}
+    ${powderRow}
+    ${chargeRow}
+    ${pfRow}
+    ${velocityRow}
+    ${energyRow}
+    ${zeroRow}
+    ${groupRow}
+    ${usesRow}
+    ${rangeNotesRow}
+  </div>
+  <script>
+    window.onload = function() {
+      window.print();
+      setTimeout(function() { window.close(); }, 250);
+    };
+  </script>
+</body>
+</html>`
+
+    const win = window.open('', '_blank')
+    if (!win) {
+      alert('Unable to open PDF window. Please allow pop-ups for this site.')
+      return
+    }
+    win.document.open()
+    win.document.write(html)
+    win.document.close()
+  }
+
   const inputClass =
     'w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/60'
-
   const labelClass =
     'block text-xs font-semibold text-slate-400 mb-1'
 
@@ -284,9 +470,7 @@ export function Recipes({ onUseRecipe }) {
 
           {/* Charge */}
           <div>
-            <label className={labelClass}>
-              Charge Weight (grains)
-            </label>
+            <label className={labelClass}>Charge Weight (grains)</label>
             <input
               type="number"
               min="0"
@@ -336,7 +520,7 @@ export function Recipes({ onUseRecipe }) {
             <label className={labelClass}>Notes</label>
             <textarea
               className={inputClass + ' resize-none min-h-[60px]'}
-              placeholder="Intended use, COAL, powder / bullet combo, anything else."
+              placeholder="Intended use, powder / bullet brand, COAL, anything else."
               value={form.notes}
               onChange={e => updateField('notes', e.target.value)}
             />
@@ -432,7 +616,7 @@ export function Recipes({ onUseRecipe }) {
             <label className={labelClass}>Range Notes</label>
             <textarea
               className={inputClass + ' resize-none min-h-[60px]'}
-              placeholder="Chrono data, ES/SD, recoil feel, point of impact, environmental conditions, etc."
+              placeholder="Chrono data, ES/SD, recoil feel, POI, environmental conditions, etc."
               value={form.rangeNotes}
               onChange={e =>
                 updateField('rangeNotes', e.target.value)
@@ -446,7 +630,7 @@ export function Recipes({ onUseRecipe }) {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 rounded-full border border-slate-600 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 transition"
+                className="inline-flex items-center px-4 py-2 rounded-full border border-slate-600 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 transition"
               >
                 Cancel edit
               </button>
@@ -455,7 +639,7 @@ export function Recipes({ onUseRecipe }) {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 rounded-full border border-slate-600 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 transition"
+                className="inline-flex items-center px-4 py-2 rounded-full border border-slate-600 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 transition"
               >
                 Clear
               </button>
@@ -463,7 +647,7 @@ export function Recipes({ onUseRecipe }) {
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2 rounded-full bg-red-700 hover:bg-red-600 text-xs font-semibold shadow-lg shadow-red-900/40 transition disabled:opacity-60"
+              className="inline-flex items-center px-5 py-2 rounded-full bg-red-700 hover:bg-red-600 text-xs font-semibold shadow-lg shadow-red-900/40 transition disabled:opacity-60"
             >
               {saving
                 ? 'Saving…'
@@ -496,9 +680,8 @@ export function Recipes({ onUseRecipe }) {
           <div className="space-y-2 mt-2">
             {recipes.map(r => {
               const profileLabel =
-                PROFILE_TYPES.find(
-                  p => p.value === r.profileType
-                )?.label || 'Custom'
+                PROFILE_TYPES.find(p => p.value === r.profileType)
+                  ?.label || 'Custom'
 
               const pfLabel =
                 r.powerFactor && r.powerFactor > 0
@@ -528,8 +711,7 @@ export function Recipes({ onUseRecipe }) {
                       )}
                     </div>
                     <div className="text-[11px] text-slate-400 mt-1">
-                      {profileLabel} • Charge {r.chargeGrains} gr •
-                      {' Brass x'}
+                      {profileLabel} • Charge {r.chargeGrains} gr • Brass x
                       {r.brassReuse} • Lot size {r.lotSize}
                     </div>
                     {(r.bulletWeightGr || r.muzzleVelocityFps) && (
@@ -553,10 +735,7 @@ export function Recipes({ onUseRecipe }) {
                           <span> • Zero {r.zeroDistanceYards} yd</span>
                         )}
                         {r.groupSizeInches > 0 && (
-                          <span>
-                            {' '}
-                            • Group {r.groupSizeInches}"
-                          </span>
+                          <span> • Group {r.groupSizeInches}"</span>
                         )}
                       </div>
                     )}
@@ -567,20 +746,28 @@ export function Recipes({ onUseRecipe }) {
                     )}
                   </div>
 
-                  <div className="flex gap-2 justify-end">
+                  {/* ACTION PILLS — match Purchases pill sizing */}
+                  <div className="flex flex-wrap items-center gap-2 justify-end text-[11px]">
                     {onUseRecipe && !isArchived && (
                       <button
                         type="button"
                         onClick={() => onUseRecipe(r)}
-                        className="text-[11px] px-3 py-1 rounded-full border border-emerald-500/60 text-emerald-300 hover:bg-emerald-900/40 transition"
+                        className="px-2 py-[2px] rounded-full border border-emerald-500/70 text-emerald-300 bg-black/60 hover:bg-emerald-500/10 transition"
                       >
                         Use in Calculator
                       </button>
                     )}
                     <button
                       type="button"
+                      onClick={() => handleExportPdf(r)}
+                      className="px-2 py-[2px] rounded-full border border-slate-700 bg-black/60 hover:border-emerald-500/70 hover:text-emerald-300 transition"
+                    >
+                      Export PDF
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleEdit(r)}
-                      className="text-[11px] px-3 py-1 rounded-full border border-slate-600 text-slate-200 hover:bg-slate-800/60 transition"
+                      className="px-2 py-[2px] rounded-full border border-slate-700 bg-black/60 hover:bg-slate-800/80 transition"
                     >
                       Edit
                     </button>
@@ -588,7 +775,7 @@ export function Recipes({ onUseRecipe }) {
                       type="button"
                       disabled={archivingId === r.id}
                       onClick={() => handleArchiveToggle(r)}
-                      className="text-[11px] px-3 py-1 rounded-full border border-amber-500/70 text-amber-300 hover:bg-amber-900/40 transition disabled:opacity-50"
+                      className="px-2 py-[2px] rounded-full border border-amber-400 text-amber-300 bg-black/60 hover:bg-amber-500/10 transition disabled:opacity-50"
                     >
                       {archivingId === r.id
                         ? isArchived
@@ -602,7 +789,7 @@ export function Recipes({ onUseRecipe }) {
                       type="button"
                       disabled={deletingId === r.id}
                       onClick={() => handleDelete(r.id)}
-                      className="text-[11px] px-3 py-1 rounded-full border border-red-700/70 text-red-300 hover:bg-red-900/40 transition disabled:opacity-50"
+                      className="px-2 py-[2px] rounded-full border border-red-700/70 text-red-300 bg-black/60 hover:bg-red-900/40 transition disabled:opacity-50"
                     >
                       {deletingId === r.id ? 'Deleting…' : 'Delete'}
                     </button>

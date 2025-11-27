@@ -1,4 +1,15 @@
-// src/App.jsx
+//===============================================================
+//Script Name: App.jsx
+//Script Location: src/App.jsx
+//Date: 11/26/2025
+//Created By: T03KNEE
+//Github: https://github.com/To3Knee/reload-tracker
+//Version: 1.0.1
+//About: Root shell for Reload Tracker. Handles navbar/tab routing,
+//       age confirmation gate, initial purchase load from DB, and
+//       wiring selected recipes into the Live Round Calculator.
+//===============================================================
+
 import { useEffect, useState } from 'react'
 import Navbar from './components/Navbar'
 import Dashboard from './components/Dashboard'
@@ -19,6 +30,7 @@ export default function App() {
       : false
   )
 
+  // Initial load: seed DB (if needed) and pull all purchases
   useEffect(() => {
     const load = async () => {
       await seedData()
@@ -41,31 +53,6 @@ export default function App() {
   const handleUseRecipe = recipe => {
     setSelectedRecipe(recipe)
     setActiveTab('calculator')
-  }
-
-  const handleResetLocalData = () => {
-    if (typeof window === 'undefined') return
-
-    const ok = window.confirm(
-      'This will clear Reload Tracker data on THIS device (purchases, recipes, age gate) and reload the app. It will NOT affect other devices. Continue?'
-    )
-    if (!ok) return
-
-    try {
-      if (window.indexedDB) {
-        // DB name used by the app (matches db.js)
-        window.indexedDB.deleteDatabase('reload-tracker')
-      }
-      // Clear local storage keys for this origin
-      window.localStorage.clear()
-    } catch (err) {
-      console.error('Failed to reset local data', err)
-      alert(
-        'Error clearing local data. You may need to clear site data from your browser settings.'
-      )
-    } finally {
-      window.location.reload()
-    }
   }
 
   if (!ageConfirmed) {
@@ -143,20 +130,11 @@ export default function App() {
         )}
       </main>
 
-      {/* Fixed version + reset badge – small, bottom-right */}
+      {/* Fixed version badge – small, bottom-right */}
       <div className="fixed bottom-2 right-3 z-50 text-[10px] text-slate-500">
-        <div className="flex flex-col items-end gap-1">
-          <span className="px-2 py-[2px] rounded-full border border-red-600/40 bg-black/70 backdrop-blur">
-            Reload Tracker {APP_VERSION_LABEL}
-          </span>
-          <button
-            type="button"
-            onClick={handleResetLocalData}
-            className="px-2 py-[2px] rounded-full border border-slate-600/50 bg-black/60 text-[10px] text-slate-400 hover:border-red-600/60 hover:text-red-300 transition"
-          >
-            Reset local data (this device)
-          </button>
-        </div>
+        <span className="px-2 py-[2px] rounded-full border border-red-600/40 bg-black/70 backdrop-blur">
+          Reload Tracker {APP_VERSION_LABEL}
+        </span>
       </div>
     </div>
   )

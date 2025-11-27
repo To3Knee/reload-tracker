@@ -1,4 +1,14 @@
-// src/components/Dashboard.jsx
+//===============================================================
+//Script Name: Dashboard.jsx
+//Script Location: src/components/Dashboard.jsx
+//Date: 11/26/2025
+//Created By: T03KNEE
+//Github: https://github.com/To3Knee/reload-tracker
+//Version: 1.0.2
+//About: Live Round Calculator dashboard. Ties recipes, purchases,
+//       cost math, and inventory capacity into a single view.
+//===============================================================
+
 import { useEffect, useMemo, useState } from 'react'
 import {
   calculatePerUnit,
@@ -20,7 +30,7 @@ export default function Dashboard({
   const [recipes, setRecipes] = useState([])
   const [selectedRecipeId, setSelectedRecipeId] = useState('')
   const [scenarios, setScenarios] = useState([])
-  const [savingScenarioId, setSavingScenarioId] = useState(null)
+  const [savingRecipeId, setSavingRecipeId] = useState(null)
 
   // Load recipes once
   useEffect(() => {
@@ -129,7 +139,9 @@ export default function Dashboard({
     const numericLot = Math.max(Number(lotSize) || 0, 0)
 
     const per = p =>
-      p ? calculatePerUnit(p.price, p.shipping, p.tax, p.qty) : 0
+      p
+        ? calculatePerUnit(p.price, p.shipping, p.tax, p.qty)
+        : 0
 
     const powderPerRound = (() => {
       if (!powder) return 0
@@ -286,9 +298,9 @@ export default function Dashboard({
   // Header line: always label the value, never render a bare `0` on its own
   const headerRounds =
     selectedRecipe && capacity && !capacity.needsCharge
-      ? typeof capacity.roundsPossible === 'number'
-        ? capacity.roundsPossible
-        : 0
+      ? (typeof capacity.roundsPossible === 'number'
+          ? capacity.roundsPossible
+          : 0)
       : null
 
   function handleSaveScenario() {
@@ -325,47 +337,34 @@ export default function Dashboard({
     setScenarios(prev => prev.filter(s => s.id !== id))
   }
 
-  // NEW: Save a saved config as a Recipe in the Recipes store
   async function handleSaveScenarioAsRecipe(scenario) {
     if (!scenario) return
-    setSavingScenarioId(scenario.id)
+
+    setSavingRecipeId(scenario.id)
     try {
+      const recipeName =
+        scenario.name || `Saved config (${scenario.caliber || 'Unknown'})`
+
       const payload = {
-        name: scenario.name || 'Saved config',
-        caliber: scenario.caliber || caliber || '',
+        name: recipeName,
+        caliber: scenario.caliber || '',
         profileType: 'custom',
-        chargeGrains:
-          scenario.chargeGrains != null
-            ? Number(scenario.chargeGrains)
-            : Number(chargeGrains) || 0,
-        brassReuse:
-          scenario.caseReuse != null
-            ? Number(scenario.caseReuse)
-            : Number(caseReuse) || 1,
-        lotSize:
-          scenario.lotSize != null
-            ? Number(scenario.lotSize)
-            : Number(lotSize) || 0,
-        notes: '',
-        // Ballistics left empty; can be filled in the Recipes tab later
-        bulletWeightGr: null,
-        muzzleVelocityFps: null,
-        zeroDistanceYards: null,
-        groupSizeInches: null,
+        chargeGrains: scenario.chargeGrains || 0,
+        brassReuse: scenario.caseReuse || 1,
+        lotSize: scenario.lotSize || 0,
+        notes: 'Saved from Live Round Calculator config.',
+        bulletWeightGr: '',
+        muzzleVelocityFps: '',
+        zeroDistanceYards: '',
+        groupSizeInches: '',
         rangeNotes: '',
-        powerFactor: 0,
-        archived: false,
       }
 
       await saveRecipe(payload)
       const data = await getAllRecipes()
       setRecipes(data)
-    } catch (err) {
-      // Keep it quiet visually, but log for debugging
-      // eslint-disable-next-line no-console
-      console.error('Failed to save scenario as recipe', err)
     } finally {
-      setSavingScenarioId(null)
+      setSavingRecipeId(null)
     }
   }
 
@@ -386,14 +385,12 @@ export default function Dashboard({
   const calibers = Array.from(
     new Set(
       recipes
-        .filter(r => !r.archived)
         .map(r => r.caliber)
         .filter(c => c && c.trim().length > 0)
     )
   ).sort()
 
   const recipesForCaliber = recipes.filter(r => {
-    if (r.archived) return false
     if (!caliber) return true
     if (!r.caliber) return true
     return r.caliber === caliber
@@ -440,11 +437,12 @@ export default function Dashboard({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold flex flex-col gap-1">
-        <span className="glow-red">Live Round Calculator</span>
+      {/* HEADER – tightened spacing */}
+      <h2 className="text-3xl font-bold">
+        <span className="block glow-red mb-1">Live Round Calculator</span>
 
         {activeRecipeLabel && (
-          <span className="text-xs text-slate-400">
+          <span className="block text-xs text-slate-400">
             Recipe:{' '}
             <span className="font-semibold text-slate-100">
               {activeRecipeLabel}
@@ -452,9 +450,8 @@ export default function Dashboard({
           </span>
         )}
 
-        {/* Only shows when we have a usable capacity object */}
         {headerRounds !== null && (
-          <span className="text-xs text-slate-400">
+          <span className="block text-xs text-slate-400">
             Max rounds with selected recipe:{' '}
             <span className="font-semibold text-slate-100">
               {headerRounds.toLocaleString()}
@@ -463,7 +460,7 @@ export default function Dashboard({
         )}
 
         {hasBallistics && (
-          <span className="text-[11px] text-slate-500">
+          <span className="block text-[11px] text-slate-500">
             Ballistics:
             {selectedRecipe.bulletWeightGr && (
               <> {selectedRecipe.bulletWeightGr}gr</>
@@ -767,7 +764,7 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* INVENTORY CAPACITY – details-only, no bare `0` line */}
+          {/* INVENTORY CAPACITY – ONLY BLOCK CHANGED */}
           {selectedRecipe && (
             <div className="border-t border-red-500/20 pt-4 space-y-2">
               <p className={sectionLabelClass}>
@@ -786,28 +783,28 @@ export default function Dashboard({
                   capacity.brassRounds) ? (
                 <div className="flex items-start justify-between gap-3">
                   <div className="text-[11px] text-slate-400 space-y-1">
-                    <p>
+                    <p className="whitespace-nowrap">
                       Powder capacity:{' '}
                       <span className="font-semibold text-slate-100">
                         {(capacity.powderRounds || 0).toLocaleString()}
                       </span>{' '}
                       rounds
                     </p>
-                    <p>
+                    <p className="whitespace-nowrap">
                       Bullet capacity:{' '}
                       <span className="font-semibold text-slate-100">
                         {(capacity.bulletRounds || 0).toLocaleString()}
                       </span>{' '}
                       rounds
                     </p>
-                    <p>
+                    <p className="whitespace-nowrap">
                       Primer capacity:{' '}
                       <span className="font-semibold text-slate-100">
                         {(capacity.primerRounds || 0).toLocaleString()}
                       </span>{' '}
                       rounds
                     </p>
-                    <p>
+                    <p className="whitespace-nowrap">
                       Brass (with reuse):{' '}
                       <span className="font-semibold text-slate-100">
                         {(capacity.brassRounds || 0).toLocaleString()}
@@ -888,25 +885,21 @@ export default function Dashboard({
                         </span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleSaveScenarioAsRecipe(s)
-                        }
-                        disabled={savingScenarioId === s.id}
-                        className="text-[10px] px-2 py-1 rounded-full border border-emerald-500/70 text-emerald-300 hover:bg-emerald-900/40 transition disabled:opacity-60"
-                      >
-                        {savingScenarioId === s.id
-                          ? 'Saving…'
-                          : 'Save recipe'}
-                      </button>
+                    <div className="flex flex-col gap-1 ml-3 text-[10px]">
                       <button
                         type="button"
                         onClick={() => handleDeleteScenario(s.id)}
-                        className="text-[10px] px-2 py-1 rounded-full border border-red-700/70 text-red-300 hover:bg-red-900/40 transition"
+                        className="px-2 py-1 rounded-full border border-red-700/70 text-red-300 hover:bg-red-900/40 transition"
                       >
                         Remove
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveScenarioAsRecipe(s)}
+                        disabled={savingRecipeId === s.id}
+                        className="px-2 py-1 rounded-full border border-emerald-500/70 text-emerald-300 hover:bg-emerald-900/40 transition disabled:opacity-60"
+                      >
+                        {savingRecipeId === s.id ? 'Saving…' : 'Save recipe'}
                       </button>
                     </div>
                   </div>
