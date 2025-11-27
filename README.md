@@ -27,8 +27,8 @@
 <h2 align="center">LIVE RELOAD TRACKER DEMO</h2>
 
 <p align="center">
-  <a href="https://reload-tracker.netlify.app/">
-    <img alt="Live Demo" src="https://img.shields.io/badge/Live%20Demo-reload--tracker.netlify.app-00C7B7?style=for-the-badge&logo=netlify&logoColor=white">
+  <a href="https://reloadtracker.com">
+    <img alt="Live Demo" src="https://img.shields.io/badge/Live%20Demo-reloadtracker.com-00C7B7?style=for-the-badge&logo=netlify&logoColor=white">
   </a>
 </p>
 
