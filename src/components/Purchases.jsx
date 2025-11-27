@@ -1,4 +1,13 @@
-// src/components/Purchases.jsx
+//===============================================================
+//Script Name: Purchases.jsx
+//Script Location: src/components/Purchases.jsx
+//Date: 11/27/2025
+//Created By: T03KNEE
+//Github: https://github.com/To3Knee/reload-tracker
+//Version: 1.0.1
+//About: Manage purchase LOTs (powder, bullets, primers, brass) and feed cost and inventory data into the Live Round Calculator.
+//===============================================================
+
 import { useEffect, useMemo, useState } from 'react'
 import {
   addPurchase,
@@ -32,6 +41,7 @@ const CASE_CONDITIONS = [
 export function Purchases({ onChanged }) {
   const [purchases, setPurchases] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [editingPurchaseId, setEditingPurchaseId] = useState(null)
 
   const [form, setForm] = useState({
     componentType: 'powder',
@@ -71,6 +81,7 @@ export function Purchases({ onChanged }) {
     try {
       await addPurchase({
         ...form,
+        id: editingPurchaseId || undefined,
         qty: Number(form.qty) || 0,
         price: Number(form.price) || 0,
         shipping: Number(form.shipping) || 0,
@@ -95,6 +106,7 @@ export function Purchases({ onChanged }) {
         url: '',
         caseCondition: '',
       }))
+      setEditingPurchaseId(null)
     } finally {
       setIsSubmitting(false)
     }
@@ -106,6 +118,42 @@ export function Purchases({ onChanged }) {
     const data = await getAllPurchases()
     setPurchases(data)
     if (onChanged) onChanged()
+  }
+
+  const handleStartEdit = purchase => {
+    if (!purchase) return
+    setEditingPurchaseId(purchase.id ?? null)
+    setForm(prev => ({
+      ...prev,
+      componentType: purchase.componentType || prev.componentType || 'powder',
+      caliber: purchase.caliber || '',
+      brand: purchase.brand || '',
+      name: purchase.name || '',
+      lotId: purchase.lotId || '',
+      qty:
+        purchase.qty != null && !Number.isNaN(Number(purchase.qty))
+          ? String(purchase.qty)
+          : '',
+      unit: purchase.unit || '',
+      price:
+        purchase.price != null && !Number.isNaN(Number(purchase.price))
+          ? String(purchase.price)
+          : '',
+      shipping:
+        purchase.shipping != null && !Number.isNaN(Number(purchase.shipping))
+          ? String(purchase.shipping)
+          : '',
+      tax:
+        purchase.tax != null && !Number.isNaN(Number(purchase.tax))
+          ? String(purchase.tax)
+          : '',
+      vendor: purchase.vendor || '',
+      date: purchase.date || '',
+      notes: purchase.notes || '',
+      url: purchase.url || '',
+      status: purchase.status || 'active',
+      caseCondition: purchase.caseCondition || '',
+    }))
   }
 
   const lotsByType = useMemo(() => {
@@ -142,7 +190,7 @@ export function Purchases({ onChanged }) {
     'text-xs uppercase tracking-[0.25em] text-slate-500 mb-2'
 
   const inputClass =
-    'w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-red-500/60'
+    'w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-2 text-xs md:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/60'
 
   const labelClass =
     'block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-[0.16em]'
@@ -205,20 +253,20 @@ export function Purchases({ onChanged }) {
               value={form.brand}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Hodgdon, Hornady, CCI…"
+              placeholder="Hodgdon, CCI, Starline…"
               required
             />
           </div>
 
-          {/* Name */}
+          {/* Name / description */}
           <div>
-            <label className={labelClass}>Product name</label>
+            <label className={labelClass}>Name / description</label>
             <input
               name="name"
               value={form.name}
               onChange={handleChange}
               className={inputClass}
-              placeholder="H4350, 147gr RN, Small Rifle…"
+              placeholder="H335, 124gr RN, Small Rifle…"
               required
             />
           </div>
@@ -231,128 +279,129 @@ export function Purchases({ onChanged }) {
               value={form.lotId}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Lot code from jug / box"
+              placeholder="Printed lot code or your own ID"
             />
+          </div>
+
+          {/* Quantity + unit */}
+          <div className="grid grid-cols-[1.5fr,1fr] gap-3">
+            <div>
+              <label className={labelClass}>Quantity</label>
+              <input
+                name="qty"
+                type="number"
+                min="0"
+                step="any"
+                value={form.qty}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="8"
+                required
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Unit</label>
+              <select
+                name="unit"
+                value={form.unit}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              >
+                {UNITS.map(u => (
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Case condition (only for brass) */}
-          <div>
-            <label className={labelClass}>
-              Case condition (if component is brass)
-            </label>
-            <select
-              name="caseCondition"
-              value={form.caseCondition}
-              onChange={handleChange}
-              className={inputClass}
-            >
-              <option value="">Not brass / not set</option>
-              {CASE_CONDITIONS.map(c => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {form.componentType === 'case' && (
+            <div>
+              <label className={labelClass}>Case condition</label>
+              <select
+                name="caseCondition"
+                value={form.caseCondition}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="">Select condition…</option>
+                {CASE_CONDITIONS.map(c => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Quantity */}
-          <div>
-            <label className={labelClass}>Quantity</label>
-            <input
-              type="number"
-              name="qty"
-              value={form.qty}
-              onChange={handleChange}
-              className={inputClass}
-              min="0"
-              step="1"
-              required
-            />
-          </div>
-
-          {/* Unit */}
-          <div>
-            <label className={labelClass}>Unit</label>
-            <select
-              name="unit"
-              value={form.unit}
-              onChange={handleChange}
-              className={inputClass}
-              required
-            >
-              <option value="">Select unit…</option>
-              {UNITS.map(u => (
-                <option key={u.value} value={u.value}>
-                  {u.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Price */}
-          <div>
-            <label className={labelClass}>Price</label>
-            <input
-              type="number"
-              name="price"
-              value={form.price}
-              onChange={handleChange}
-              className={inputClass}
-              min="0"
-              step="0.01"
-              required
-            />
-          </div>
-
-          {/* Shipping */}
-          <div>
-            <label className={labelClass}>Shipping</label>
-            <input
-              type="number"
-              name="shipping"
-              value={form.shipping}
-              onChange={handleChange}
-              className={inputClass}
-              min="0"
-              step="0.01"
-            />
-          </div>
-
-          {/* Tax */}
-          <div>
-            <label className={labelClass}>Tax</label>
-            <input
-              type="number"
-              name="tax"
-              value={form.tax}
-              onChange={handleChange}
-              className={inputClass}
-              min="0"
-              step="0.01"
-            />
+          {/* Price / shipping / tax */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className={labelClass}>Base price</label>
+              <input
+                name="price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.price}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="100.00"
+                required
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Shipping</label>
+              <input
+                name="shipping"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.shipping}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Tax</label>
+              <input
+                name="tax"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.tax}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="0.00"
+              />
+            </div>
           </div>
 
           {/* Vendor */}
           <div>
-            <label className={labelClass}>Vendor</label>
+            <label className={labelClass}>Vendor (optional)</label>
             <input
               name="vendor"
               value={form.vendor}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Where you bought it"
+              placeholder="Local shop, Powder Valley, etc."
             />
           </div>
 
-          {/* Date */}
+          {/* Purchase date */}
           <div>
-            <label className={labelClass}>Purchase date</label>
+            <label className={labelClass}>Purchase date (optional)</label>
             <input
-              type="date"
               name="date"
               value={form.date}
               onChange={handleChange}
               className={inputClass}
+              placeholder="YYYY-MM-DD or whatever you prefer"
             />
           </div>
 
@@ -385,7 +434,7 @@ export function Purchases({ onChanged }) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2 rounded-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-xs md:text-sm font-semibold tracking-[0.18em] uppercase"
+              className="px-6 py-2 rounded-full bg-red-700 hover:bg-red-600/90 border border-red-700/80 text-xs md:text-sm font-semibold tracking-[0.18em] uppercase"
             >
               {isSubmitting ? 'Saving…' : 'Add purchase'}
             </button>
@@ -445,6 +494,12 @@ export function Purchases({ onChanged }) {
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                            <span
+                              onClick={() => handleStartEdit(p)}
+                              className="px-2 py-[2px] rounded-full bg-black/60 border border-emerald-500/40 text-emerald-300 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer"
+                            >
+                              Edit
+                            </span>
                             {p.vendor && (
                               <span className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700">
                                 {p.vendor}
@@ -460,7 +515,7 @@ export function Purchases({ onChanged }) {
                                 href={p.url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition"
+                                className="px-2 py-[2px] rounded-full bg-black/60 border border-emerald-500/40 text-emerald-300 hover:border-emerald-500/70 hover:text-emerald-300 transition"
                               >
                                 Product page ↗
                               </a>

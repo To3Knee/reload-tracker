@@ -1,4 +1,15 @@
-// src/components/Recipes.jsx
+//===============================================================
+//Script Name: Recipes.jsx
+//Script Location: src/components/Recipes.jsx
+//Date: 11/27/2025
+//Created By: T03KNEE
+//Github: https://github.com/To3Knee/reload-tracker
+//Version: 1.0.1
+//About: Manage saved load recipes, attach ballistics/range data,
+//       use them in the Live Round Calculator, archive, and
+//       export a clean PDF recipe card.
+//===============================================================
+
 import { useEffect, useState } from 'react'
 import {
   getAllRecipes,
@@ -79,8 +90,7 @@ export function Recipes({ onUseRecipe }) {
           form.chargeGrains !== '' ? Number(form.chargeGrains) : null,
         brassReuse:
           form.brassReuse !== '' ? Number(form.brassReuse) : null,
-        lotSize:
-          form.lotSize !== '' ? Number(form.lotSize) : null,
+        lotSize: form.lotSize !== '' ? Number(form.lotSize) : null,
         notes: form.notes || '',
         bulletWeightGr:
           form.bulletWeightGr !== '' ? Number(form.bulletWeightGr) : null,
@@ -659,7 +669,7 @@ export function Recipes({ onUseRecipe }) {
         </form>
       </div>
 
-      {/* List */}
+      {/* Saved recipes list */}
       <div className="glass rounded-2xl p-6 space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -690,6 +700,8 @@ export function Recipes({ onUseRecipe }) {
 
               const isArchived =
                 typeof r.archived === 'boolean' && r.archived
+              const isArchiving = archivingId === r.id
+              const isDeleting = deletingId === r.id
 
               return (
                 <div
@@ -746,53 +758,60 @@ export function Recipes({ onUseRecipe }) {
                     )}
                   </div>
 
-                  {/* ACTION PILLS — match Purchases pill sizing */}
-                  <div className="flex flex-wrap items-center gap-2 justify-end text-[11px]">
+                  {/* ACTION PILLS — now <span> pills, matching Purchases */}
+                  <div className="flex flex-wrap items-center gap-2 justify-end text-[11px] text-slate-500">
                     {onUseRecipe && !isArchived && (
-                      <button
-                        type="button"
+                      <span
                         onClick={() => onUseRecipe(r)}
-                        className="px-2 py-[2px] rounded-full border border-emerald-500/70 text-emerald-300 bg-black/60 hover:bg-emerald-500/10 transition"
+                        className="px-2 py-[2px] rounded-full bg-black/60 border border-emerald-500/40 text-emerald-300 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer"
                       >
                         Use in Calculator
-                      </button>
+                      </span>
                     )}
-                    <button
-                      type="button"
+                    <span
                       onClick={() => handleExportPdf(r)}
-                      className="px-2 py-[2px] rounded-full border border-slate-700 bg-black/60 hover:border-emerald-500/70 hover:text-emerald-300 transition"
+                      className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer"
                     >
                       Export PDF
-                    </button>
-                    <button
-                      type="button"
+                    </span>
+                    <span
                       onClick={() => handleEdit(r)}
-                      className="px-2 py-[2px] rounded-full border border-slate-700 bg-black/60 hover:bg-slate-800/80 transition"
+                      className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 transition cursor-pointer"
                     >
                       Edit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={archivingId === r.id}
-                      onClick={() => handleArchiveToggle(r)}
-                      className="px-2 py-[2px] rounded-full border border-amber-400 text-amber-300 bg-black/60 hover:bg-amber-500/10 transition disabled:opacity-50"
+                    </span>
+                    <span
+                      onClick={() => {
+                        if (!isArchiving) handleArchiveToggle(r)
+                      }}
+                      className={
+                        'px-2 py-[2px] rounded-full bg-black/60 border border-amber-400 text-amber-300 hover:bg-amber-500/10 transition cursor-pointer ' +
+                        (isArchiving
+                          ? 'opacity-50 pointer-events-none'
+                          : '')
+                      }
                     >
-                      {archivingId === r.id
+                      {isArchiving
                         ? isArchived
                           ? 'Unarchiving…'
                           : 'Archiving…'
                         : isArchived
                         ? 'Unarchive'
                         : 'Archive'}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={deletingId === r.id}
-                      onClick={() => handleDelete(r.id)}
-                      className="px-2 py-[2px] rounded-full border border-red-700/70 text-red-300 bg-black/60 hover:bg-red-900/40 transition disabled:opacity-50"
+                    </span>
+                    <span
+                      onClick={() => {
+                        if (!isDeleting) handleDelete(r.id)
+                      }}
+                      className={
+                        'px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition cursor-pointer ' +
+                        (isDeleting
+                          ? 'opacity-50 pointer-events-none'
+                          : '')
+                      }
                     >
-                      {deletingId === r.id ? 'Deleting…' : 'Delete'}
-                    </button>
+                      {isDeleting ? 'Deleting…' : 'Delete'}
+                    </span>
                   </div>
                 </div>
               )
