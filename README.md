@@ -11,31 +11,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/To3Knee/reload-tracker/stargazers">
-    <img alt="GitHub stars" src="https://img.shields.io/github/stars/To3Knee/reload-tracker?style=for-the-badge">
-  </a>
-  <a href="https://github.com/To3Knee/reload-tracker/network/members">
-    <img alt="GitHub forks" src="https://img.shields.io/github/forks/To3Knee/reload-tracker?style=for-the-badge">
-  </a>
-  <a href="https://github.com/To3Knee/reload-tracker/issues">
-    <img alt="GitHub issues" src="https://img.shields.io/github/issues/To3Knee/reload-tracker?style=for-the-badge">
-  </a>
-  <a href="https://github.com/To3Knee/reload-tracker">
-    <img alt="Repo size" src="https://img.shields.io/github/repo-size/To3Knee/reload-tracker?style=for-the-badge">
-  </a>
-  <a href="https://github.com/To3Knee/reload-tracker">
-    <img alt="Top language" src="https://img.shields.io/github/languages/top/To3Knee/reload-tracker?style=for-the-badge">
-  </a>
-  <a href="https://github.com/To3Knee/reload-tracker/commits/main">
-    <img alt="Last commit" src="https://img.shields.io/github/last-commit/To3Knee/reload-tracker?style=for-the-badge">
-  </a>
-  <a href="LICENSE">
-    <img alt="License" src="https://img.shields.io/github/license/To3Knee/reload-tracker?style=for-the-badge">
-  </a>
+
+[![Netlify Status](https://api.netlify.com/api/v1/badges/fcaa3310-d64d-4f6c-af56-bbc08cfedcf2/deploy-status)](https://app.netlify.com/projects/reload-tracker/deploys)
+
+ <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-5.4+-blue?style=flat-square" alt="Vite Version"></a>
+ <a href="https://github.com/To3Knee/tsv-editor/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-High%20Five-yellow?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">
-  <a href="https://reload-tracker.netlify.app"><strong>🚀 Live Demo – reload-tracker.netlify.app</strong></a>
+ [![Live App Demo](img.shields.io)](https://reload-tracker.netlify.app)
 </p>
 
 ---
