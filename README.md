@@ -38,8 +38,7 @@
 
 > ⚠️ **Safety & Responsibility**
 >
-> Reload Tracker is a **cost & inventory** tool only.  
-> follow local laws, and reload at your own risk.
+> Reload Tracker is a **cost & inventory** tool only. Follow local laws, and reload at your own risk.
 
 ---
 
