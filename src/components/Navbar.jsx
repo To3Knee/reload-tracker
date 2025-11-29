@@ -1,13 +1,13 @@
 //===============================================================
 //Script Name: Navbar.jsx
 //Script Location: src/components/Navbar.jsx
-//Date: 11/28/2025
+//Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.0.3
+//Version: 2.0.1
 //About: Top-right navigation bar for Reload Tracker. Provides
 //       tab switching between Calculator, Purchases, Inventory,
-//       and Recipes. Includes a small gear icon to open the
+//       Recipes, and Batches. Includes a small gear icon to open the
 //       access/roles modal, plus a subtle session indicator
 //       (Reloader vs Shooter).
 //===============================================================
@@ -18,6 +18,7 @@ import {
   Package,
   Beaker,
   Settings,
+  ClipboardList, // NEW ICON
 } from 'lucide-react'
 
 const MENU_ITEMS = [
@@ -25,6 +26,7 @@ const MENU_ITEMS = [
   { id: 'purchases', label: 'Purchases', icon: ShoppingCart },
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'recipes', label: 'Recipes', icon: Beaker },
+  { id: 'batches', label: 'Batches', icon: ClipboardList }, // NEW TAB
 ]
 
 export default function Navbar({
@@ -43,7 +45,7 @@ export default function Navbar({
 
   return (
     <nav className="fixed top-6 right-4 z-50 bg-black/80 backdrop-blur-xl border border-[#b33c3c44] rounded-full px-4 py-2 flex items-center gap-3">
-      {/* Main nav pills (existing UI, unchanged) */}
+      {/* Main nav pills */}
       <div className="flex gap-3">
         {MENU_ITEMS.map(item => (
           <button

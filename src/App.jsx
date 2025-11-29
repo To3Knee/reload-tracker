@@ -1,10 +1,10 @@
 //===============================================================
 //Script Name: App.jsx
 //Script Location: src/App.jsx
-//Date: 11/28/2025
+//Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.0.3
+//Version: 2.0.1
 //About: Root shell for Reload Tracker. Handles navbar/tab routing,
 //       age confirmation gate, initial purchase load from DB, and
 //       wiring selected recipes into the Live Round Calculator.
@@ -18,6 +18,7 @@ import Dashboard from './components/Dashboard'
 import { Purchases } from './components/Purchases'
 import { Inventory } from './components/Inventory'
 import { Recipes } from './components/Recipes'
+import { Batches } from './components/Batches' // NEW IMPORT
 import { getAllPurchases, seedData } from './lib/db'
 import logo from './assets/logo.png'
 import { APP_VERSION_LABEL } from './version'
@@ -26,7 +27,7 @@ import {
   getCurrentUser,
   logoutUser,
   ROLE_ADMIN,
-} from './lib/auth' // UPDATED: Using real API auth client
+} from './lib/auth'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('calculator')
@@ -169,7 +170,11 @@ export default function App() {
           <Recipes
             onUseRecipe={handleUseRecipe}
             canEdit={!!isAdmin}
+            purchases={purchases} // <-- CRITICAL: Needed for Load Batch Modal
           />
+        )}
+        {activeTab === 'batches' && (
+          <Batches />
         )}
       </main>
 

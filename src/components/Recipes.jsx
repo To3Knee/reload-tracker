@@ -1,13 +1,13 @@
 //===============================================================
 //Script Name: Recipes.jsx
 //Script Location: src/components/Recipes.jsx
-//Date: 11/28/2025
+//Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.1.2
+//Version: 2.2.1
 //About: Manage saved load recipes and optional ballistics data.
-//       Features: "Sexy" 4x6 PDF export, "Pro" Excel export,
-//       Admin editing, and user attribution tracking.
+//       Features: "Sexy" PDF export, Pro Excel export,
+//       Admin editing, user attribution, AND Batch Logging.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -16,8 +16,11 @@ import {
   saveRecipe,
   deleteRecipe,
   formatCurrency,
+  calculatePerUnit
 } from '../lib/db'
-import { downloadExcel } from '../lib/excel' // UPDATED: Import Excel helper
+import { downloadExcel } from '../lib/excel'
+import { createBatch } from '../lib/batches' // NEW: Import batch helper
+import { ClipboardList, X } from 'lucide-react' // Icons for modal
 
 const PROFILE_TYPES = [
   { value: 'range', label: 'Range / Plinking' },
@@ -31,6 +34,7 @@ const DEFAULT_FORM = {
   name: '',
   caliber: '',
   profileType: 'range',
+  source: '', // NEW FIELD
   chargeGrains: '',
   brassReuse: 5,
   lotSize: 200,
@@ -42,13 +46,26 @@ const DEFAULT_FORM = {
   rangeNotes: '',
 }
 
-export function Recipes({ onUseRecipe, canEdit = true }) {
+export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   const [recipes, setRecipes] = useState([])
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [editingRecipe, setEditingRecipe] = useState(null)
   const [archivingId, setArchivingId] = useState(null)
+
+  // --- BATCH MODAL STATE ---
+  const [batchModalOpen, setBatchModalOpen] = useState(false)
+  const [batchRecipe, setBatchRecipe] = useState(null)
+  const [batchForm, setBatchForm] = useState({
+    rounds: '',
+    powderLotId: '',
+    bulletLotId: '',
+    primerLotId: '',
+    caseLotId: '',
+    notes: ''
+  })
+  const [batchSubmitting, setBatchSubmitting] = useState(false)
 
   useEffect(() => {
     loadRecipes()
@@ -88,6 +105,7 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
         name: form.name?.trim() || '',
         caliber: form.caliber?.trim() || '',
         profileType: form.profileType || 'custom',
+        source: form.source?.trim() || '', // Save Source
         chargeGrains:
           form.chargeGrains !== '' ? Number(form.chargeGrains) : null,
         brassReuse:
@@ -112,6 +130,9 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
         rangeNotes: form.rangeNotes || '',
       }
 
+      // Calculate Power Factor on save if not provided by user input? 
+      // Actually, backend/service handles PF calculation, but we can pass it if we want.
+      // For now, let's let the backend calculate it to be safe, or pass it.
       const powerFactor =
         base.bulletWeightGr && base.muzzleVelocityFps
           ? (base.bulletWeightGr * base.muzzleVelocityFps) / 1000
@@ -148,6 +169,7 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
       name: recipe.name || '',
       caliber: recipe.caliber || '',
       profileType: recipe.profileType || 'custom',
+      source: recipe.source || '', // Populate Source
       chargeGrains:
         recipe.chargeGrains != null ? String(recipe.chargeGrains) : '',
       brassReuse: recipe.brassReuse != null ? recipe.brassReuse : 5,
@@ -221,15 +243,14 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
     })
   }
 
-  // --- EXCEL EXPORT: PRO FORMATTING ---
   function handleExportExcel(dataToExport = recipes, filenameSuffix = 'all') {
     const timestamp = new Date().toISOString().slice(0, 10)
     
-    // Define Pro columns with explicit widths
     const columns = [
       { header: 'Recipe Name', key: 'name', width: 25 },
       { header: 'Caliber', key: 'caliber', width: 15 },
       { header: 'Profile', key: 'profileType', width: 15 },
+      { header: 'Source', key: 'source', width: 20 }, // Export Source
       { header: 'Bullet (gr)', key: 'bulletWeightGr', width: 12 },
       { header: 'Velocity (fps)', key: 'muzzleVelocityFps', width: 15 },
       { header: 'Power Factor', key: 'powerFactor', width: 15 },
@@ -244,7 +265,6 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
     downloadExcel(dataToExport, columns, `reload-tracker-recipes-${filenameSuffix}-${timestamp}`)
   }
 
-  // --- PDF EXPORT: 4x6 INDEX CARD LAYOUT ---
   function handleExportPdf(recipe) {
     if (!recipe) return
 
@@ -256,7 +276,9 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
     const charge = recipe.chargeGrains ? `${recipe.chargeGrains} gr` : '---'
     const fps = recipe.muzzleVelocityFps ? `${recipe.muzzleVelocityFps} fps` : '---'
     const pf = recipe.powerFactor ? recipe.powerFactor.toFixed(1) : '---'
+    const source = recipe.source || ''
     
+    // Added Source to PDF HTML
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -264,7 +286,7 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
 <title>Recipe Card - ${escapeHtml(name)}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-  @page { margin: 0; size: 6in 4in; } /* Landscape Index Card */
+  @page { margin: 0; size: 6in 4in; }
   body {
     margin: 0;
     padding: 0;
@@ -409,6 +431,7 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
             <span class="stat-label">Zero</span>
             <span class="stat-value">${escapeHtml(recipe.zeroDistanceYards || '--')} yd</span>
         </div>
+        ${source ? `<div class="stat-row"><span class="stat-label">Source</span><span class="stat-value" style="font-size:11px">${escapeHtml(source)}</span></div>` : ''}
       </div>
       
       <div class="notes-section">
@@ -443,8 +466,60 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
     win.document.close()
   }
 
+  // --- BATCH MODAL HELPERS ---
+  function openBatchModal(recipe) {
+    if (!canEdit) return
+    setBatchRecipe(recipe)
+    
+    // Try to auto-select components based on caliber/names if possible,
+    // or just default to empty.
+    // Filter purchases by caliber matches for convenience.
+    const filterCaliber = (p) => !p.caliber || !recipe.caliber || p.caliber === recipe.caliber
+    const active = (p) => p.status !== 'depleted'
+
+    // Auto-select first available if matches, else empty
+    const recPowder = purchases.find(p => p.componentType === 'powder' && active(p) && filterCaliber(p))
+    const recBullet = purchases.find(p => p.componentType === 'bullet' && active(p) && filterCaliber(p))
+    const recPrimer = purchases.find(p => p.componentType === 'primer' && active(p) && filterCaliber(p))
+    const recCase = purchases.find(p => p.componentType === 'case' && active(p) && filterCaliber(p))
+
+    setBatchForm({
+      rounds: recipe.lotSize || 100,
+      powderLotId: recPowder ? recPowder.id : '',
+      bulletLotId: recBullet ? recBullet.id : '',
+      primerLotId: recPrimer ? recPrimer.id : '',
+      caseLotId: recCase ? recCase.id : '',
+      notes: ''
+    })
+    setBatchModalOpen(true)
+  }
+
+  async function handleBatchSubmit(e) {
+    e.preventDefault()
+    if (!batchRecipe) return
+    setBatchSubmitting(true)
+    try {
+      await createBatch({
+        recipeId: batchRecipe.id,
+        rounds: batchForm.rounds,
+        powderLotId: batchForm.powderLotId,
+        bulletLotId: batchForm.bulletLotId,
+        primerLotId: batchForm.primerLotId,
+        caseLotId: batchForm.caseLotId,
+        notes: batchForm.notes
+      })
+      setBatchModalOpen(false)
+      setBatchRecipe(null)
+      // Removed alert() - just close cleanly
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setBatchSubmitting(false)
+    }
+  }
+
   const inputClass =
-    'w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/60'
+    'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60 placeholder:text-slate-600'
   const labelClass =
     'block text-xs font-semibold text-slate-400 mb-1'
 
@@ -509,6 +584,17 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Source (NEW) */}
+            <div>
+              <label className={labelClass}>Source (Manual/Data)</label>
+              <input
+                className={inputClass}
+                placeholder="e.g. Hornady 11th Ed, pg 405"
+                value={form.source || ''}
+                onChange={e => updateField('source', e.target.value)}
+              />
             </div>
 
             {/* Charge */}
@@ -615,10 +701,10 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
             {/* Power factor display */}
             <div>
               <label className={labelClass}>Power Factor</label>
-              <div className="flex items-center h-[38px] rounded-xl bg-black/40 border border-red-500/30 px-3 text-sm text-slate-100">
+              <div className="flex items-center h-[30px] rounded-xl bg-black/40 border border-slate-700/70 px-3 text-[11px] text-slate-100">
                 {computedPowerFactor
                   ? computedPowerFactor.toFixed(1)
-                  : 'Enter bullet weight & velocity'}
+                  : 'Enter bullet & velocity'}
               </div>
             </div>
 
@@ -796,6 +882,11 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
                       {profileLabel} • Charge {r.chargeGrains} gr • Brass x
                       {r.brassReuse} • Lot size {r.lotSize}
                     </div>
+                    {r.source && (
+                      <div className="text-[10px] text-slate-500 mt-1 italic">
+                        Source: {r.source}
+                      </div>
+                    )}
                     {(r.bulletWeightGr || r.muzzleVelocityFps) && (
                       <div className="text-[11px] text-slate-400 mt-1">
                         Ballistics:{' '}
@@ -841,6 +932,16 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
                             Use in Calculator
                         </span>
                         )}
+                        
+                        {canEdit && (
+                        <span
+                            onClick={() => openBatchModal(r)}
+                            className="px-2 py-[2px] rounded-full bg-black/60 border border-red-500/40 text-red-300 hover:border-red-500/70 hover:text-red-200 transition cursor-pointer flex items-center gap-1"
+                        >
+                            <ClipboardList size={12} /> Load Batch
+                        </span>
+                        )}
+
                         <span
                         onClick={() => handleExportPdf(r)}
                         className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer"
@@ -910,6 +1011,93 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
           </div>
         )}
       </div>
+      
+      {/* BATCH LOADING MODAL */}
+      {batchModalOpen && batchRecipe && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+                <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/40">
+                    <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                        <ClipboardList className="text-red-500" size={16} />
+                        Load Batch: {batchRecipe.name}
+                    </h3>
+                    <button onClick={() => setBatchModalOpen(false)} className="text-slate-500 hover:text-white"><X size={16} /></button>
+                </div>
+                <div className="p-6 space-y-4">
+                    <p className="text-xs text-slate-400">
+                        Record a loading session. This will deduct components from your inventory based on the recipe charge ({batchRecipe.chargeGrains} gr).
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelClass}>Rounds Loaded</label>
+                            <input type="number" className={inputClass} value={batchForm.rounds} onChange={e => setBatchForm(p => ({ ...p, rounds: e.target.value }))} />
+                        </div>
+                        <div>
+                             <label className={labelClass}>Powder Lot</label>
+                             <select className={inputClass} value={batchForm.powderLotId} onChange={e => setBatchForm(p => ({ ...p, powderLotId: e.target.value }))}>
+                                 <option value="">Select Powder...</option>
+                                 {purchases.filter(p => p.componentType === 'powder' && p.status !== 'depleted').map(p => (
+                                     <option key={p.id} value={p.id}>{p.brand} {p.name} (Lot {p.lotId})</option>
+                                 ))}
+                             </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                             <label className={labelClass}>Bullet Lot</label>
+                             <select className={inputClass} value={batchForm.bulletLotId} onChange={e => setBatchForm(p => ({ ...p, bulletLotId: e.target.value }))}>
+                                 <option value="">Select...</option>
+                                 {purchases.filter(p => p.componentType === 'bullet' && p.status !== 'depleted').map(p => (
+                                     <option key={p.id} value={p.id}>{p.brand} (Lot {p.lotId})</option>
+                                 ))}
+                             </select>
+                        </div>
+                        <div>
+                             <label className={labelClass}>Primer Lot</label>
+                             <select className={inputClass} value={batchForm.primerLotId} onChange={e => setBatchForm(p => ({ ...p, primerLotId: e.target.value }))}>
+                                 <option value="">Select...</option>
+                                 {purchases.filter(p => p.componentType === 'primer' && p.status !== 'depleted').map(p => (
+                                     <option key={p.id} value={p.id}>{p.brand} (Lot {p.lotId})</option>
+                                 ))}
+                             </select>
+                        </div>
+                        <div>
+                             <label className={labelClass}>Brass Lot</label>
+                             <select className={inputClass} value={batchForm.caseLotId} onChange={e => setBatchForm(p => ({ ...p, caseLotId: e.target.value }))}>
+                                 <option value="">Select...</option>
+                                 {purchases.filter(p => p.componentType === 'case' && p.status !== 'depleted').map(p => (
+                                     <option key={p.id} value={p.id}>{p.brand} (Lot {p.lotId})</option>
+                                 ))}
+                             </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label className={labelClass}>Batch Notes</label>
+                        <textarea 
+                            className={inputClass + " resize-none min-h-[60px]"} 
+                            placeholder="Weather, specific seating depth tweaks, etc."
+                            value={batchForm.notes} 
+                            onChange={e => setBatchForm(p => ({ ...p, notes: e.target.value }))}
+                        />
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                        {/* UPDATED BUTTON STYLE to match 'Save Recipe' */}
+                        <button 
+                            onClick={handleBatchSubmit} 
+                            disabled={batchSubmitting}
+                            className="inline-flex items-center px-5 py-2 rounded-full bg-red-700 hover:bg-red-600 text-xs font-semibold shadow-lg shadow-red-900/40 transition disabled:opacity-60 text-white"
+                        >
+                            {batchSubmitting ? 'Logging...' : 'Log Batch & Update Inventory'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   )
 }

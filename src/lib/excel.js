@@ -17,12 +17,10 @@ export async function downloadExcel(data, columns, filename) {
   const worksheet = workbook.addWorksheet('Reload Data')
 
   // 1. Define Columns & Widths
-  // We map your 'key' to the column key, and 'header' to the label.
-  // We assign a default width of 20 for readability.
   worksheet.columns = columns.map(col => ({
     header: col.header,
     key: col.key,
-    width: col.width || 20, // Default width if not specified
+    width: col.width || 20, 
     style: { 
       alignment: { horizontal: 'left' } // FORCE LEFT ALIGNMENT
     }
