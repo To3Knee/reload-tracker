@@ -3,9 +3,9 @@
 //Script Location: src/components/Batches.jsx
 //Date: 11/29/2025
 //Created By: T03KNEE
-//Version: 1.5.0
+//Version: 1.5.1
 //About: Displays the history of loaded ammo batches.
-//       Updated: Added Deep-Link Highlighting.
+//       Updated: Fixed ID type mismatch & added Pulse animation.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -27,14 +27,15 @@ export function Batches({ highlightId }) {
     loadHistory()
   }, [])
 
-  // Scroll to highlighted item when data loads or highlightId changes
   useEffect(() => {
     if (highlightId && batches.length > 0) {
-      const el = document.getElementById(`batch-${highlightId}`)
+      // FIX: Ensure string-to-string comparison for ID
+      const targetId = String(highlightId)
+      const el = document.getElementById(`batch-${targetId}`)
       if (el) {
         setTimeout(() => {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }, 500)
+        }, 600)
       }
     }
   }, [highlightId, batches])
@@ -114,15 +115,16 @@ export function Batches({ highlightId }) {
         <div className="space-y-3">
           {batches.map(batch => {
             const isEditing = editingId === batch.id
-            const isHighlighted = highlightId === batch.id
+            // FIX: Loose equality for ID comparison
+            const isHighlighted = String(highlightId) === String(batch.id)
 
             return (
                 <div 
                     id={`batch-${batch.id}`} // ID for scrolling
                     key={batch.id} 
-                    className={`bg-black/40 border rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between transition ${
+                    className={`bg-black/40 border rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between transition duration-500 ${
                         isHighlighted
-                          ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]'
+                          ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)] scale-[1.02]'
                           : 'border-slate-800 hover:border-slate-600'
                     }`}
                 >

@@ -4,10 +4,9 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.3.0
+//Version: 2.3.1
 //About: Manage component LOT purchases.
-//       Features: Admin editing, user attribution, Pro UI,
-//       Printable Inventory Labels, and Deep-Link Highlighting.
+//       Updated: Fixed ID type mismatch for QR Code highlighting.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -78,11 +77,16 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
   // Scroll to highlighted item when data loads or highlightId changes
   useEffect(() => {
     if (highlightId && purchases.length > 0) {
-      const el = document.getElementById(`purchase-${highlightId}`)
+      // FIX: Ensure ID match is string-to-string
+      const targetId = String(highlightId)
+      // Try to find the element
+      const el = document.getElementById(`purchase-${targetId}`)
+      
       if (el) {
+        // Use a timeout to ensure layout is settled
         setTimeout(() => {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }, 500) // Slight delay to allow tab switch animation
+        }, 600)
       }
     }
   }, [highlightId, purchases])
@@ -479,15 +483,16 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
                   <div className="grid md:grid-cols-2 gap-3">
                     {lots.map(p => {
                       const depleted = p.status === 'depleted'
-                      const isHighlighted = highlightId === p.id
+                      // FIX: Loose Equality Check for String/Number IDs
+                      const isHighlighted = String(highlightId) === String(p.id)
                       
                       return (
                         <div
-                          id={`purchase-${p.id}`} // ID for scrolling
+                          id={`purchase-${p.id}`}
                           key={p.id}
-                          className={`bg-black/40 border rounded-xl px-3 py-3 flex flex-col gap-2 transition ${
+                          className={`bg-black/40 border rounded-xl px-3 py-3 flex flex-col gap-2 transition duration-500 ${
                             isHighlighted
-                              ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]'
+                              ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)] scale-[1.02]'
                               : editingId === p.id
                                 ? 'border-red-500 ring-1 ring-red-500/50'
                                 : 'border-red-500/20'
@@ -582,6 +587,15 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
                           {p.notes && (
                             <div className="text-[11px] text-slate-400">
                               {p.notes}
+                            </div>
+                          )}
+                          
+                          {/* User Attribution */}
+                          {attribution && (
+                            <div className="mt-2 flex justify-end">
+                              <span className="px-2 py-[2px] rounded-full border border-slate-800 text-slate-500 bg-black/40 text-[10px]">
+                                {attribution}
+                              </span>
                             </div>
                           )}
                         </div>
