@@ -4,7 +4,7 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.0.1
+//Version: 2.2.1
 //About: Root shell for Reload Tracker. Handles navbar/tab routing,
 //       age confirmation gate, initial purchase load from DB, and
 //       wiring selected recipes into the Live Round Calculator.
@@ -18,7 +18,7 @@ import Dashboard from './components/Dashboard'
 import { Purchases } from './components/Purchases'
 import { Inventory } from './components/Inventory'
 import { Recipes } from './components/Recipes'
-import { Batches } from './components/Batches' // NEW IMPORT
+import { Batches } from './components/Batches'
 import { getAllPurchases, seedData } from './lib/db'
 import logo from './assets/logo.png'
 import { APP_VERSION_LABEL } from './version'
@@ -138,10 +138,10 @@ export default function App() {
               Reload Tracker
             </p>
             <h1 className="text-3xl md:text-4xl font-black glow-red">
-              Your Reloading Process Updated
+              Precision Data for Reloaders.
             </h1>
             <p className="text-sm md:text-base text-slate-400 mt-3 md:ml-auto md:pl-10">
-              Track your Recipes, Inventory and every penny you spend.
+              The simplified way to track inventory, recipes, and costs.
             </p>
           </div>
         </header>
@@ -170,7 +170,7 @@ export default function App() {
           <Recipes
             onUseRecipe={handleUseRecipe}
             canEdit={!!isAdmin}
-            purchases={purchases} // <-- CRITICAL: Needed for Load Batch Modal
+            purchases={purchases} 
           />
         )}
         {activeTab === 'batches' && (
