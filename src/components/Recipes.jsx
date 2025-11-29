@@ -4,9 +4,10 @@
 //Date: 11/28/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.1.1
+//Version: 2.1.2
 //About: Manage saved load recipes and optional ballistics data.
-//       Updated: "Added By" is now a visible Action Pill.
+//       Features: "Sexy" 4x6 PDF export, "Pro" Excel export,
+//       Admin editing, and user attribution tracking.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -16,6 +17,7 @@ import {
   deleteRecipe,
   formatCurrency,
 } from '../lib/db'
+import { downloadExcel } from '../lib/excel' // UPDATED: Import Excel helper
 
 const PROFILE_TYPES = [
   { value: 'range', label: 'Range / Plinking' },
@@ -219,132 +221,215 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
     })
   }
 
+  // --- EXCEL EXPORT: PRO FORMATTING ---
+  function handleExportExcel(dataToExport = recipes, filenameSuffix = 'all') {
+    const timestamp = new Date().toISOString().slice(0, 10)
+    
+    // Define Pro columns with explicit widths
+    const columns = [
+      { header: 'Recipe Name', key: 'name', width: 25 },
+      { header: 'Caliber', key: 'caliber', width: 15 },
+      { header: 'Profile', key: 'profileType', width: 15 },
+      { header: 'Bullet (gr)', key: 'bulletWeightGr', width: 12 },
+      { header: 'Velocity (fps)', key: 'muzzleVelocityFps', width: 15 },
+      { header: 'Power Factor', key: 'powerFactor', width: 15 },
+      { header: 'Powder Charge (gr)', key: 'chargeGrains', width: 20 },
+      { header: 'Zero (yd)', key: 'zeroDistanceYards', width: 10 },
+      { header: 'Group (in)', key: 'groupSizeInches', width: 12 },
+      { header: 'Load Notes', key: 'notes', width: 40 },
+      { header: 'Range Notes', key: 'rangeNotes', width: 40 },
+      { header: 'Date Created', key: 'createdAt', width: 15 }
+    ]
+
+    downloadExcel(dataToExport, columns, `reload-tracker-recipes-${filenameSuffix}-${timestamp}`)
+  }
+
+  // --- PDF EXPORT: 4x6 INDEX CARD LAYOUT ---
   function handleExportPdf(recipe) {
     if (!recipe) return
 
-    const profileLabel =
-      PROFILE_TYPES.find(p => p.value === recipe.profileType)?.label ||
-      'Custom'
-
-    const pfLabel =
-      recipe.powerFactor && recipe.powerFactor > 0
-        ? recipe.powerFactor.toFixed(1)
-        : ''
-
-    const bulletText = recipe.bulletWeightGr
-      ? `${recipe.bulletWeightGr}gr${
-          recipe.caliber ? ` • ${recipe.caliber}` : ''
-        }`
-      : recipe.caliber || ''
-
-    const powderText = recipe.notes || ''
-
-    const velocityText =
-      recipe.muzzleVelocityFps != null &&
-      recipe.muzzleVelocityFps !== ''
-        ? `${recipe.muzzleVelocityFps} fps`
-        : ''
-
-    const zeroText =
-      recipe.zeroDistanceYards != null &&
-      recipe.zeroDistanceYards !== ''
-        ? `${recipe.zeroDistanceYards} yd`
-        : ''
-
-    const groupText =
-      recipe.groupSizeInches != null &&
-      recipe.groupSizeInches !== ''
-        ? `${recipe.groupSizeInches}"`
-        : ''
-
-    const energy =
-      recipe.bulletWeightGr && recipe.muzzleVelocityFps
-        ? ((Number(recipe.bulletWeightGr) || 0) *
-            Math.pow(
-              Number(recipe.muzzleVelocityFps) || 0,
-              2
-            )) /
-          450240
-        : 0
-    const energyText = energy ? `${energy.toFixed(0)} ft-lbs` : ''
-
-    const usesText = profileLabel
-    const rangeNotesText = recipe.rangeNotes || ''
-    const nameText = recipe.name || 'Recipe'
-
-    const bulletRow = `<div class="row"><span class="label">Bullet:</span> ${escapeHtml(
-      bulletText
-    )}</div>`
-    const powderRow = `<div class="row"><span class="label">Powder:</span> ${escapeHtml(
-      powderText
-    )}</div>`
-    const chargeRow = `<div class="row"><span class="label">Charge (grains):</span> ${escapeHtml(
-      recipe.chargeGrains != null ? recipe.chargeGrains : ''
-    )}</div>`
-    const pfRow = pfLabel
-      ? `<div class="row"><span class="label">Power Factor:</span> ${escapeHtml(
-          pfLabel
-        )}</div>`
-      : ''
-    const velocityRow = velocityText
-      ? `<div class="row"><span class="label">Velocity (fps):</span> ${escapeHtml(
-          velocityText
-        )}</div>`
-      : ''
-    const energyRow = energyText
-      ? `<div class="row"><span class="label">Muzzle Energy (ft-lbs):</span> ${escapeHtml(
-          energyText
-        )}</div>`
-      : ''
-    const zeroRow = zeroText
-      ? `<div class="row"><span class="label">Zero Distance:</span> ${escapeHtml(
-          zeroText
-        )}</div>`
-      : ''
-    const groupRow = groupText
-      ? `<div class="row"><span class="label">Group Size:</span> ${escapeHtml(
-          groupText
-        )}</div>`
-      : ''
-    const usesRow = `<div class="row"><span class="label">Uses:</span> ${escapeHtml(
-      usesText
-    )}</div>`
-    const rangeNotesRow = rangeNotesText
-      ? `<div class="row notes"><span class="label">Range Notes:</span> ${escapeHtml(
-          rangeNotesText
-        )}</div>`
-      : ''
-
     const logoUrl = `${window.location.origin}/logo.png`
-
+    
+    const name = recipe.name || 'Untitled Load'
+    const caliber = recipe.caliber || 'Unknown Caliber'
+    const bullet = recipe.bulletWeightGr ? `${recipe.bulletWeightGr}gr` : 'Unknown Bullet'
+    const charge = recipe.chargeGrains ? `${recipe.chargeGrains} gr` : '---'
+    const fps = recipe.muzzleVelocityFps ? `${recipe.muzzleVelocityFps} fps` : '---'
+    const pf = recipe.powerFactor ? recipe.powerFactor.toFixed(1) : '---'
+    
     const html = `<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>${escapeHtml(nameText)} - Reload Tracker Recipe</title>
-  <style>
-    @page { size: 4in 6in; margin: 0.5in; }
-    body { margin: 0; background: radial-gradient(circle at top, #281219 0, #0d0b10 40%, #050406 100%); font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .card { background: #f4f0e9; color: #221b16; max-width: 320px; margin: 0 auto; padding: 12px 14px 14px; box-sizing: border-box; font-size: 11px; line-height: 1.4; border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-    .banner { display: inline-block; background: #b3342a; color: #fff; padding: 3px 9px; font-weight: 700; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
-    .logo { height: 26px; }
-    .title { font-weight: 700; font-size: 12px; margin-bottom: 4px; text-transform: uppercase; }
-    .row { margin: 1px 0; }
-    .label { font-weight: 700; text-transform: uppercase; }
-    .notes { margin-top: 4px; }
-  </style>
+<meta charset="utf-8" />
+<title>Recipe Card - ${escapeHtml(name)}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+  @page { margin: 0; size: 6in 4in; } /* Landscape Index Card */
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background: #000;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color: #111;
+  }
+  .card {
+    width: 6in;
+    height: 4in;
+    background: #fdfbf7; 
+    position: relative;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+  }
+  .header {
+    background: #111;
+    color: #fff;
+    padding: 0.8rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 4px solid #b33c3c; 
+  }
+  .header-text h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .header-text h2 {
+    margin: 2px 0 0 0;
+    font-size: 11px;
+    font-weight: 500;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+  }
+  .logo {
+    width: 110px;
+    height: auto;
+  }
+  .content {
+    padding: 0.8rem 2rem;
+    flex: 1;
+    display: flex;
+    gap: 1.5rem;
+  }
+  .main-specs {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid #e5e5e5;
+    padding: 5px 0;
+    align-items: baseline;
+  }
+  .stat-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .stat-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: #000;
+  }
+  .notes-section {
+    flex: 1.3;
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+  }
+  .notes-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #b33c3c;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.25rem;
+    display: block;
+  }
+  .notes-body {
+    font-size: 10px;
+    line-height: 1.3;
+    color: #333;
+    flex: 1;
+  }
+  .footer {
+    padding: 0.3rem 2rem;
+    background: #e5e5e5;
+    text-align: center;
+    font-size: 8px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+</style>
 </head>
 <body>
   <div class="card">
     <div class="header">
-      <div class="banner">RECIPE</div>
-      <img src="${logoUrl}" alt="Reload Tracker" class="logo" />
+      <div class="header-text">
+        <h1>${escapeHtml(name)}</h1>
+        <h2>${escapeHtml(caliber)}</h2>
+      </div>
+      <img src="${logoUrl}" class="logo" alt="Reload Tracker" />
     </div>
-    <div class="title">${escapeHtml(nameText)}</div>
-    ${bulletRow} ${powderRow} ${chargeRow} ${pfRow} ${velocityRow} ${energyRow} ${zeroRow} ${groupRow} ${usesRow} ${rangeNotesRow}
+    
+    <div class="content">
+      <div class="main-specs">
+        <div class="stat-row">
+          <span class="stat-label">Bullet</span>
+          <span class="stat-value">${escapeHtml(bullet)}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Charge</span>
+          <span class="stat-value">${escapeHtml(charge)}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Velocity</span>
+          <span class="stat-value">${escapeHtml(fps)}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Power Factor</span>
+          <span class="stat-value">${escapeHtml(pf)}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Zero</span>
+            <span class="stat-value">${escapeHtml(recipe.zeroDistanceYards || '--')} yd</span>
+        </div>
+      </div>
+      
+      <div class="notes-section">
+        <span class="notes-label">Load Notes</span>
+        <div class="notes-body">
+          ${escapeHtml(recipe.notes || 'No load notes recorded.')}
+          <br/><br/>
+          <span style="font-weight:700">Range Notes:</span> ${escapeHtml(recipe.rangeNotes || 'No range data.')}
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      Generated by Reload Tracker • Always verify load data.
+    </div>
   </div>
-  <script>window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 250); };</script>
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  </script>
 </body>
 </html>`
 
@@ -648,6 +733,15 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
                   } saved.`}
             </p>
           </div>
+          {/* Global Excel Export Button */}
+          {recipes.length > 0 && (
+            <span
+              onClick={() => handleExportExcel(recipes, 'all')}
+              className="px-3 py-1 rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer text-[10px] text-slate-400"
+            >
+              Download All (Excel)
+            </span>
+          )}
         </div>
 
         {recipes.length > 0 && (
@@ -728,7 +822,6 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
                         )}
                       </div>
                     )}
-                    {/* Notes are not shown here in original script, but rangeNotes are */}
                     {r.rangeNotes && (
                       <div className="text-[11px] text-slate-500 mt-1">
                         Range Notes: {r.rangeNotes}
@@ -753,6 +846,12 @@ export function Recipes({ onUseRecipe, canEdit = true }) {
                         className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer"
                         >
                         Export PDF
+                        </span>
+                        <span
+                        onClick={() => handleExportExcel([r], `single-${r.name.replace(/\s+/g,'-')}`)}
+                        className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer"
+                        >
+                        Export Excel
                         </span>
                         {canEdit && (
                         <>

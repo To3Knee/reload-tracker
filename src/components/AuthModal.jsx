@@ -4,15 +4,15 @@
 //Date: 11/28/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.1.1
-//About: Role / account management modal.
-//       Updated to use REAL backend API via ../lib/auth.js
-//       Added: Edit User functionality.
-//       Updated: Button styling to match Purchases/Recipes pills.
+//Version: 2.0.3
+//About: Professional "Access & Roles" modal.
+//       Features: Split-pane layout, Admin-led management only.
+//       Theme: Strict Red/Slate.
+//       Fixes: Autofill yellow background override & vibrant colors.
 //===============================================================
 
 import { useEffect, useState } from 'react'
-import { X, Shield, UserCircle2 } from 'lucide-react'
+import { X, Shield, UserCircle2, Users, LogIn, Lock } from 'lucide-react'
 import {
   ROLE_ADMIN,
   ROLE_SHOOTER,
@@ -21,7 +21,6 @@ import {
   updateUser,
   loginUser,
   resetUserPassword,
-  requestPasswordReset,
   removeUser,
 } from '../lib/auth'
 
@@ -32,68 +31,61 @@ export default function AuthModal({
   onLogin,
   onLogout,
 }) {
-  const [loginForm, setLoginForm] = useState({
-    username: '',
-    password: '',
-  })
+  // --- STATE ---
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' })
   
-  // "newUser" state is used for both Add and Edit
   const [newUser, setNewUser] = useState({
-    firstName: '',
-    lastName: '',
-    username: '',
-    phone: '',
-    email: '',
-    password: '',
-    role: ROLE_SHOOTER,
+    firstName: '', lastName: '', username: '', phone: '', email: '', password: '', role: ROLE_SHOOTER,
   })
-  
-  // Track which user is being edited (null = adding new)
   const [editingUserId, setEditingUserId] = useState(null)
-
-  const [resetForm, setResetForm] = useState({
-    username: '',
-    newPassword: '',
-  })
-  const [recoverEmail, setRecoverEmail] = useState('')
+  
+  const [resetForm, setResetForm] = useState({ username: '', newPassword: '' })
   const [adminUsers, setAdminUsers] = useState([])
+  
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [activeTab, setActiveTab] = useState('manage') 
 
-  // On open, fetch user list (only works if we are currently an admin)
+  const isAdmin = currentUser?.role === ROLE_ADMIN
+
   useEffect(() => {
     if (!open) return
-    if (currentUser?.role === ROLE_ADMIN) {
-        loadUsers()
+    if (isAdmin) {
+      loadUsers()
     } else {
-        setAdminUsers([])
+      setAdminUsers([])
     }
-    setStatusMessage('')
-    setErrorMessage('')
+    clearMessages()
     handleCancelEdit()
-  }, [open, currentUser])
+  }, [open, currentUser, isAdmin])
 
   async function loadUsers() {
-      try {
-          const users = await listAdminUsers()
-          setAdminUsers(users)
-      } catch (err) {
-          console.log("Could not list users:", err)
-      }
+    try {
+      const users = await listAdminUsers()
+      setAdminUsers(users)
+    } catch (err) {
+      console.log("Could not list users:", err)
+    }
+  }
+
+  function clearMessages() {
+    setStatusMessage('')
+    setErrorMessage('')
   }
 
   function handleEditUser(user) {
     setEditingUserId(user.id)
     setNewUser({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        username: user.username || '',
-        phone: user.phone || '',
-        email: user.email || '',
-        password: '', // Don't populate password
-        role: user.role || ROLE_SHOOTER
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      username: user.username || '',
+      phone: user.phone || '',
+      email: user.email || '',
+      password: '', 
+      role: user.role || ROLE_SHOOTER
     })
+    setActiveTab('manage')
     setStatusMessage(`Editing user "${user.username}".`)
     setErrorMessage('')
   }
@@ -101,52 +93,22 @@ export default function AuthModal({
   function handleCancelEdit() {
     setEditingUserId(null)
     setNewUser({
-        firstName: '',
-        lastName: '',
-        username: '',
-        phone: '',
-        email: '',
-        password: '',
-        role: ROLE_SHOOTER,
+      firstName: '', lastName: '', username: '', phone: '', email: '', password: '', role: ROLE_SHOOTER,
     })
   }
-
-  if (!open) return null
-
-  const sessionLabel = currentUser
-    ? currentUser.role === ROLE_ADMIN
-      ? 'Reloader (Admin)'
-      : 'Shooter (Read-only)'
-    : 'Shooter (Read-only)'
-
-  const sessionName =
-    currentUser?.username ||
-    currentUser?.firstName ||
-    currentUser?.email ||
-    ''
-
-  const inputClass =
-    'w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-2 text-[11px] md:text-sm focus:outline-none focus:ring-2 focus:ring-red-500/60'
-
-  const labelClass =
-    'block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-[0.16em]'
 
   async function handleLoginSubmit(e) {
     e.preventDefault()
     setBusy(true)
-    setStatusMessage('')
-    setErrorMessage('')
+    clearMessages()
     try {
       const user = await loginUser({
         username: loginForm.username,
         password: loginForm.password,
       })
-      setStatusMessage(
-        `Signed in as ${user.username || user.email}.`
-      )
+      setStatusMessage(`Welcome back, ${user.firstName || user.username}.`)
       setLoginForm({ username: '', password: '' })
       if (onLogin) onLogin(user)
-      if (onClose) onClose()
     } catch (err) {
       setErrorMessage(err?.message || 'Login failed.')
     } finally {
@@ -157,30 +119,21 @@ export default function AuthModal({
   async function handleRegisterOrUpdateSubmit(e) {
     e.preventDefault()
     setBusy(true)
-    setStatusMessage('')
-    setErrorMessage('')
+    clearMessages()
 
     try {
       if (editingUserId) {
-          // UPDATE EXISTING
-          const payload = { ...newUser }
-          if (!payload.password) delete payload.password // Don't send empty string if unchanged
-          
-          await updateUser(editingUserId, payload)
-          setStatusMessage(`User "${newUser.username}" updated successfully.`)
-          handleCancelEdit() // Clear form
+        const payload = { ...newUser }
+        if (!payload.password) delete payload.password
+        await updateUser(editingUserId, payload)
+        setStatusMessage(`User "${newUser.username}" updated.`)
+        handleCancelEdit()
       } else {
-          // CREATE NEW
-          await registerUser(newUser)
-          setStatusMessage(
-            `User "${newUser.username}" created as ${
-              newUser.role === ROLE_ADMIN ? 'Reloader (Admin)' : 'Shooter'
-            }.`
-          )
-          handleCancelEdit() // Clear form
+        await registerUser(newUser)
+        setStatusMessage(`User "${newUser.username}" created successfully.`)
+        handleCancelEdit()
       }
-      
-      if (currentUser?.role === ROLE_ADMIN) loadUsers()
+      if (isAdmin) loadUsers()
     } catch (err) {
       setErrorMessage(err?.message || 'Operation failed.')
     } finally {
@@ -191,17 +144,13 @@ export default function AuthModal({
   async function handleResetSubmit(e) {
     e.preventDefault()
     setBusy(true)
-    setStatusMessage('')
-    setErrorMessage('')
-
+    clearMessages()
     try {
       await resetUserPassword({
         username: resetForm.username,
         newPassword: resetForm.newPassword,
       })
-      setStatusMessage(
-        `Password reset for "${resetForm.username}".`
-      )
+      setStatusMessage(`Password reset for "${resetForm.username}".`)
       setResetForm({ username: '', newPassword: '' })
     } catch (err) {
       setErrorMessage(err?.message || 'Unable to reset password.')
@@ -210,329 +159,291 @@ export default function AuthModal({
     }
   }
 
-  async function handleRecoverSubmit(e) {
-    e.preventDefault()
-    setBusy(true)
-    setStatusMessage('')
-    setErrorMessage('')
-
-    try {
-      await requestPasswordReset({ email: recoverEmail })
-      setStatusMessage(
-        'If that email exists, a recovery link has been sent (Stub).'
-      )
-      setRecoverEmail('')
-    } catch (err) {
-      setErrorMessage(
-        err?.message || 'Unable to request password recovery.'
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
-
   async function handleRemoveUser(id) {
-    if (!window.confirm('Remove this user?')) return
-
+    if (!window.confirm('Are you sure you want to remove this user? This cannot be undone.')) return
     setBusy(true)
-    setStatusMessage('')
-    setErrorMessage('')
-
+    clearMessages()
     try {
       await removeUser(id)
-      loadUsers()
+      await loadUsers()
       setStatusMessage('User removed.')
-      
-      // If we removed ourselves
       if (currentUser && currentUser.id === id && onLogout) {
         onLogout()
       }
     } catch (err) {
-      setErrorMessage(
-        err?.message || 'Unable to remove user.'
-      )
+      setErrorMessage(err?.message || 'Unable to remove user.')
     } finally {
       setBusy(false)
     }
   }
 
+  if (!open) return null
+
+  // Use solid backgrounds to prevent transparency issues
+  const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
+  const labelClass = "block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider"
+  
+  // Brighter Red for Active Tabs
+  const tabClass = (active) => `text-xs font-semibold px-4 py-2 rounded-full transition ${active ? 'bg-red-700 text-white shadow-lg shadow-red-900/20' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`
+
+  const containerClass = isAdmin 
+    ? "w-full max-w-4xl flex-col md:flex-row" 
+    : "w-full max-w-md flex-col"
+
+  const leftPaneClass = isAdmin
+    ? "w-full md:w-[35%] border-b md:border-b-0 md:border-r border-slate-800"
+    : "w-full"
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur">
-      <div className="glass max-w-3xl w-full mx-4 relative max-h-[90vh] overflow-y-auto">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 rounded-full bg-black/60 border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500/70 transition"
-        >
-          <X size={14} />
-        </button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+      {/* --- AUTOFILL FIX --- */}
+      <style>{`
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #1a1a1a inset !important;
+            -webkit-text-fill-color: white !important;
+            caret-color: white !important;
+            border: 1px solid #334155 !important;
+        }
+      `}</style>
 
-        <div className="flex items-start gap-3 mb-3 pr-8">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-900/60 border border-red-500/60 text-red-200 mr-1">
-            <Shield size={16} />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-red-500/70 mb-1">
-              Access &amp; Roles
-            </p>
-            <h2 className="text-xl font-bold glow-red">
-              Reloader (admin) vs Shooter (read-only)
-            </h2>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Admins can add, edit, and delete data. Shooters can browse only.
-            </p>
-          </div>
-        </div>
-
-        <div className="mb-3 text-[11px] text-slate-400 flex items-center gap-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 border border-slate-700">
-            <UserCircle2 size={14} className="text-slate-300" />
-            <span className="uppercase tracking-[0.16em] text-slate-500">
-              Current session:
-            </span>
-            <span className="font-semibold text-slate-100">
-              {sessionLabel}
-            </span>
-            {sessionName && (
-              <span className="text-slate-400">
-                • {sessionName}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {(statusMessage || errorMessage) && (
-          <div className="mb-3 text-[11px]">
-            {statusMessage && (
-              <div className="text-emerald-300">
-                {statusMessage}
-              </div>
-            )}
-            {errorMessage && (
-              <div className="text-red-300">
-                {errorMessage}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="grid md:grid-cols-2 gap-5 mt-2 text-[11px]">
-          {/* LEFT: Login */}
-          <div className="space-y-3">
-            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500">
-              Login
-            </p>
+      <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${containerClass} max-h-[85vh]`}>
+        
+        {/* === LEFT PANE: LOGIN & SESSION === */}
+        <div className={`${leftPaneClass} bg-black/40 p-6 flex flex-col relative`}>
             
+          {!isAdmin && (
+             <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition">
+               <X size={20} />
+             </button>
+          )}
+
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="text-red-500" size={20} />
+              <h2 className="text-lg font-bold text-slate-100 tracking-tight">Access & Roles</h2>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Authenticate to unlock editing capabilities.
+            </p>
+          </div>
+
+          {/* Current Session */}
+          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 mb-6">
+            <p className={labelClass}>Current Session</p>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-full ${currentUser?.role === ROLE_ADMIN ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-400'}`}>
+                <UserCircle2 size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-200">
+                  {currentUser ? (currentUser.username || currentUser.email) : 'Guest User'}
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                  {currentUser?.role === ROLE_ADMIN ? 'Reloader (Admin)' : 'Shooter (Read-only)'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Login Form */}
+          <div className="flex-1">
+            <p className={labelClass}>Sign In</p>
             <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
-              <div>
-                <label className={labelClass}>Username / Email</label>
-                <input
-                  className={inputClass}
-                  value={loginForm.username}
-                  onChange={e =>
-                    setLoginForm(prev => ({
-                      ...prev,
-                      username: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Password</label>
-                <input
-                  type="password"
-                  className={inputClass}
-                  value={loginForm.password}
-                  onChange={e =>
-                    setLoginForm(prev => ({
-                      ...prev,
-                      password: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="flex items-center gap-2 mt-1">
+              <input
+                className={inputClass}
+                placeholder="Username or Email"
+                value={loginForm.username}
+                onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
+              />
+              <input
+                type="password"
+                className={inputClass}
+                placeholder="Password"
+                value={loginForm.password}
+                onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+              />
+              <div className="pt-2 flex flex-col gap-2">
                 <button
                   type="submit"
                   disabled={busy}
-                  className="px-4 py-1.5 rounded-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-[11px] font-semibold shadow-md shadow-red-900/40 transition"
+                  className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {busy ? 'Working…' : 'Sign in'}
+                  <LogIn size={14} />
+                  {busy ? 'Verifying...' : 'Sign In'}
                 </button>
                 {currentUser && (
                   <button
                     type="button"
                     onClick={onLogout}
-                    className="px-3 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800/60 text-[11px] font-semibold transition"
+                    className="w-full py-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-400 transition"
                   >
-                    Sign out
+                    Sign Out
                   </button>
                 )}
               </div>
             </form>
           </div>
 
-          {/* RIGHT: User management */}
-          <div className="space-y-3">
-            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500">
-              User Management
-            </p>
-            <p className="text-[11px] text-slate-400">
-              {currentUser?.role === ROLE_ADMIN 
-                ? "Manage users below." 
-                : "Login as Admin to create new users."}
-            </p>
-
-            <form onSubmit={handleRegisterOrUpdateSubmit} className="space-y-2 mt-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClass}>First Name</label>
-                  <input
-                    className={inputClass}
-                    value={newUser.firstName}
-                    onChange={e => setNewUser(prev => ({ ...prev, firstName: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Last Name</label>
-                  <input
-                    className={inputClass}
-                    value={newUser.lastName}
-                    onChange={e => setNewUser(prev => ({ ...prev, lastName: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClass}>Username</label>
-                  <input
-                    className={inputClass}
-                    value={newUser.username}
-                    onChange={e => setNewUser(prev => ({ ...prev, username: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Phone</label>
-                  <input
-                    className={inputClass}
-                    value={newUser.phone}
-                    onChange={e => setNewUser(prev => ({ ...prev, phone: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelClass}>Email</label>
-                <input
-                  className={inputClass}
-                  type="email"
-                  value={newUser.email}
-                  onChange={e => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  {editingUserId ? "Password (leave empty to keep)" : "Password"}
-                </label>
-                <input
-                  type="password"
-                  className={inputClass}
-                  value={newUser.password}
-                  onChange={e => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>Account Type</label>
-                <div className="flex flex-wrap gap-2 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => setNewUser(prev => ({ ...prev, role: ROLE_ADMIN }))}
-                    className={
-                      'px-3 py-1 rounded-full border text-xs transition ' +
-                      (newUser.role === ROLE_ADMIN
-                        ? 'border-emerald-500/70 text-emerald-300 bg-black/60'
-                        : 'border-slate-700 text-slate-300 bg-black/40')
-                    }
-                  >
-                    Reloader (Admin)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewUser(prev => ({ ...prev, role: ROLE_SHOOTER }))}
-                    className={
-                      'px-3 py-1 rounded-full border text-xs transition ' +
-                      (newUser.role === ROLE_SHOOTER
-                        ? 'border-slate-400 text-slate-200 bg-black/60'
-                        : 'border-slate-700 text-slate-300 bg-black/40')
-                    }
-                  >
-                    Shooter (Read-only)
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                {editingUserId && (
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="px-4 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800/60 text-[11px] font-semibold transition"
-                  >
-                    Cancel
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="px-4 py-1.5 rounded-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-[11px] font-semibold shadow-md shadow-red-900/40 transition"
-                >
-                  {busy ? 'Working…' : editingUserId ? 'Update User' : 'Add User'}
-                </button>
-              </div>
-            </form>
-
-            {/* Admin users list */}
-            {currentUser?.role === ROLE_ADMIN && (
-              <div className="mt-3">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-1">
-                  Existing Users
-                </p>
-                <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
-                  {adminUsers.map(u => (
-                    <div
-                      key={u.id}
-                      className="flex items-center justify-between bg-black/40 rounded-xl px-3 py-1 text-[11px] text-slate-300"
-                    >
-                      <span className="truncate max-w-[120px]" title={u.email}>
-                        {u.username}
-                        {u.role === ROLE_ADMIN && <span className="text-emerald-400 ml-1">(Admin)</span>}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {/* EDIT BUTTON PILL - MATCHING PURCHASES STYLE */}
-                        <span
-                          onClick={() => handleEditUser(u)}
-                          className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 transition cursor-pointer text-[10px] text-slate-300"
-                        >
-                          Edit
-                        </span>
-                        {/* REMOVE BUTTON PILL - MATCHING PURCHASES STYLE */}
-                        <span
-                          onClick={() => handleRemoveUser(u.id)}
-                          className="px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition cursor-pointer text-[10px]"
-                        >
-                          Remove
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Status Messages */}
+          {(statusMessage || errorMessage) && (
+            <div className="mt-4 p-3 rounded-lg bg-black/40 border border-slate-800">
+              {statusMessage && <p className="text-[10px] text-emerald-400">{statusMessage}</p>}
+              {errorMessage && <p className="text-[10px] text-red-400">{errorMessage}</p>}
+            </div>
+          )}
         </div>
+
+        {/* === RIGHT PANE: MANAGEMENT (ADMIN ONLY) === */}
+        {isAdmin && (
+          <div className="w-full md:w-[65%] p-6 bg-gradient-to-br from-[#121214] to-[#0a0a0a] flex flex-col overflow-hidden relative">
+            <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition">
+              <X size={20} />
+            </button>
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6 border-b border-slate-800 pb-4">
+              <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>
+                User Management
+              </button>
+              <button onClick={() => setActiveTab('reset')} className={tabClass(activeTab === 'reset')}>
+                Password Reset
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              {/* View: User Management */}
+              {activeTab === 'manage' && (
+                <div className="space-y-6">
+                  <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                        <Users size={16} className="text-red-500" />
+                        {editingUserId ? 'Edit User' : 'Create New User'}
+                      </h3>
+                      {editingUserId && (
+                        <button onClick={handleCancelEdit} className="text-[10px] text-red-400 hover:underline">
+                          Cancel Edit
+                        </button>
+                      )}
+                    </div>
+
+                    <form onSubmit={handleRegisterOrUpdateSubmit} className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className={labelClass}>First Name</label>
+                          <input className={inputClass} value={newUser.firstName} onChange={e => setNewUser(p => ({ ...p, firstName: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Last Name</label>
+                          <input className={inputClass} value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className={labelClass}>Username</label>
+                          <input className={inputClass} value={newUser.username} onChange={e => setNewUser(p => ({ ...p, username: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Phone</label>
+                          <input className={inputClass} value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2">
+                          <label className={labelClass}>Email</label>
+                          <input type="email" className={inputClass} value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className={labelClass}>{editingUserId ? 'New Password (Optional)' : 'Password'}</label>
+                          <input type="password" className={inputClass} value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Role</label>
+                          <select 
+                            className={inputClass}
+                            value={newUser.role}
+                            onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}
+                          >
+                            <option value={ROLE_SHOOTER}>Shooter (Read-only)</option>
+                            <option value={ROLE_ADMIN}>Reloader (Admin)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="pt-2 flex justify-end">
+                        {/* MATCHED SIGN IN BUTTON STYLE */}
+                        <button type="submit" disabled={busy} className="px-6 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50">
+                          {busy ? 'Saving...' : editingUserId ? 'Save Changes' : 'Create User'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* User List */}
+                  <div>
+                    <p className={labelClass}>User Directory</p>
+                    {adminUsers.length === 0 ? (
+                      <div className="text-center p-4 border border-dashed border-slate-800 rounded-lg text-xs text-slate-600">
+                        No users found.
+                      </div>
+                    ) : (
+                      <div className="grid gap-2">
+                        {adminUsers.map(u => (
+                          <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-slate-800/50 group hover:border-slate-700 transition">
+                            <div className="flex items-center gap-3">
+                              {/* THEME FIX: Red dot for Admin */}
+                              <div className={`w-2 h-2 rounded-full ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-slate-600'}`} />
+                              <div>
+                                <p className="text-xs font-bold text-slate-200">{u.username}</p>
+                                <p className="text-[10px] text-slate-500">{u.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => handleEditUser(u)} className="px-2 py-1 rounded bg-slate-800 text-[10px] text-slate-300 hover:text-white">Edit</button>
+                              <button onClick={() => handleRemoveUser(u.id)} className="px-2 py-1 rounded bg-red-900/30 text-[10px] text-red-400 hover:bg-red-900/50">Delete</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* View: Password Reset */}
+              {activeTab === 'reset' && (
+                <div className="space-y-6">
+                  <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
+                    <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4">
+                      <Lock size={16} className="text-red-500" />
+                      Admin Password Reset
+                    </h3>
+                    <form onSubmit={handleResetSubmit} className="space-y-3">
+                      <div>
+                        <label className={labelClass}>Target Username</label>
+                        <input className={inputClass} value={resetForm.username} onChange={e => setResetForm(p => ({ ...p, username: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>New Password</label>
+                        <input type="password" className={inputClass} value={resetForm.newPassword} onChange={e => setResetForm(p => ({ ...p, newPassword: e.target.value }))} />
+                      </div>
+                      <div className="pt-2 flex justify-end">
+                        {/* MATCHED SIGN IN BUTTON STYLE */}
+                        <button type="submit" disabled={busy} className="px-6 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50">
+                          Reset Password
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

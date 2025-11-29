@@ -5,8 +5,8 @@
 <h1 align="center">💥 Reload Tracker 💥</h1>
 
 <p align="center">
-  <strong>Beautiful, professional ammo cost & inventory tracking — without spreadsheets.</strong><br>
-  Track every LOT, every recipe, and exactly what each round really costs.
+  <strong>The professional inventory & cost management system for reloaders.</strong><br>
+  Now with secure multi-user authentication, audit trails, and precision math.
 </p>
 
 <p align="center">
@@ -50,27 +50,6 @@
 
 ---
 
-## 📚 Table of Contents
-
-- [Why Reload Tracker?](#-why-reload-tracker)
-- [Core Features](#-core-features)
-- [Tour of the App](#-tour-of-the-app)
-  - [Live Round Calculator](#-live-round-calculator)
-  - [Purchases & LOTs](#-purchases--lots)
-  - [Inventory View](#-inventory-view)
-  - [Recipes & Ballistics](#-recipes--ballistics)
-- [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Quick Start (local dev)](#quick-start-local-dev)
-  - [Environment Variables](#-environment-variables)
-- [Examples / Workflows](#-examples--workflows)
-- [Roadmap](#-roadmap)
-- [Contributing](#-contributing)
-- [License](#-license)
-
----
-
 ## 🎯 Why Reload Tracker?
 
 Reloading costs can get fuzzy fast:
@@ -88,42 +67,28 @@ Reload Tracker turns all of that into **clear per-round math** with a **clean, m
 
 ---
 
-## ✨ Core Features
+## 📚 Features
 
-- 🧮 **Live Cost Calculator**
-  - Exact cost per round, per 50, per 100, per 1,000, and per custom lot size.
-  - Includes price, shipping, HazMat, and tax in every calculation. :contentReference[oaicite:0]{index=0}  
+### 🧮 Live Round Calculator
+The heart of the app.
+- Exact cost per round, per 50/100/1000.
+- Factors in **Brass Reuse**, **HazMat fees**, and **Shipping**.
+- Compare "Saved Scenarios" side-by-side.
 
-- 🧾 **Purchases & LOT Tracking**
-  - Each purchase becomes a LOT with brand, caliber, quantity, vendor, date, URL, status, and notes. :contentReference[oaicite:1]{index=1}  
-  - Track **active** vs **depleted** LOTs without losing history.
+### 🧾 Inventory Management
+- Track **LOTs** of Powder, Bullets, Primers, and Brass.
+- Track **Active** vs. **Depleted** stock.
+- **Capacity Engine:** Tells you exactly how many rounds you can build right now based on your limiting component (e.g., "You are primer-limited to 450 rounds").
 
-- 📦 **Inventory Overview**
-  - Total investment, total LOTs, total pieces across powder, bullets, primers, and brass.
-  - Capacity pills: see whether you’re powder-limited, bullet-limited, primer-limited, or brass-limited for a selected recipe. :contentReference[oaicite:2]{index=2}  
+### 📖 Recipe Book
+- Store your load data with ballistics (Velocity, Power Factor, Zero).
+- **"Use in Calculator"** button snaps your dashboard to that recipe instantly.
+- **Printable Cards:** Generate a clean, high-contrast PDF card for your range bag.
 
-- 📖 **Recipe Book**
-  - Save named recipes with caliber, profile type (range, subsonic, competition, etc.), brass reuse, and default lot size.
-  - Optional ballistics fields: bullet weight, muzzle velocity, power factor, zero distance, group size, and range notes. :contentReference[oaicite:3]{index=3}  
-  - One-click **“Use in Calculator”** to snap the dashboard to a chosen recipe.
-
-- 📊 **Inventory Capacity (This Recipe)**
-  - For the selected recipe, see how many rounds you can build from your entire inventory and which component is limiting. :contentReference[oaicite:4]{index=4}  
-
-- 🧪 **Saved “What-if” Configurations**
-  - Inside the calculator, snapshot scenarios (caliber, charge, brass reuse, lot size, and resulting cost) and compare them side-by-side.
-
-- 🕶️ **Polished Dark UI**
-  - Glassmorphism cards, neon red highlights, and Inter font throughout for a “premium app” feel. :contentReference[oaicite:5]{index=5}  
-
-- 🔞 **Age Gate**
-  - Simple “I am 21 or older” confirmation before the app is accessible. :contentReference[oaicite:6]{index=6}  
-
-- 🧹 **Per-device Reset**
-  - “Reset local data (this device)” button for clearing local data during development or testing without affecting other devices. :contentReference[oaicite:7]{index=7}  
-
-- 🧾 **Recipe PDF Export (Planned / WIP)**
-  - The goal: export a recipe as a clean, printable card (for binders or range notes) with your logo at the top.
+### 🛡️ Admin & Security
+- **Invite-Only System:** Admins create accounts for other users.
+- **Secure Auth:** HttpOnly session cookies (no localStorage tokens).
+- **Portable API:** Runs on Netlify Functions or any Node.js server.
 
 ---
 
@@ -153,7 +118,6 @@ The calculator shows:
 - Cost for your selected lot size
 - Detailed per-round breakdown for each component
 
-All in one clean panel. :contentReference[oaicite:9]{index=9}  
 
 ### 🧾 Purchases & LOTs
 
@@ -166,15 +130,10 @@ In the **Purchases** tab you can:
   - Qty + unit (`ea`, `lb`, `gr`, `box`)
   - Price, shipping/HazMat, tax
   - Vendor, date, product URL, optional image URL
-  - Notes and LOT status (active / depleted) :contentReference[oaicite:10]{index=10}  
+  - Notes and LOT status (active / depleted) 
 - Filter by component type and caliber for quick lookup.
 - See per-unit and total cost per LOT.
 
-These LOTs power:
-
-- The **Inventory** view
-- The **Live Calculator** dropdowns
-- Future features like lots history & analytics
 
 ### 📦 Inventory View
 
@@ -222,16 +181,10 @@ From there:
 
 ## 🛠 Tech Stack
 
-Under the hood:
-
-- ⚛️ **React 18** powered SPA :contentReference[oaicite:13]{index=13}  
-- ⚡ **Vite** dev/build tooling
-- 🎨 **Tailwind CSS** + custom glassmorphism styles :contentReference[oaicite:14]{index=14}  
-- 🧩 **Lucide React** icons for navigation :contentReference[oaicite:15]{index=15}  
-- 🌐 Deployed easily via **Netlify** (with serverless functions for API access)
-- 🗄️ Designed to integrate with a **PostgreSQL** backend via a small `db.js` abstraction (Netlify Functions, self-hosted API, etc.)
-
-The goal is to keep the **UI and UX stable** while allowing the backing data layer (local only vs. shared DB) to evolve over time.
+* **Frontend:** React 18, Vite, Tailwind CSS (Glassmorphism theme)
+* **Backend:** Node.js API (Adapter-based for Netlify Functions or Express)
+* **Database:** PostgreSQL (Neon, Supabase, or self-hosted)
+* **Auth:** Custom session-based auth with PBKDF2 hashing (No external auth providers required).
 
 ---
 

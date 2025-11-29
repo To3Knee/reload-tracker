@@ -4,9 +4,10 @@
 //Date: 11/28/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.1.2
+//Version: 2.0.0
 //About: Manage component LOT purchases.
-//       Updated: "Added By" is now a visible Action Pill.
+//       Features: Admin editing, user attribution, and 
+//       "Pro" compact UI styling (matching Dashboard).
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -91,7 +92,7 @@ export function Purchases({ onChanged, canEdit = true }) {
       shipping: lot.shipping != null ? String(lot.shipping) : '',
       tax: lot.tax != null ? String(lot.tax) : '',
       vendor: lot.vendor || '',
-      date: lot.purchaseDate || '', // Note: API returns purchaseDate
+      date: lot.purchaseDate || '', 
       notes: lot.notes || '',
       url: lot.url || '',
       status: lot.status || 'active',
@@ -112,12 +113,12 @@ export function Purchases({ onChanged, canEdit = true }) {
     try {
       await addPurchase({
         ...form,
-        id: editingId, // Include ID if we are editing
+        id: editingId,
         qty: Number(form.qty) || 0,
         price: Number(form.price) || 0,
         shipping: Number(form.shipping) || 0,
         tax: Number(form.tax) || 0,
-        purchaseDate: form.date, // Map form 'date' back to 'purchaseDate'
+        purchaseDate: form.date,
       })
       const data = await getAllPurchases()
       setPurchases(data)
@@ -130,10 +131,7 @@ export function Purchases({ onChanged, canEdit = true }) {
 
   const handleDelete = async id => {
     if (!canEdit) return
-    if (
-      typeof window !== 'undefined' &&
-      !window.confirm('Delete this purchase?')
-    ) {
+    if (typeof window !== 'undefined' && !window.confirm('Delete this purchase?')) {
       return
     }
     await deletePurchase(id)
@@ -144,18 +142,11 @@ export function Purchases({ onChanged, canEdit = true }) {
   }
 
   const lotsByType = useMemo(() => {
-    const groups = {
-      powder: [],
-      bullet: [],
-      primer: [],
-      case: [],
-    }
-
+    const groups = { powder: [], bullet: [], primer: [], case: [] }
     for (const p of purchases) {
       if (!groups[p.componentType]) continue
       groups[p.componentType].push(p)
     }
-
     for (const key of Object.keys(groups)) {
       groups[key].sort((a, b) => {
         const aBrand = (a.brand || '').toLowerCase()
@@ -169,18 +160,19 @@ export function Purchases({ onChanged, canEdit = true }) {
         return (a.lotId || '').localeCompare(b.lotId || '')
       })
     }
-
     return groups
   }, [purchases])
 
   const sectionLabelClass =
     'text-xs uppercase tracking-[0.25em] text-slate-500 mb-2'
 
+  // UPDATED: Matching Dashboard's compact styling
   const inputClass =
-    'w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-red-500/60'
+    'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60 placeholder:text-slate-600'
 
+  // UPDATED: Matching Dashboard's label styling (Removed aggressive uppercase/tracking)
   const labelClass =
-    'block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-[0.16em]'
+    'block text-xs font-semibold text-slate-400 mb-1'
 
   const renderPerUnit = p => {
     const per = calculatePerUnit(p.price, p.shipping, p.tax, p.qty)
@@ -195,17 +187,14 @@ export function Purchases({ onChanged, canEdit = true }) {
         <p className={sectionLabelClass}>
           {editingId ? 'EDIT PURCHASE' : 'ADD PURCHASE'}
         </p>
-        <p className="text-slate-300 text-sm mb-4">
+        <p className="text-slate-300 text-xs mb-4">
           Record powders, bullets, primers, and brass as you buy them. The live
           calculator will use these lots to drive cost per round and inventory
           capacity.
         </p>
 
         {canEdit ? (
-          <form
-            onSubmit={handleSubmit}
-            className="grid md:grid-cols-2 gap-4 md:gap-6"
-          >
+          <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-4">
             {/* Component type */}
             <div>
               <label className={labelClass}>Component type</label>
@@ -273,7 +262,7 @@ export function Purchases({ onChanged, canEdit = true }) {
               />
             </div>
 
-            {/* Case condition (only for brass) */}
+            {/* Case condition */}
             <div>
               <label className={labelClass}>
                 Case condition (if component is brass)
@@ -419,12 +408,12 @@ export function Purchases({ onChanged, canEdit = true }) {
               />
             </div>
 
-            <div className="md:col-span-2 flex justify-end gap-3">
+            <div className="md:col-span-2 flex justify-end gap-3 pt-2">
               {editingId && (
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="px-6 py-2 rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800/60 text-xs md:text-sm font-semibold tracking-[0.18em] uppercase transition"
+                  className="px-4 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800/60 text-[11px] font-semibold transition"
                 >
                   Cancel
                 </button>
@@ -432,7 +421,7 @@ export function Purchases({ onChanged, canEdit = true }) {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2 rounded-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-xs md:text-sm font-semibold tracking-[0.18em] uppercase shadow-lg shadow-red-900/40 transition"
+                className="px-5 py-1.5 rounded-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-[11px] font-semibold shadow-lg shadow-red-900/40 transition"
               >
                 {isSubmitting
                   ? 'Saving…'
@@ -460,7 +449,7 @@ export function Purchases({ onChanged, canEdit = true }) {
       <section className="glass rounded-2xl p-6">
         <p className={sectionLabelClass}>LOTS BY COMPONENT</p>
         {!hasAny ? (
-          <p className="text-slate-400 text-sm">
+          <p className="text-slate-400 text-xs">
             No purchases recorded yet. Add your first powder, bullets, primers,
             or brass above.
           </p>
@@ -578,7 +567,7 @@ export function Purchases({ onChanged, canEdit = true }) {
                             </div>
                           )}
                           
-                          {/* User Attribution Pill */}
+                          {/* User Attribution */}
                           {attribution && (
                             <div className="mt-2 flex justify-end">
                               <span className="px-2 py-[2px] rounded-full border border-slate-800 text-slate-500 bg-black/40 text-[10px]">

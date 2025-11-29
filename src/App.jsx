@@ -160,7 +160,10 @@ export default function App() {
           />
         )}
         {activeTab === 'inventory' && (
-          <Inventory purchases={purchases} />
+          <Inventory 
+            purchases={purchases} 
+            selectedRecipe={selectedRecipe}
+          />
         )}
         {activeTab === 'recipes' && (
           <Recipes

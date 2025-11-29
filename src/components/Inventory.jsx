@@ -1,6 +1,21 @@
-// src/components/Inventory.jsx
+//===============================================================
+//Script Name: Inventory.jsx
+//Script Location: src/components/Inventory.jsx
+//Date: 11/28/2025
+//Created By: T03KNEE
+//Github: https://github.com/To3Knee/reload-tracker
+//Version: 2.0.0
+//About: Inventory overview and capacity planning.
+//       Updated to use src/lib/math.js and dynamic wiring.
+//===============================================================
+
 import { useMemo } from 'react'
-import { calculatePerUnit, formatCurrency } from '../lib/db'
+import { formatCurrency } from '../lib/db'
+import { 
+  calculateCostPerUnit, 
+  calculateLotTotalCost, 
+  convertToGrains 
+} from '../lib/math'
 
 const COMPONENT_TYPES = [
   { value: 'powder', label: 'Powder' },
@@ -21,16 +36,13 @@ const PROFILE_TYPES = [
   { value: 'subsonic', label: 'Subsonic' },
   { value: 'defense', label: 'Defense' },
   { value: 'competition', label: 'Competition' },
+  { value: 'custom', label: 'Custom' },
 ]
 
 function matchesRecipeCaliber(purchase, recipe) {
   if (!recipe?.caliber) return true
   if (!purchase.caliber) return true
   return purchase.caliber === recipe.caliber
-}
-
-function lbToGrains(lb) {
-  return lb * 7000
 }
 
 export function Inventory({ purchases = [], selectedRecipe }) {
@@ -42,16 +54,17 @@ export function Inventory({ purchases = [], selectedRecipe }) {
     totalQty,
     capacityRounds,
   } = useMemo(() => {
+    // 1. Calculate Total Investment using Math Lib
     const totalInvestment = list.reduce((sum, p) => {
-      const price = Number(p.price) || 0
-      const shipping = Number(p.shipping) || 0
-      const tax = Number(p.tax) || 0
-      return sum + price + shipping + tax
+      return sum + calculateLotTotalCost(p)
     }, 0)
 
     const totalLots = list.length
+    
+    // 2. Sum Total Pieces (Treats 1 lb as 1 unit, 1000 primers as 1000 units)
     const totalQty = list.reduce((sum, p) => sum + (Number(p.qty) || 0), 0)
 
+    // 3. Capacity Logic (Requires Recipe)
     if (!selectedRecipe) {
       return {
         totalInvestment,
@@ -65,65 +78,38 @@ export function Inventory({ purchases = [], selectedRecipe }) {
       p => p.status === undefined || p.status === 'active'
     )
 
-    const powders = activeLots.filter(
-      p =>
-        p.componentType === 'powder' &&
-        matchesRecipeCaliber(p, selectedRecipe)
-    )
-    const bullets = activeLots.filter(
-      p =>
-        p.componentType === 'bullet' &&
-        matchesRecipeCaliber(p, selectedRecipe)
-    )
-    const primers = activeLots.filter(
-      p =>
-        p.componentType === 'primer' &&
-        matchesRecipeCaliber(p, selectedRecipe)
-    )
-    const cases = activeLots.filter(
-      p =>
-        p.componentType === 'case' &&
-        matchesRecipeCaliber(p, selectedRecipe)
-    )
+    const powders = activeLots.filter(p => p.componentType === 'powder' && matchesRecipeCaliber(p, selectedRecipe))
+    const bullets = activeLots.filter(p => p.componentType === 'bullet' && matchesRecipeCaliber(p, selectedRecipe))
+    const primers = activeLots.filter(p => p.componentType === 'primer' && matchesRecipeCaliber(p, selectedRecipe))
+    const cases = activeLots.filter(p => p.componentType === 'case' && matchesRecipeCaliber(p, selectedRecipe))
 
     const chargeGrains = Number(selectedRecipe.chargeGrains) || 0
     const brassReuse = Number(selectedRecipe.brassReuse) || 1
 
+    // Math Lib Conversion for Powder
     const totalPowderGrains = powders.reduce((sum, p) => {
-      const qty = Number(p.qty) || 0
-      if (p.unit === 'lb') return sum + lbToGrains(qty)
-      if (p.unit === 'gr') return sum + qty
-      return sum
+      return sum + convertToGrains(p.qty, p.unit)
     }, 0)
 
-    const totalBulletCount = bullets.reduce(
-      (sum, p) => sum + (Number(p.qty) || 0),
-      0
-    )
-    const totalPrimerCount = primers.reduce(
-      (sum, p) => sum + (Number(p.qty) || 0),
-      0
-    )
-    const totalCaseCount = cases.reduce(
-      (sum, p) => sum + (Number(p.qty) || 0),
-      0
-    )
+    const totalBulletCount = bullets.reduce((sum, p) => sum + (Number(p.qty) || 0), 0)
+    const totalPrimerCount = primers.reduce((sum, p) => sum + (Number(p.qty) || 0), 0)
+    const totalCaseCount = cases.reduce((sum, p) => sum + (Number(p.qty) || 0), 0)
 
-    const powderLimited =
-      chargeGrains > 0 ? Math.floor(totalPowderGrains / chargeGrains) : 0
+    const powderLimited = chargeGrains > 0 ? Math.floor(totalPowderGrains / chargeGrains) : 0
     const bulletLimited = totalBulletCount
     const primerLimited = totalPrimerCount
-    const caseLimited =
-      brassReuse > 0 ? Math.floor(totalCaseCount * brassReuse) : 0
+    const caseLimited = brassReuse > 0 ? Math.floor(totalCaseCount * brassReuse) : 0
 
-    const max = Math.min(
-      powderLimited || Infinity,
-      bulletLimited || Infinity,
-      primerLimited || Infinity,
-      caseLimited || Infinity
-    )
-    const maxRounds =
-      !Number.isFinite(max) || max === Infinity ? 0 : max
+    // If a component count is 0 (e.g. no powder), capacity is 0.
+    // If charge weight is 0, powder capacity is infinite (logic handled in render).
+    
+    const limits = []
+    if (chargeGrains > 0) limits.push(powderLimited)
+    if (totalBulletCount > 0) limits.push(bulletLimited)
+    if (totalPrimerCount > 0) limits.push(primerLimited)
+    if (totalCaseCount > 0) limits.push(caseLimited)
+
+    const maxRounds = limits.length > 0 ? Math.min(...limits) : 0
 
     return {
       totalInvestment,
@@ -139,8 +125,14 @@ export function Inventory({ purchases = [], selectedRecipe }) {
     }
   }, [list, selectedRecipe])
 
-  const profileLabel =
-    PROFILE_TYPES.find(p => p.value === 'range')?.label || 'Range'
+  // Dynamic Profile Label
+  const profileLabel = selectedRecipe
+    ? PROFILE_TYPES.find(p => p.value === selectedRecipe.profileType)?.label || 'Custom'
+    : 'N/A'
+
+  const profileSub = selectedRecipe
+    ? `Based on recipe: ${selectedRecipe.name}`
+    : 'Select a recipe to see profile'
 
   return (
     <div className="space-y-6">
@@ -158,13 +150,13 @@ export function Inventory({ purchases = [], selectedRecipe }) {
         />
         <SummaryCard
           label="Total Pieces"
-          value={totalQty}
+          value={totalQty.toLocaleString()}
           sub="Bullets, primers, cases, or equivalent units"
         />
         <SummaryCard
           label="Profile"
           value={profileLabel}
-          sub="Visual preference (does not affect math yet)"
+          sub={profileSub}
         />
       </div>
 
@@ -184,32 +176,15 @@ export function Inventory({ purchases = [], selectedRecipe }) {
 
         {selectedRecipe && capacityRounds ? (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-[11px] text-slate-300">
-            <CapacityPill
-              label="Powder-limited"
-              rounds={capacityRounds.powderLimited}
-            />
-            <CapacityPill
-              label="Bullet-limited"
-              rounds={capacityRounds.bulletLimited}
-            />
-            <CapacityPill
-              label="Primer-limited"
-              rounds={capacityRounds.primerLimited}
-            />
-            <CapacityPill
-              label="Case-limited"
-              rounds={capacityRounds.caseLimited}
-            />
-            <CapacityPill
-              label="Max Buildable"
-              rounds={capacityRounds.maxRounds}
-              highlight
-            />
+            <CapacityPill label="Powder-limited" rounds={capacityRounds.powderLimited} />
+            <CapacityPill label="Bullet-limited" rounds={capacityRounds.bulletLimited} />
+            <CapacityPill label="Primer-limited" rounds={capacityRounds.primerLimited} />
+            <CapacityPill label="Case-limited" rounds={capacityRounds.caseLimited} />
+            <CapacityPill label="Max Buildable" rounds={capacityRounds.maxRounds} highlight />
           </div>
         ) : (
-          <p className="text-[11px] text-slate-500">
-            Select a recipe in the Dashboard to see capacity from active
-            inventory.
+          <p className="text-[11px] text-slate-500 border border-dashed border-slate-800 p-3 rounded-lg">
+            Select a recipe in the Dashboard or Recipes tab to see capacity calculations here.
           </p>
         )}
       </div>
@@ -245,7 +220,7 @@ export function Inventory({ purchases = [], selectedRecipe }) {
 
 function SummaryCard({ label, value, sub }) {
   return (
-    <div className="glass rounded-2xl p-3 flex flex-col justify-between">
+    <div className="glass rounded-2xl p-3 flex flex-col justify-between min-h-[100px]">
       <div>
         <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500 mb-1">
           {label}
@@ -253,7 +228,7 @@ function SummaryCard({ label, value, sub }) {
         <p className="text-lg font-semibold text-slate-50">{value}</p>
       </div>
       {sub && (
-        <p className="mt-1 text-[11px] text-slate-500 leading-snug">{sub}</p>
+        <p className="mt-2 text-[10px] text-slate-500 leading-relaxed opacity-70">{sub}</p>
       )}
     </div>
   )
@@ -261,8 +236,8 @@ function SummaryCard({ label, value, sub }) {
 
 function CapacityPill({ label, rounds, highlight = false }) {
   const val = rounds != null ? rounds : 0
-  const formatted =
-    val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val.toString()
+  // If we have > 0 but it's massive, format K. Else just comma number.
+  const formatted = val.toLocaleString()
 
   return (
     <div
@@ -283,99 +258,68 @@ function CapacityPill({ label, rounds, highlight = false }) {
 }
 
 function LotCard({ lot }) {
-  const perUnit = calculatePerUnit(
-    lot.price,
-    lot.shipping,
-    lot.tax,
-    lot.qty
-  )
+  // Use the precision math helpers
+  const perUnit = calculateCostPerUnit(lot.price, lot.shipping, lot.tax, lot.qty)
+  const totalCost = calculateLotTotalCost(lot)
 
-  const typeLabel =
-    COMPONENT_TYPES.find(t => t.value === lot.componentType)?.label ||
-    'Other'
-
-  const caseLabel =
-    lot.componentType === 'case' && lot.caseCondition
+  const typeLabel = COMPONENT_TYPES.find(t => t.value === lot.componentType)?.label || 'Other'
+  const caseLabel = lot.componentType === 'case' && lot.caseCondition
       ? CASE_CONDITIONS.find(c => c.value === lot.caseCondition)?.label || ''
       : ''
 
   const isDepleted = lot.status === 'depleted'
   const cardClass = [
-    'bg-black/40 rounded-2xl overflow-hidden flex flex-col border',
-    isDepleted ? 'border-slate-800/80 opacity-80' : 'border-red-500/20',
+    'bg-black/40 rounded-2xl overflow-hidden flex flex-col border transition hover:border-slate-600',
+    isDepleted ? 'border-slate-800/80 opacity-60 grayscale' : 'border-red-500/20',
   ].join(' ')
 
   return (
     <div className={cardClass}>
-      <div className="relative h-28 bg-gradient-to-br from-slate-900 via-black to-slate-900">
-        {lot.imageUrl ? (
-          <img
-            src={lot.imageUrl}
-            alt={lot.name || lot.brand || 'Component image'}
-            className="absolute inset-0 w-full h-full object-cover opacity-40"
-          />
-        ) : (
-          <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_#ef4444_0,_transparent_55%),radial-gradient(circle_at_bottom,_#22c55e_0,_transparent_55%)]" />
-        )}
+      <div className="relative h-24 bg-gradient-to-br from-slate-900 via-black to-slate-900">
+        {/* Optional Image or Fallback Gradient */}
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,_#b33c3c_0,_transparent_60%)]" />
+        
         <div className="relative z-10 flex items-start justify-between px-3 pt-2">
-          <span className="inline-flex items-center text-[10px] px-2 py-[1px] rounded-full bg-black/60 border border-red-500/70 text-red-300">
+          <span className="inline-flex items-center text-[9px] font-mono px-2 py-[1px] rounded-full bg-black/80 border border-red-500/40 text-red-200">
             {lot.lotId || 'LOT'}
           </span>
-          <span className="text-[10px] px-2 py-[1px] rounded-full bg-black/40 border border-slate-500/60 text-slate-200">
+          <span className="text-[9px] px-2 py-[1px] rounded-full bg-black/60 border border-slate-700 text-slate-300">
             {typeLabel}
           </span>
         </div>
         {caseLabel && (
-          <div className="relative z-10 px-3 pt-1 text-[10px] text-slate-300">
+          <div className="relative z-10 px-3 pt-1 text-[9px] text-slate-400 uppercase tracking-wide">
             {caseLabel}
           </div>
         )}
       </div>
 
-      <div className="p-3 space-y-1 text-xs text-slate-300">
-        <div className="font-semibold text-slate-100">
-          {lot.brand || 'Unknown'} {lot.name && <span>• {lot.name}</span>}
+      <div className="p-3 space-y-1.5 text-xs text-slate-300">
+        <div className="font-semibold text-slate-100 leading-tight">
+          {lot.brand || 'Unknown'} <span className="text-slate-400">{lot.name}</span>
         </div>
-        <div className="text-[11px] text-slate-400 space-x-2">
-          {lot.caliber && <span>{lot.caliber}</span>}
-          <span>
-            {lot.qty} {lot.unit}
-          </span>
-          {lot.vendor && <span>• {lot.vendor}</span>}
+        
+        <div className="flex justify-between text-[11px] text-slate-400 border-b border-slate-800 pb-2">
+          <span>{lot.qty} {lot.unit} {lot.caliber ? `(${lot.caliber})` : ''}</span>
+          <span>{lot.vendor}</span>
         </div>
-        <div className="text-[11px] text-slate-400 space-x-2">
-          <span>
-            Total:{' '}
-            <span className="font-semibold text-slate-100">
-              {formatCurrency(
-                (Number(lot.price) || 0) +
-                  (Number(lot.shipping) || 0) +
-                  (Number(lot.tax) || 0)
-              )}
-            </span>
-          </span>
-          <span>
-            Per unit:{' '}
-            <span className="font-semibold text-slate-100">
-              {formatCurrency(perUnit)}
-            </span>
-          </span>
+
+        <div className="flex justify-between text-[11px] pt-1">
+          <span className="text-slate-500">Total Cost</span>
+          <span className="font-mono text-slate-200">{formatCurrency(totalCost)}</span>
         </div>
-        <div className="text-[11px] text-slate-500">
-          Status:{' '}
-          <span className={isDepleted ? 'text-amber-300' : 'text-emerald-300'}>
+        <div className="flex justify-between text-[11px]">
+          <span className="text-slate-500">Cost / Unit</span>
+          <span className="font-mono text-emerald-400">{formatCurrency(perUnit)}</span>
+        </div>
+
+        <div className="pt-2 flex items-center justify-between">
+           <span className={`text-[10px] uppercase tracking-wider ${isDepleted ? 'text-amber-500' : 'text-emerald-500'}`}>
             {isDepleted ? 'Depleted' : 'Active'}
           </span>
+          {lot.date && <span className="text-[10px] text-slate-600">{lot.date}</span>}
         </div>
-        {lot.date && (
-          <div className="text-[11px] text-slate-500">Purchased: {lot.date}</div>
-        )}
-        {lot.notes && (
-          <div className="text-[11px] text-slate-500">{lot.notes}</div>
-        )}
       </div>
     </div>
   )
 }
-
-export default Inventory
