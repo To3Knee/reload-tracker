@@ -4,14 +4,14 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.5.0
+//Version: 2.6.0
 //About: Professional "Access & Roles" modal.
 //       Features: Admin-led management, System Settings.
-//       Updated: Fully responsive for iPhone/Mobile (Stacking grids).
+//       Updated: Fixed Mobile Tabs wrapping & iPhone Select styling.
 //===============================================================
 
 import { useEffect, useState } from 'react'
-import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, Info } from 'lucide-react'
+import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, Info, ChevronDown } from 'lucide-react'
 import {
   ROLE_ADMIN,
   ROLE_SHOOTER,
@@ -219,22 +219,32 @@ export default function AuthModal({
   const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
   const labelClass = "block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider"
   
-  // Red for active tabs
+  // FIX: Added whitespace-nowrap to tabs to prevent clobbering on mobile
   const tabClass = (active) => `text-xs font-semibold px-4 py-2 rounded-full transition whitespace-nowrap ${active ? 'bg-red-700 text-white shadow-lg shadow-red-900/20' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`
 
   const containerClass = isAdmin 
     ? "w-full max-w-4xl flex-col md:flex-row" 
     : "w-full max-w-md flex-col"
 
-  // Adjust padding on mobile (p-4) vs desktop (p-6)
   const leftPaneClass = isAdmin
     ? "w-full md:w-[35%] border-b md:border-b-0 md:border-r border-slate-800"
     : "w-full"
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 md:p-4">
-      <style>{`input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus,input:-webkit-autofill:active{-webkit-box-shadow:0 0 0 30px #1a1a1a inset !important;-webkit-text-fill-color:white !important;caret-color:white !important;border:1px solid #334155 !important;}`}</style>
-      <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${containerClass} max-h-[90vh]`}>
+      <style>{`
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #1a1a1a inset !important;
+            -webkit-text-fill-color: white !important;
+            caret-color: white !important;
+            border: 1px solid #334155 !important;
+        }
+      `}</style>
+      
+      <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${containerClass} max-h-[85vh]`}>
         
         {/* === LEFT PANE: LOGIN & SESSION === */}
         <div className={`${leftPaneClass} bg-black/40 p-4 md:p-6 flex flex-col relative`}>
@@ -328,7 +338,7 @@ export default function AuthModal({
               <X size={20} />
             </button>
 
-            {/* Tabs - Scrollable on mobile */}
+            {/* Tabs - Scrollable on mobile with whitespace-nowrap */}
             <div className="flex gap-2 mb-6 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar">
               <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>
                 User Management
@@ -359,7 +369,6 @@ export default function AuthModal({
                     </div>
 
                     <form onSubmit={handleRegisterOrUpdateSubmit} className="space-y-3">
-                      {/* RESPONSIVE GRID: 1 Col on Mobile, 2 Cols on Desktop */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className={labelClass}>First Name</label>
@@ -396,14 +405,20 @@ export default function AuthModal({
                         </div>
                         <div>
                           <label className={labelClass}>Role</label>
-                          <select 
-                            className={inputClass}
-                            value={newUser.role}
-                            onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}
-                          >
-                            <option value={ROLE_SHOOTER}>Shooter (Read-only)</option>
-                            <option value={ROLE_ADMIN}>Reloader (Admin)</option>
-                          </select>
+                          {/* FIX: Custom styled select container to override iPhone native UI */}
+                          <div className="relative">
+                            <select 
+                              className={`${inputClass} appearance-none`}
+                              value={newUser.role}
+                              onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}
+                            >
+                              <option value={ROLE_SHOOTER}>Shooter (Read-only)</option>
+                              <option value={ROLE_ADMIN}>Reloader (Admin)</option>
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                              <ChevronDown size={14} />
+                            </div>
+                          </div>
                         </div>
                       </div>
                       
@@ -427,11 +442,9 @@ export default function AuthModal({
                         {adminUsers.map(u => (
                           <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-slate-800/50 group hover:border-slate-700 transition">
                             <div className="flex items-center gap-3 min-w-0">
-                              {/* Flex-shrink-0 prevents icon from squishing */}
                               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-slate-600'}`} />
                               <div className="min-w-0">
                                 <p className="text-xs font-bold text-slate-200 truncate">{u.username}</p>
-                                {/* Truncate email to prevent overflow */}
                                 <p className="text-[10px] text-slate-500 truncate">{u.email}</p>
                               </div>
                             </div>
@@ -447,7 +460,7 @@ export default function AuthModal({
                 </div>
               )}
 
-              {/* View: Password Reset */}
+              {/* TAB: PASSWORDS */}
               {activeTab === 'reset' && (
                 <div className="space-y-6">
                   <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
@@ -487,7 +500,7 @@ export default function AuthModal({
                                   </div>
                                   <div>
                                       <p className="text-xs font-bold text-slate-200">AI Ballistics Expert</p>
-                                      <p className="text-[10px] text-slate-500">Enable the 'Ask AI' button.</p>
+                                      <p className="text-[10px] text-slate-500">Enable the 'Ask AI' button in the navbar.</p>
                                   </div>
                               </div>
                               {systemSettings.hasAiKey ? (
