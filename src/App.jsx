@@ -4,9 +4,9 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.3.0
+//Version: 2.4.0
 //About: Root shell for Reload Tracker. Handles routing, auth,
-//       and now supports Deep Linking via QR Codes.
+//       and now supports Analytics visualization.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -16,6 +16,7 @@ import { Purchases } from './components/Purchases'
 import { Inventory } from './components/Inventory'
 import { Recipes } from './components/Recipes'
 import { Batches } from './components/Batches'
+import { Analytics } from './components/Analytics' // NEW IMPORT
 import { getAllPurchases, seedData } from './lib/db'
 import logo from './assets/logo.png'
 import { APP_VERSION_LABEL } from './version'
@@ -33,7 +34,6 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   
-  // Deep Linking State (What did we just scan?)
   const [scannedId, setScannedId] = useState(null)
 
   const [ageConfirmed, setAgeConfirmed] = useState(
@@ -42,7 +42,6 @@ export default function App() {
       : false
   )
 
-  // 1. Initial load: DB, Auth, and QR Code Logic
   useEffect(() => {
     const load = async () => {
       await seedData()
@@ -52,7 +51,6 @@ export default function App() {
       const user = await getCurrentUser()
       if (user) setCurrentUser(user)
 
-      // --- QR CODE DEEP LINKING ---
       const params = new URLSearchParams(window.location.search)
       const batchId = params.get('batchId')
       const purchaseId = params.get('purchaseId')
@@ -60,7 +58,6 @@ export default function App() {
       if (batchId) {
         setActiveTab('batches')
         setScannedId(Number(batchId))
-        // Clean the URL so a refresh doesn't get stuck
         window.history.replaceState({}, document.title, "/")
       } else if (purchaseId) {
         setActiveTab('purchases')
@@ -161,7 +158,7 @@ export default function App() {
           <Purchases
             onChanged={refreshPurchases}
             canEdit={!!isAdmin}
-            highlightId={scannedId} // PASS THE ID
+            highlightId={scannedId} 
           />
         )}
         {activeTab === 'inventory' && (
@@ -178,7 +175,10 @@ export default function App() {
           />
         )}
         {activeTab === 'batches' && (
-          <Batches highlightId={scannedId} /> // PASS THE ID
+          <Batches highlightId={scannedId} /> 
+        )}
+        {activeTab === 'analytics' && (
+          <Analytics />
         )}
       </main>
 

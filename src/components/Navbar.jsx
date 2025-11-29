@@ -4,12 +4,10 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.0.1
+//Version: 2.1.0
 //About: Top-right navigation bar for Reload Tracker. Provides
 //       tab switching between Calculator, Purchases, Inventory,
-//       Recipes, and Batches. Includes a small gear icon to open the
-//       access/roles modal, plus a subtle session indicator
-//       (Reloader vs Shooter).
+//       Recipes, Batches, and Analytics.
 //===============================================================
 
 import {
@@ -18,7 +16,8 @@ import {
   Package,
   Beaker,
   Settings,
-  ClipboardList, // NEW ICON
+  ClipboardList,
+  Activity, // NEW ICON
 } from 'lucide-react'
 
 const MENU_ITEMS = [
@@ -26,7 +25,8 @@ const MENU_ITEMS = [
   { id: 'purchases', label: 'Purchases', icon: ShoppingCart },
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'recipes', label: 'Recipes', icon: Beaker },
-  { id: 'batches', label: 'Batches', icon: ClipboardList }, // NEW TAB
+  { id: 'batches', label: 'Batches', icon: ClipboardList },
+  { id: 'analytics', label: 'Analytics', icon: Activity }, // NEW TAB
 ]
 
 export default function Navbar({
