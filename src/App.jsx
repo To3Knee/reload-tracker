@@ -1,13 +1,15 @@
 //===============================================================
 //Script Name: App.jsx
 //Script Location: src/App.jsx
-//Date: 11/26/2025
+//Date: 11/28/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.0.1
+//Version: 1.0.3
 //About: Root shell for Reload Tracker. Handles navbar/tab routing,
 //       age confirmation gate, initial purchase load from DB, and
 //       wiring selected recipes into the Live Round Calculator.
+//       Now manages real role-based access (Reloader vs Shooter)
+//       via the backend API auth.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -19,11 +21,19 @@ import { Recipes } from './components/Recipes'
 import { getAllPurchases, seedData } from './lib/db'
 import logo from './assets/logo.png'
 import { APP_VERSION_LABEL } from './version'
+import AuthModal from './components/AuthModal'
+import {
+  getCurrentUser,
+  logoutUser,
+  ROLE_ADMIN,
+} from './lib/auth' // UPDATED: Using real API auth client
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('calculator')
   const [purchases, setPurchases] = useState([])
   const [selectedRecipe, setSelectedRecipe] = useState(null)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [ageConfirmed, setAgeConfirmed] = useState(
     typeof window !== 'undefined'
       ? localStorage.getItem('ageConfirmed') === 'true'
@@ -40,13 +50,26 @@ export default function App() {
     load()
   }, [])
 
+  // Load any existing logged-in user from API session (cookie)
+  useEffect(() => {
+    const checkSession = async () => {
+      const user = await getCurrentUser()
+      if (user) {
+        setCurrentUser(user)
+      }
+    }
+    checkSession()
+  }, [])
+
   const refreshPurchases = async () => {
     const data = await getAllPurchases()
     setPurchases(data)
   }
 
   const confirmAge = () => {
-    localStorage.setItem('ageConfirmed', 'true')
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ageConfirmed', 'true')
+    }
     setAgeConfirmed(true)
   }
 
@@ -54,6 +77,9 @@ export default function App() {
     setSelectedRecipe(recipe)
     setActiveTab('calculator')
   }
+
+  const isAdmin =
+    currentUser && currentUser.role === ROLE_ADMIN
 
   if (!ageConfirmed) {
     return (
@@ -87,7 +113,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100">
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        currentUser={currentUser}
+        onOpenSettings={() => setIsAuthOpen(true)}
+      />
 
       <main className="max-w-6xl mx-auto px-4 pt-24 pb-24">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 mb-10">
@@ -119,16 +150,43 @@ export default function App() {
             purchases={purchases}
             selectedRecipe={selectedRecipe}
             onSelectRecipe={handleUseRecipe}
+            canEdit={!!isAdmin}
           />
         )}
         {activeTab === 'purchases' && (
-          <Purchases onChanged={refreshPurchases} />
+          <Purchases
+            onChanged={refreshPurchases}
+            canEdit={!!isAdmin}
+          />
         )}
-        {activeTab === 'inventory' && <Inventory purchases={purchases} />}
+        {activeTab === 'inventory' && (
+          <Inventory purchases={purchases} />
+        )}
         {activeTab === 'recipes' && (
-          <Recipes onUseRecipe={handleUseRecipe} />
+          <Recipes
+            onUseRecipe={handleUseRecipe}
+            canEdit={!!isAdmin}
+          />
         )}
       </main>
+
+      {/* Auth / Role modal */}
+      {isAuthOpen && (
+        <AuthModal
+          open={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          currentUser={currentUser}
+          onLogin={user => {
+            setCurrentUser(user)
+            setIsAuthOpen(false)
+          }}
+          onLogout={async () => {
+            await logoutUser()
+            setCurrentUser(null)
+            setIsAuthOpen(false)
+          }}
+        />
+      )}
 
       {/* Fixed version badge – small, bottom-right */}
       <div className="fixed bottom-2 right-3 z-50 text-[10px] text-slate-500">

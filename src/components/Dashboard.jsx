@@ -1,10 +1,10 @@
 //===============================================================
 //Script Name: Dashboard.jsx
 //Script Location: src/components/Dashboard.jsx
-//Date: 11/26/2025
+//Date: 11/27/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.0.2
+//Version: 1.0.3
 //About: Live Round Calculator dashboard. Ties recipes, purchases,
 //       cost math, and inventory capacity into a single view.
 //===============================================================
@@ -41,6 +41,25 @@ export default function Dashboard({
     load()
   }, [])
 
+  // Sync selected recipe from outside (Recipes tab "Use in calculator")
+  useEffect(() => {
+    if (selectedRecipe) {
+      setSelectedRecipeId(String(selectedRecipe.id || ''))
+      if (selectedRecipe.caliber) {
+        setCaliber(selectedRecipe.caliber)
+      }
+      if (selectedRecipe.chargeGrains) {
+        setChargeGrains(String(selectedRecipe.chargeGrains))
+      }
+      if (selectedRecipe.brassReuse) {
+        setCaseReuse(Number(selectedRecipe.brassReuse) || 1)
+      }
+      if (selectedRecipe.lotSize) {
+        setLotSize(Number(selectedRecipe.lotSize) || 0)
+      }
+    }
+  }, [selectedRecipe])
+
   // Filter lots by type, non-depleted, and (optionally) caliber
   const powderLots = purchases.filter(
     p =>
@@ -70,51 +89,83 @@ export default function Dashboard({
       (!caliber || !p.caliber || p.caliber === caliber)
   )
 
+  // Current selected lot ids
   const [powderId, setPowderId] = useState('')
   const [bulletId, setBulletId] = useState('')
   const [primerId, setPrimerId] = useState('')
   const [caseId, setCaseId] = useState('')
 
-  const findById = (id, list) =>
-    list.find(p => String(p.id) === String(id))
+  const findById = (id, lots) =>
+    lots.find(l => String(l.id) === String(id)) || null
 
-  // When a recipe is selected externally (Recipes tab -> "Use in calculator"),
-  // sync local fields (caliber, charge, lot size, brass reuse).
+  // When caliber or recipes change, try to keep a matching recipe selected
   useEffect(() => {
-    if (!selectedRecipe) return
+    if (!caliber || recipes.length === 0) return
 
-    if (selectedRecipe.id != null) {
-      setSelectedRecipeId(String(selectedRecipe.id))
+    // If currently selected recipe doesn't match caliber, clear it
+    const current = recipes.find(r => String(r.id) === selectedRecipeId)
+    if (current && current.caliber && current.caliber !== caliber) {
+      setSelectedRecipeId('')
     }
-    if (selectedRecipe.caliber) {
-      setCaliber(selectedRecipe.caliber)
-    }
-    if (selectedRecipe.chargeGrains != null) {
-      setChargeGrains(String(selectedRecipe.chargeGrains))
-    }
-    if (selectedRecipe.lotSize) {
-      setLotSize(selectedRecipe.lotSize)
-    }
-    if (selectedRecipe.brassReuse) {
-      setCaseReuse(selectedRecipe.brassReuse)
-    }
-  }, [selectedRecipe])
 
-  // Smarter LOT auto-pick: re-evaluate when caliber / recipe / inventory changes
-  useEffect(() => {
-    const ensureSelection = (currentId, lots, setter) => {
-      // No lots for this type: clear selection
-      if (!lots.length) {
-        if (currentId !== '') {
-          setter('')
+    // Auto-select a recipe matching this caliber when none chosen
+    if (!selectedRecipeId) {
+      const firstForCaliber = recipes.find(r => r.caliber === caliber)
+      if (firstForCaliber) {
+        setSelectedRecipeId(String(firstForCaliber.id))
+        if (onSelectRecipe) {
+          onSelectRecipe(firstForCaliber)
         }
+      }
+    }
+  }, [caliber, recipes, selectedRecipeId, onSelectRecipe])
+
+  const activeRecipe =
+    selectedRecipe ||
+    recipes.find(r => String(r.id) === String(selectedRecipeId)) ||
+    null
+
+  const activeRecipeLabel = activeRecipe
+    ? `${activeRecipe.name}${
+        activeRecipe.caliber ? ` • ${activeRecipe.caliber}` : ''
+      }`
+    : ''
+
+  // Auto-select sensible defaults for each component when lots change
+  useEffect(() => {
+    if (!caliber && recipes.length > 0 && !selectedRecipeId) {
+      const firstWithCaliber = recipes.find(r => r.caliber)
+      if (firstWithCaliber) {
+        setCaliber(firstWithCaliber.caliber)
+      }
+    }
+
+    const ensureSelection = (currentId, lots, setter) => {
+      if (currentId && lots.some(l => String(l.id) === String(currentId))) {
         return
       }
-
-      // If the current selection is still valid, leave it alone
-      const exists = lots.some(p => String(p.id) === String(currentId))
-      if (exists) return
-
+      if (!lots.length) {
+        setter('')
+        return
+      }
+      // Prefer first lot that matches recipe's brand/name if we have a recipe
+      if (activeRecipe) {
+        const match = lots.find(
+          l =>
+            (activeRecipe.powderBrand &&
+              l.brand &&
+              l.brand.toLowerCase() ===
+                activeRecipe.powderBrand.toLowerCase()) ||
+            (activeRecipe.bulletBrand &&
+              l.brand &&
+              l.brand.toLowerCase() ===
+                activeRecipe.bulletBrand.toLowerCase())
+        )
+        if (match) {
+          setter(String(match.id))
+          return
+        }
+      }
       // Otherwise, fall back to the first available lot
       setter(String(lots[0].id))
     }
@@ -123,7 +174,7 @@ export default function Dashboard({
     ensureSelection(bulletId, bulletLots, setBulletId)
     ensureSelection(primerId, primerLots, setPrimerId)
     ensureSelection(caseId, caseLots, setCaseId)
-  }, [caliber, selectedRecipe, powderLots, bulletLots, primerLots, caseLots])
+  }, [caliber, activeRecipe, powderLots, bulletLots, primerLots, caseLots])
 
   // Cost breakdown
   const breakdown = useMemo(() => {
@@ -135,158 +186,192 @@ export default function Dashboard({
     const brass = findById(caseId, caseLots)
 
     const numericCharge = Number(chargeGrains) || 0
-    const numericReuse = Math.max(Number(caseReuse) || 1, 1)
-    const numericLot = Math.max(Number(lotSize) || 0, 0)
+    const numericLotSize = Number(lotSize) || 0
+    const numericReuse = Number(caseReuse) || 1
 
-    const per = p =>
-      p
-        ? calculatePerUnit(p.price, p.shipping, p.tax, p.qty)
-        : 0
+    const powderPerUnit =
+      powder &&
+      calculatePerUnit(
+        powder.price,
+        powder.shipping,
+        powder.tax,
+        powder.qty
+      )
 
-    const powderPerRound = (() => {
-      if (!powder) return 0
-      const perUnit = per(powder)
-      const unit = (powder.unit || '').toLowerCase()
+    const bulletPerUnit =
+      bullet &&
+      calculatePerUnit(
+        bullet.price,
+        bullet.shipping,
+        bullet.tax,
+        bullet.qty
+      )
 
-      if (!numericCharge) return 0
+    const primerPerUnit =
+      primer &&
+      calculatePerUnit(
+        primer.price,
+        primer.shipping,
+        primer.tax,
+        primer.qty
+      )
 
-      if (unit === 'gr' || unit === 'grain' || unit === 'grains') {
-        return perUnit * numericCharge
-      }
-      if (unit === 'lb' || unit === 'pound' || unit === 'pounds') {
-        return (perUnit / 7000) * numericCharge
-      }
-      if (unit === 'kg' || unit === 'kilogram' || unit === 'kilograms') {
-        return (perUnit / 15432) * numericCharge
-      }
-      return perUnit * numericCharge
-    })()
+    const brassPerUnit =
+      brass &&
+      calculatePerUnit(
+        brass.price,
+        brass.shipping,
+        brass.tax,
+        brass.qty
+      )
 
-    const bulletPerRound = per(bullet)
-    const primerPerRound = per(primer)
-    const brassPerRound = brass ? per(brass) / numericReuse : 0
+    const powderPerRound = powderPerUnit
+      ? // convert grains → cost: if unit is "gr" or similar, direct multiply
+        (() => {
+          const unit = (powder.unit || '').toLowerCase()
+          const perUnit = powderPerUnit
+          if (unit === 'gr' || unit === 'grain' || unit === 'grains') {
+            return perUnit * numericCharge
+          }
+          if (unit === 'lb' || unit === 'pound' || unit === 'pounds') {
+            return (perUnit / 7000) * numericCharge
+          }
+          if (unit === 'kg' || unit === 'kilogram' || unit === 'kilograms') {
+            return (perUnit / 15432) * numericCharge
+          }
+          return perUnit * numericCharge
+        })()
+      : 0
+
+    const bulletPerRound = bulletPerUnit || 0
+    const primerPerRound = primerPerUnit || 0
+    const brassPerRound =
+      brassPerUnit && numericReuse > 0
+        ? brassPerUnit / numericReuse
+        : brassPerUnit || 0
 
     const totalPerRound =
-      powderPerRound +
-      bulletPerRound +
-      primerPerRound +
-      brassPerRound
+      powderPerRound + bulletPerRound + primerPerRound + brassPerRound
 
-    const mk = perRound => ({
-      perRound,
-      per50: perRound * 50,
-      per100: perRound * 100,
-      per1000: perRound * 1000,
-      lot: perRound * numericLot,
-    })
+    const per50 = totalPerRound * 50
+    const per100 = totalPerRound * 100
+    const per1000 = totalPerRound * 1000
+    const lotCost = totalPerRound * (numericLotSize || 0)
 
     return {
-      powder: mk(powderPerRound),
-      bullet: mk(bulletPerRound),
-      primer: mk(primerPerRound),
-      brass: mk(brassPerRound),
-      total: mk(totalPerRound),
+      powder: {
+        perRound: powderPerRound,
+      },
+      bullet: {
+        perRound: bulletPerRound,
+      },
+      primer: {
+        perRound: primerPerRound,
+      },
+      brass: {
+        perRound: brassPerRound,
+      },
+      total: {
+        perRound: totalPerRound,
+        per50,
+        per100,
+        per1000,
+        lot: lotCost,
+      },
     }
   }, [
-    purchases,
-    powderLots,
-    bulletLots,
-    primerLots,
-    caseLots,
+    purchases.length,
     powderId,
     bulletId,
     primerId,
     caseId,
+    powderLots,
+    bulletLots,
+    primerLots,
+    caseLots,
     chargeGrains,
-    caseReuse,
     lotSize,
+    caseReuse,
   ])
 
-  // Capacity (how many rounds possible from all inventory with this recipe)
+  // Inventory capacity for this recipe
   const capacity = useMemo(() => {
-    if (!selectedRecipe) return null
+    if (!activeRecipe || !purchases.length) return null
 
     const numericCharge = Number(chargeGrains) || 0
     if (!numericCharge) {
       return { needsCharge: true }
     }
 
-    const numericReuse = Math.max(Number(caseReuse) || 1, 1)
+    const powder = findById(powderId, powderLots)
+    const bullet = findById(bulletId, bulletLots)
+    const primer = findById(primerId, primerLots)
+    const brass = findById(caseId, caseLots)
 
-    const totalPowderGrains = powderLots.reduce((sum, p) => {
-      const qty = Number(p.qty) || 0
-      const unit = (p.unit || '').toLowerCase()
+    const powderPerUnit =
+      powder &&
+      calculatePerUnit(
+        powder.price,
+        powder.shipping,
+        powder.tax,
+        powder.qty
+      )
 
+    const powderRounds = (() => {
+      if (!powder || !powderPerUnit) return 0
+      const unit = (powder.unit || '').toLowerCase()
+      const qty = Number(powder.qty) || 0
+      if (!qty) return 0
+
+      if (unit === 'gr' || unit === 'grain' || unit === 'grains') {
+        return qty / numericCharge
+      }
       if (unit === 'lb' || unit === 'pound' || unit === 'pounds') {
-        return sum + qty * 7000
+        return (qty * 7000) / numericCharge
       }
       if (unit === 'kg' || unit === 'kilogram' || unit === 'kilograms') {
-        return sum + qty * 15432
+        return (qty * 15432) / numericCharge
       }
-      if (unit === 'gr' || unit === 'grain' || unit === 'grains') {
-        return sum + qty
-      }
-      return sum
-    }, 0)
+      // Fallback – treat as "per unit" unknown, assume qty is grains
+      return qty / numericCharge
+    })()
 
-    const totalBullets = bulletLots.reduce(
-      (sum, p) => sum + (Number(p.qty) || 0),
-      0
-    )
-    const totalPrimers = primerLots.reduce(
-      (sum, p) => sum + (Number(p.qty) || 0),
-      0
-    )
-    const totalCases = caseLots.reduce(
-      (sum, p) => sum + (Number(p.qty) || 0),
-      0
-    )
+    const bulletRounds = bullet ? Number(bullet.qty) || 0 : 0
+    const primerRounds = primer ? Number(primer.qty) || 0 : 0
+    const brassQty = brass ? Number(brass.qty) || 0 : 0
+    const numericReuse = Number(caseReuse) || 1
+    const brassRounds = brassQty * numericReuse
 
-    const powderRounds =
-      totalPowderGrains > 0 && numericCharge > 0
-        ? Math.floor(totalPowderGrains / numericCharge)
-        : 0
-    const bulletRounds = totalBullets
-    const primerRounds = totalPrimers
-    const brassRounds = totalCases * numericReuse
-
-    const components = [
-      { key: 'powder', label: 'Powder', rounds: powderRounds },
-      { key: 'bullets', label: 'Bullets', rounds: bulletRounds },
-      { key: 'primers', label: 'Primers', rounds: primerRounds },
-      { key: 'brass', label: 'Brass (with reuse)', rounds: brassRounds },
+    const candidates = [
+      { key: 'powderRounds', value: Math.floor(powderRounds), label: 'powder on hand' },
+      { key: 'bulletRounds', value: bulletRounds, label: 'bullet count' },
+      { key: 'primerRounds', value: primerRounds, label: 'primer count' },
+      { key: 'brassRounds', value: brassRounds, label: 'brass (with reuse)' },
     ]
 
-    let roundsPossible = 0
-    let limiting = null
+    const nonZero = candidates.filter(c => c.value > 0)
+    if (!nonZero.length) return null
 
-    for (const c of components) {
-      if (c.rounds === 0) {
-        if (!limiting || limiting.rounds > 0) {
-          limiting = c
-        }
-        continue
-      }
-      if (roundsPossible === 0) {
-        roundsPossible = c.rounds
-        limiting = c
-      } else if (c.rounds < roundsPossible) {
-        roundsPossible = c.rounds
-        limiting = c
-      }
-    }
+    const limiting = nonZero.reduce((min, c) =>
+      c.value < min.value ? c : min
+    )
 
     return {
-      needsCharge: false,
-      roundsPossible,
-      powderRounds,
+      powderRounds: Math.floor(powderRounds),
       bulletRounds,
       primerRounds,
       brassRounds,
       limiting,
+      roundsPossible: limiting.value,
+      needsCharge: false,
     }
   }, [
-    selectedRecipe,
+    activeRecipe,
+    purchases.length,
+    powderId,
+    bulletId,
+    primerId,
+    caseId,
     powderLots,
     bulletLots,
     primerLots,
@@ -297,10 +382,10 @@ export default function Dashboard({
 
   // Header line: always label the value, never render a bare `0` on its own
   const headerRounds =
-    selectedRecipe && capacity && !capacity.needsCharge
-      ? (typeof capacity.roundsPossible === 'number'
-          ? capacity.roundsPossible
-          : 0)
+    activeRecipe && capacity && !capacity.needsCharge
+      ? typeof capacity.roundsPossible === 'number'
+        ? capacity.roundsPossible
+        : 0
       : null
 
   function handleSaveScenario() {
@@ -311,8 +396,8 @@ export default function Dashboard({
     const id = `${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 7)}`
-    const name = selectedRecipe
-      ? selectedRecipe.name
+    const name = activeRecipe
+      ? activeRecipe.name
       : `Manual - ${caliber || 'Unknown'}`
 
     const scenario = {
@@ -338,8 +423,7 @@ export default function Dashboard({
   }
 
   async function handleSaveScenarioAsRecipe(scenario) {
-    if (!scenario) return
-
+    if (!scenario || !scenario.cost || !scenario.cost.perRound) return
     setSavingRecipeId(scenario.id)
     try {
       const recipeName =
@@ -371,9 +455,9 @@ export default function Dashboard({
   const sectionLabelClass =
     'text-xs uppercase tracking-[0.25em] text-slate-500 mb-2'
 
-  // smaller text on mobile so selects/inputs fit better
+  // Smaller input text and padding for compact look
   const inputClass =
-    'w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-[6px] text-[11px] md:text-sm focus:outline-none focus:ring-2 focus:ring-red-500/60'
+    'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60'
 
   const renderOptionLabel = p =>
     `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'}${
@@ -396,22 +480,12 @@ export default function Dashboard({
     return r.caliber === caliber
   })
 
-  const activeRecipeLabel = selectedRecipe
-    ? `${selectedRecipe.name}${
-        selectedRecipe.caliber ? ` • ${selectedRecipe.caliber}` : ''
-      }`
-    : null
-
   const hasBallistics =
-    !!selectedRecipe &&
-    (selectedRecipe.bulletWeightGr ||
-      selectedRecipe.muzzleVelocityFps ||
-      (selectedRecipe.powerFactor &&
-        selectedRecipe.powerFactor > 0) ||
-      (selectedRecipe.zeroDistanceYards &&
-        selectedRecipe.zeroDistanceYards > 0) ||
-      (selectedRecipe.groupSizeInches &&
-        selectedRecipe.groupSizeInches > 0))
+    !!activeRecipe &&
+    (activeRecipe.bulletWeightGr ||
+      activeRecipe.muzzleVelocityFps ||
+      activeRecipe.zeroDistanceYards ||
+      activeRecipe.groupSizeInches)
 
   function handleRecipeSelect(e) {
     const id = e.target.value
@@ -422,139 +496,111 @@ export default function Dashboard({
     }
   }
 
-  if (!purchases.length) {
-    return (
-      <div className="glass rounded-2xl p-10 text-center mt-8">
-        <h2 className="text-3xl font-bold mb-4">Live Round Calculator</h2>
-        <p className="text-slate-400">
-          Add your first powder, bullets, primers, and brass on the
-          <span className="text-red-400 font-semibold"> Purchases </span>
-          tab and the calculator will light up automatically.
-        </p>
-      </div>
-    )
-  }
+  // Common button styles for pill action buttons
+  const saveConfigButtonClass = 'px-2 py-[2px] rounded-full bg-black/60 border border-emerald-400/70 text-emerald-300 hover:bg-emerald-900/40 transition text-[11px] cursor-pointer'
+  const removeButtonClass = 'px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition text-[11px] cursor-pointer'
+  const saveRecipeButtonClass = 'px-2 py-[2px] rounded-full bg-black/60 border border-emerald-400/70 text-emerald-300 hover:bg-emerald-900/40 transition text-[11px] cursor-pointer disabled:opacity-50'
+
 
   return (
     <div className="space-y-6">
-      {/* HEADER – tightened spacing */}
+      {/* HEADER – TIGHTEST SPACING APPLIED: space-y-0 leading-none */}
       <h2 className="text-3xl font-bold">
         <span className="block glow-red mb-1">Live Round Calculator</span>
 
-        {activeRecipeLabel && (
-          <span className="block text-xs text-slate-400">
-            Recipe:{' '}
-            <span className="font-semibold text-slate-100">
-              {activeRecipeLabel}
+        {/* FIX: Grouping for separate lines with tightest vertical spacing */}
+        <div className="space-y-0 leading-none"> 
+          {activeRecipeLabel && (
+            <span className="block text-xs text-slate-400"> 
+              Recipe:{' '}
+              <span className="font-semibold text-slate-100">
+                {activeRecipeLabel}
+              </span>
             </span>
-          </span>
-        )}
+          )}
 
-        {headerRounds !== null && (
-          <span className="block text-xs text-slate-400">
-            Max rounds with selected recipe:{' '}
-            <span className="font-semibold text-slate-100">
-              {headerRounds.toLocaleString()}
+          {headerRounds !== null && (
+            <span className="block text-xs text-slate-400"> 
+              Max rounds with selected recipe:{' '}
+              <span className="font-semibold text-slate-100">
+                {headerRounds.toLocaleString()}
+              </span>
             </span>
-          </span>
-        )}
+          )}
 
-        {hasBallistics && (
-          <span className="block text-[11px] text-slate-500">
-            Ballistics:
-            {selectedRecipe.bulletWeightGr && (
-              <> {selectedRecipe.bulletWeightGr}gr</>
-            )}
-            {selectedRecipe.muzzleVelocityFps && (
-              <> @ {selectedRecipe.muzzleVelocityFps} fps</>
-            )}
-            {selectedRecipe.powerFactor &&
-              selectedRecipe.powerFactor > 0 && (
-                <>
-                  {' '}
-                  • PF{' '}
-                  <span className="font-semibold text-slate-200">
-                    {selectedRecipe.powerFactor.toFixed
-                      ? selectedRecipe.powerFactor.toFixed(1)
-                      : Number(
-                          selectedRecipe.powerFactor
-                        ).toFixed(1)}
-                  </span>
-                </>
-              )}
-            {selectedRecipe.zeroDistanceYards &&
-              selectedRecipe.zeroDistanceYards > 0 && (
-                <> • Zero {selectedRecipe.zeroDistanceYards} yd</>
-              )}
-            {selectedRecipe.groupSizeInches &&
-              selectedRecipe.groupSizeInches > 0 && (
-                <> • Group {selectedRecipe.groupSizeInches}"</>
-              )}
-          </span>
-        )}
+          {hasBallistics && (
+            <span className="block text-[11px] text-slate-500"> 
+              Ballistics:{' '}
+              <span className="text-slate-300">
+                {activeRecipe.bulletWeightGr
+                  ? `${activeRecipe.bulletWeightGr} gr`
+                  : '—'}{' '}
+                @{' '}
+                {activeRecipe.muzzleVelocityFps
+                  ? `${activeRecipe.muzzleVelocityFps} fps`
+                  : '—'}
+                , zero{' '}
+                {activeRecipe.zeroDistanceYards
+                  ? `${activeRecipe.zeroDistanceYards} yds`
+                  : '—'}
+                {activeRecipe.groupSizeInches
+                  ? ` • ${activeRecipe.groupSizeInches}" group`
+                  : ''}
+              </span>
+            </span>
+          )}
+        </div>
       </h2>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        {/* Left: inputs */}
+      <div className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-6 items-start">
+        {/* LEFT SIDE: inputs & recipe link */}
         <div className="glass rounded-2xl p-6 space-y-6">
-          <div>
-            <p className={sectionLabelClass}>LOAD SETUP</p>
-            <p className="text-slate-300 text-sm">
-              Choose caliber, recipe, component lots, and your charge weight to
-              see exact cost per round.
-            </p>
-          </div>
-
+          {/* Group 1: Caliber and Recipe */}
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Caliber */}
+            {/* 1. Caliber */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">
                 Caliber
               </label>
-              <input
-                list="caliberOptions"
-                className={inputClass}
-                placeholder="9mm, 9mm Subsonic, .308, 6.5 Creedmoor…"
-                value={caliber}
-                onChange={e => setCaliber(e.target.value)}
-              />
-              <datalist id="caliberOptions">
-                {calibers.map(c => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
-            </div>
-
-            {/* Charge */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">
-                Charge weight (grains)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className={inputClass}
-                value={chargeGrains}
-                onChange={e => setChargeGrains(e.target.value)}
-              />
-              <p className="text-[11px] text-slate-500 mt-1">
-                auto fills from recipe, or manually editable here
+              {calibers.length === 0 ? (
+                <input
+                  type="text"
+                  className={inputClass}
+                  value={caliber}
+                  onChange={e => setCaliber(e.target.value)}
+                  placeholder="e.g. 9mm, .223 Rem"
+                />
+              ) : (
+                <select
+                  className={inputClass}
+                  value={caliber}
+                  onChange={e => setCaliber(e.target.value)}
+                >
+                  <option value="">All calibers</option>
+                  {calibers.map(c => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="mt-1 text-[11px] text-slate-500">
+                Filters component lots and recipes by caliber.
               </p>
             </div>
 
-            {/* Recipe selector – always present */}
-            <div className="md:col-span-2">
+            {/* 2. Recipe selector */}
+            <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">
                 Recipe (optional)
               </label>
               {recipes.length === 0 ? (
-                <div className="text-[11px] text-slate-500 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-lg px-3 py-2">
+                <div className="text-[11px] text-slate-500 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-xl px-3 py-1.5">
                   No recipes found yet. Create or edit them on the{' '}
                   <span className="font-semibold text-red-400">
                     Recipes
                   </span>{' '}
-                  tab, and they’ll show up here for quick selection.
+                  tab.
                 </div>
               ) : (
                 <select
@@ -573,9 +619,54 @@ export default function Dashboard({
                   ))}
                 </select>
               )}
+              <p className="mt-1 text-[11px] text-slate-500">
+                A recipe will auto-fill other required fields.
+              </p>
+            </div>
+          </div>
+
+          {/* Group 2: Charge Weight and Lot Size */}
+          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-800/80">
+            {/* 3. Charge weight */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">
+                Charge weight (gr)
+              </label>
+              <input
+                type="number"
+                className={inputClass}
+                value={chargeGrains}
+                onChange={e => setChargeGrains(e.target.value)}
+                placeholder="e.g. 4.3"
+                min="0"
+                step="0.01"
+              />
+              <p className="mt-1 text-[11px] text-slate-500">
+                Used with selected powder lot to compute cost per round.
+              </p>
             </div>
 
-            {/* Powder lot */}
+            {/* 4. Lot size */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">
+                Lot size (rounds)
+              </label>
+              <input
+                type="number"
+                className={inputClass}
+                value={lotSize}
+                onChange={e => setLotSize(e.target.value)}
+                min="0"
+              />
+              <p className="mt-1 text-[11px] text-slate-500">
+                Used to compute total cost for a batch of rounds.
+              </p>
+            </div>
+          </div>
+
+          {/* Group 3: Component Lots (Powder, Bullet, Primer, Brass Lot) */}
+          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-800/80">
+            {/* 5. Powder lot */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">
                 Powder lot
@@ -592,9 +683,12 @@ export default function Dashboard({
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Cost adjusts automatically based on charge weight.
+              </p>
             </div>
 
-            {/* Bullet lot */}
+            {/* 6. Bullet lot */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">
                 Bullet lot
@@ -604,16 +698,19 @@ export default function Dashboard({
                 value={bulletId}
                 onChange={e => setBulletId(e.target.value)}
               >
-                <option value="">Select bullets…</option>
+                <option value="">Select bullet…</option>
                 {bulletLots.map(p => (
                   <option key={p.id} value={p.id}>
                     {renderOptionLabel(p)}
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Bullet cost per round is based on your purchase data.
+              </p>
             </div>
 
-            {/* Primer lot */}
+            {/* 7. Primer lot */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">
                 Primer lot
@@ -623,19 +720,22 @@ export default function Dashboard({
                 value={primerId}
                 onChange={e => setPrimerId(e.target.value)}
               >
-                <option value="">Select primers…</option>
+                <option value="">Select primer…</option>
                 {primerLots.map(p => (
                   <option key={p.id} value={p.id}>
                     {renderOptionLabel(p)}
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Primer cost per round is fully captured here.
+              </p>
             </div>
 
-            {/* Case lot */}
+            {/* 8. Brass lot */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">
-                Case lot
+                Brass lot
               </label>
               <select
                 className={inputClass}
@@ -649,123 +749,50 @@ export default function Dashboard({
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Select brass lot and set the reuse factor below.
+              </p>
             </div>
+          </div>
 
-            {/* Brass reuse */}
-            <div>
+          {/* Group 4: Brass Reuse Factor (Constrained width) */}
+          <div className="pt-4 border-t border-slate-800/80">
+            {/* Constrained width for the input field */}
+            <div className="max-w-xs">
               <label className="block text-xs font-semibold text-slate-400 mb-1">
-                Brass reuse (reloads per case)
+                Brass reuse factor
               </label>
               <input
                 type="number"
-                min="1"
-                step="1"
                 className={inputClass}
                 value={caseReuse}
                 onChange={e => setCaseReuse(e.target.value)}
-              />
-            </div>
-
-            {/* Lot size */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">
-                Lot size (rounds)
-              </label>
-              <input
-                type="number"
                 min="1"
-                step="1"
-                className={inputClass}
-                value={lotSize}
-                onChange={e => setLotSize(e.target.value)}
               />
             </div>
-          </div>
-        </div>
-
-        {/* Right: breakdown + capacity + scenarios */}
-        <div className="glass rounded-2xl p-6 space-y-6">
-          <div>
-            <p className={sectionLabelClass}>COST PER ROUND</p>
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-sm text-slate-400">Per round</p>
-                <p className="text-4xl font-black text-emerald-400">
-                  {formatCurrency(breakdown?.total.perRound || 0)}
-                </p>
-              </div>
-              <div className="text-right text-xs text-slate-400 space-y-1">
-                <p>
-                  Per 50:{' '}
-                  <span className="font-semibold text-slate-200">
-                    {formatCurrency(breakdown?.total.per50 || 0)}
-                  </span>
-                </p>
-                <p>
-                  Per 100:{' '}
-                  <span className="font-semibold text-slate-200">
-                    {formatCurrency(breakdown?.total.per100 || 0)}
-                  </span>
-                </p>
-                <p>
-                  Per 1,000:{' '}
-                  <span className="font-semibold text-slate-200">
-                    {formatCurrency(breakdown?.total.per1000 || 0)}
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-red-500/20 pt-4 space-y-3 text-sm">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-              COMPONENT BREAKDOWN (PER ROUND)
+            <p className="mt-1 text-[11px] text-slate-500">
+              How many times you expect to reload this brass on average.
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              <BreakdownRow
-                label="Powder"
-                value={breakdown?.powder.perRound}
-              />
-              <BreakdownRow
-                label="Bullet"
-                value={breakdown?.bullet.perRound}
-              />
-              <BreakdownRow
-                label="Primer"
-                value={breakdown?.primer.perRound}
-              />
-              <BreakdownRow
-                label="Brass (amortized)"
-                value={breakdown?.brass.perRound}
-              />
-            </div>
           </div>
 
-          <div className="border-t border-red-500/20 pt-4">
-            <p className={sectionLabelClass}>LOT COST</p>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-lg text-slate-300">
-                Lot of{' '}
-                <span className="font-semibold text-slate-100">
-                  {lotSize}
-                </span>{' '}
-                rounds:{' '}
-                <span className="font-bold text-emerald-400">
-                  {formatCurrency(breakdown?.total.lot || 0)}
-                </span>
-              </p>
-              <button
-                type="button"
+          {/* Scenario save */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 mt-2">
+            <p className="text-[11px] text-slate-500 min-w-0 mr-2">
+              Save this setup as a configuration to compare later, or push
+              it into Recipes when you’re happy with it.
+            </p>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span
                 onClick={handleSaveScenario}
-                className="text-[10px] md:text-xs px-2 py-[1px] md:py-[3px] rounded-full border border-emerald-500/60 text-emerald-300 hover:bg-emerald-900/40 transition whitespace-nowrap"
+                className={saveConfigButtonClass}
               >
                 + Save config
-              </button>
+              </span>
             </div>
           </div>
 
-          {/* INVENTORY CAPACITY – ONLY BLOCK CHANGED */}
-          {selectedRecipe && (
+          {/* INVENTORY CAPACITY */}
+          {activeRecipe && (
             <div className="border-t border-red-500/20 pt-4 space-y-2">
               <p className={sectionLabelClass}>
                 INVENTORY CAPACITY (THIS RECIPE)
@@ -781,7 +808,8 @@ export default function Dashboard({
                   capacity.bulletRounds ||
                   capacity.primerRounds ||
                   capacity.brassRounds) ? (
-                <div className="flex items-start justify-between gap-3">
+                // FIX: Removed the misplaced JSX comment that caused the syntax error.
+                <div className="grid grid-cols-2 gap-4"> 
                   <div className="text-[11px] text-slate-400 space-y-1">
                     <p className="whitespace-nowrap">
                       Powder capacity:{' '}
@@ -814,27 +842,23 @@ export default function Dashboard({
                   </div>
                   {capacity.limiting && (
                     <div className="text-[11px] text-slate-500 text-right">
-                      <p>
-                        Max rounds value shown in the header (when present) is
-                        limited by:
+                      <p className='text-slate-500 whitespace-nowrap'>
+                        Max rounds value shown in the header is limited by:
                       </p>
-                      <p className="font-semibold text-slate-100">
+                      <p className="font-semibold text-slate-100 text-sm">
                         {capacity.limiting.label}
                       </p>
-                      {capacity.limiting.rounds > 0 && (
-                        <p>
-                          ({capacity.limiting.rounds.toLocaleString()}{' '}
-                          rounds worth)
-                        </p>
-                      )}
+                      <p className="text-slate-400 mt-1">
+                        {capacity.limiting.value.toLocaleString()} rounds
+                        available.
+                      </p>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-[11px] text-slate-400">
-                  With your current {caliber || 'selected'} inventory, this
-                  recipe cannot produce any rounds yet. You may be missing one
-                  or more components, or component quantities are zero.
+                <p className="text-xs text-slate-400">
+                  No sufficient component data to compute capacity for this
+                  recipe yet.
                 </p>
               )}
             </div>
@@ -866,47 +890,103 @@ export default function Dashboard({
                       </div>
                       <div className="text-slate-400 space-x-2">
                         <span>
-                          /rd{' '}
-                          <span className="font-semibold text-slate-100">
-                            {formatCurrency(s.cost.perRound)}
-                          </span>
+                          {formatCurrency(s.cost.perRound)} /rnd •{' '}
+                          {formatCurrency(s.cost.per100)} /100 •{' '}
+                          {formatCurrency(s.cost.per1000)} /1000
                         </span>
-                        <span>
-                          /100{' '}
-                          <span className="font-semibold text-slate-100">
-                            {formatCurrency(s.cost.per100)}
+                        {s.cost.lot > 0 && (
+                          <span>
+                            • Lot:{' '}
+                            {formatCurrency(s.cost.lot)}
                           </span>
-                        </span>
-                        <span>
-                          /1000{' '}
-                          <span className="font-semibold text-slate-100">
-                            {formatCurrency(s.cost.per1000)}
-                          </span>
-                        </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1 ml-3 text-[10px]">
-                      <button
-                        type="button"
+                    <div className="flex flex-col items-end gap-1">
+                      <span
                         onClick={() => handleDeleteScenario(s.id)}
-                        className="px-2 py-1 rounded-full border border-red-700/70 text-red-300 hover:bg-red-900/40 transition"
+                        className={removeButtonClass}
                       >
                         Remove
-                      </button>
-                      <button
-                        type="button"
+                      </span>
+                      <span
                         onClick={() => handleSaveScenarioAsRecipe(s)}
                         disabled={savingRecipeId === s.id}
-                        className="px-2 py-1 rounded-full border border-emerald-500/70 text-emerald-300 hover:bg-emerald-900/40 transition disabled:opacity-60"
+                        className={saveRecipeButtonClass}
                       >
                         {savingRecipeId === s.id ? 'Saving…' : 'Save recipe'}
-                      </button>
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
+        </div>
+
+        {/* Right: breakdown + capacity + scenarios */}
+        <div className="glass rounded-2xl p-6 space-y-6">
+          <div>
+            <p className={sectionLabelClass}>COST PER ROUND</p>
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-sm text-slate-400">Per round</p>
+                <p className="text-4xl font-black text-emerald-400">
+                  {formatCurrency(breakdown?.total.perRound || 0)}
+                </p>
+              </div>
+              <div className="text-right text-xs text-slate-400 space-y-1">
+                <p>
+                  Per 50:{' '}
+                  <span className="font-semibold text-slate-200">
+                    {formatCurrency(breakdown?.total.per50 || 0)}
+                  </span>
+                </p>
+                <p>
+                  Per 100:{' '}
+                  <span className="font-semibold text-slate-200">
+                    {formatCurrency(breakdown?.total.per100 || 0)}
+                  </span>
+                </p>
+                <p>
+                  Per 1,000:{' '}
+                  <span className="font-semibold text-slate-200">
+                    {formatCurrency(breakdown?.total.per1000 || 0)}
+                  </span>
+                </p>
+                <p>
+                  Lot total:{' '}
+                  <span className="font-semibold text-slate-200">
+                    {formatCurrency(breakdown?.total.lot || 0)}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className={sectionLabelClass}>
+              COMPONENT BREAKDOWN (PER ROUND)
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <BreakdownRow
+                label="Powder"
+                value={breakdown?.powder.perRound}
+              />
+              <BreakdownRow
+                label="Bullet"
+                value={breakdown?.bullet.perRound}
+              />
+              <BreakdownRow
+                label="Primer"
+                value={breakdown?.primer.perRound}
+              />
+              <BreakdownRow
+                label="Brass"
+                value={breakdown?.brass.perRound}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

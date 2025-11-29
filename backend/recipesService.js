@@ -1,18 +1,25 @@
 //===============================================================
 //Script Name: Reload Tracker Recipes Service
 //Script Location: backend/recipesService.js
-//Date: 11/26/2025
+//Date: 11/28/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 0.1.1
-//About: Business logic for managing load recipes (round configs)
-//       in the Reload Tracker backend. Provides CRUD operations
-//       on the "recipes" table and converts between DB rows and
-//       API JSON shapes.
+//Version: 1.1.0
+//About: Business logic for managing load recipes.
+//       Updated to include User Tracking and Admin Role enforcement.
 //===============================================================
 
 import { query } from './dbClient.js';
 import { ValidationError, NotFoundError } from './errors.js';
+
+/**
+ * Helper: Check if user is admin. Throws if not.
+ */
+function assertAdmin(user) {
+  if (!user || user.role !== 'admin' || user.isActive === false) {
+    throw new ValidationError('You must be a Reloader (admin) to perform this action.');
+  }
+}
 
 function mapRecipeRowToJson(row) {
   if (!row) return null;
@@ -41,6 +48,13 @@ function mapRecipeRowToJson(row) {
       row.group_size_inches !== null ? Number(row.group_size_inches) : null,
     rangeNotes: row.range_notes,
     status: row.status,
+    
+    // User tracking fields
+    createdByUserId: row.created_by_user_id || null,
+    createdByUsername: row.created_by_username || null,
+    updatedByUserId: row.updated_by_user_id || null,
+    updatedByUsername: row.updated_by_username || null,
+
     createdAt: row.created_at ? row.created_at.toISOString() : null,
     updatedAt: row.updated_at ? row.updated_at.toISOString() : null,
   };
@@ -79,13 +93,13 @@ export async function listRecipes(filters = {}) {
   let idx = 1;
 
   if (filters.status) {
-    whereParts.push(`status = $${idx}`);
+    whereParts.push(`r.status = $${idx}`);
     values.push(filters.status);
     idx += 1;
   }
 
   if (filters.caliber) {
-    whereParts.push(`caliber = $${idx}`);
+    whereParts.push(`r.caliber = $${idx}`);
     values.push(filters.caliber);
     idx += 1;
   }
@@ -93,35 +107,43 @@ export async function listRecipes(filters = {}) {
   const whereClause =
     whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : '';
 
+  // UPDATED SQL: Joins with users table to get creator/updater names
   const sql = `
     SELECT
-      id,
-      name,
-      caliber,
-      profile_type,
-      charge_grains,
-      brass_reuse,
-      lot_size,
-      notes,
-      bullet_weight_gr,
-      muzzle_velocity_fps,
-      power_factor,
-      zero_distance_yards,
-      group_size_inches,
-      range_notes,
-      status,
-      created_at,
-      updated_at
-    FROM recipes
+      r.id,
+      r.name,
+      r.caliber,
+      r.profile_type,
+      r.charge_grains,
+      r.brass_reuse,
+      r.lot_size,
+      r.notes,
+      r.bullet_weight_gr,
+      r.muzzle_velocity_fps,
+      r.power_factor,
+      r.zero_distance_yards,
+      r.group_size_inches,
+      r.range_notes,
+      r.status,
+      r.created_at,
+      r.updated_at,
+      r.created_by_user_id,
+      c.username AS created_by_username,
+      r.updated_by_user_id,
+      u.username AS updated_by_username
+    FROM recipes r
+    LEFT JOIN users c ON c.id = r.created_by_user_id
+    LEFT JOIN users u ON u.id = r.updated_by_user_id
     ${whereClause}
-    ORDER BY caliber ASC, name ASC
+    ORDER BY r.caliber ASC, r.name ASC
   `;
 
   const result = await query(sql, values);
   return result.rows.map(mapRecipeRowToJson);
 }
 
-export async function createRecipe(payload) {
+export async function createRecipe(payload, currentUser) {
+  assertAdmin(currentUser); // Security Check
   validateRecipePayload(payload, { partial: false });
 
   const name = payload.name?.trim?.() || '';
@@ -150,6 +172,9 @@ export async function createRecipe(payload) {
   const notes = payload.notes?.trim?.() || null;
   const rangeNotes = payload.rangeNotes?.trim?.() || null;
   const status = payload.status || 'active';
+  
+  // Track who created it
+  const createdByUserId = currentUser.id;
 
   const sql = `
     INSERT INTO recipes (
@@ -166,30 +191,14 @@ export async function createRecipe(payload) {
       zero_distance_yards,
       group_size_inches,
       range_notes,
-      status
+      status,
+      created_by_user_id
     ) VALUES (
       $1, $2, $3, $4, $5,
       $6, $7, $8, $9, $10,
-      $11, $12, $13, $14
+      $11, $12, $13, $14, $15
     )
-    RETURNING
-      id,
-      name,
-      caliber,
-      profile_type,
-      charge_grains,
-      brass_reuse,
-      lot_size,
-      notes,
-      bullet_weight_gr,
-      muzzle_velocity_fps,
-      power_factor,
-      zero_distance_yards,
-      group_size_inches,
-      range_notes,
-      status,
-      created_at,
-      updated_at
+    RETURNING *
   `;
 
   const params = [
@@ -207,13 +216,22 @@ export async function createRecipe(payload) {
     groupSizeInches,
     rangeNotes,
     status,
+    createdByUserId,
   ];
 
   const result = await query(sql, params);
-  return mapRecipeRowToJson(result.rows[0]);
+  
+  // Return mapped object immediately (username will be null until re-fetch, which is fine)
+  const row = result.rows[0];
+  // Manually attach username for instant UI feedback if desired
+  row.created_by_username = currentUser.username;
+  
+  return mapRecipeRowToJson(row);
 }
 
-export async function updateRecipe(id, updates) {
+export async function updateRecipe(id, updates, currentUser) {
+  assertAdmin(currentUser); // Security Check
+  
   if (!id) {
     throw new ValidationError('id is required for update.');
   }
@@ -273,43 +291,34 @@ export async function updateRecipe(id, updates) {
     throw new ValidationError('No valid fields provided for update.');
   }
 
+  // Always update the 'updated_by' fields
+  setParts.push(`updated_at = NOW()`);
+  setParts.push(`updated_by_user_id = $${idx}`);
+  values.push(currentUser.id);
+  idx += 1;
+
+  values.push(Number(id)); // ID is the last param
+
   const sql = `
     UPDATE recipes
-    SET
-      ${setParts.join(', ')},
-      updated_at = NOW()
+    SET ${setParts.join(', ')}
     WHERE id = $${idx}
-    RETURNING
-      id,
-      name,
-      caliber,
-      profile_type,
-      charge_grains,
-      brass_reuse,
-      lot_size,
-      notes,
-      bullet_weight_gr,
-      muzzle_velocity_fps,
-      power_factor,
-      zero_distance_yards,
-      group_size_inches,
-      range_notes,
-      status,
-      created_at,
-      updated_at
+    RETURNING *
   `;
-
-  values.push(Number(id));
 
   const result = await query(sql, values);
   if (result.rows.length === 0) {
     throw new NotFoundError(`Recipe with id ${id} not found.`);
   }
 
-  return mapRecipeRowToJson(result.rows[0]);
+  const row = result.rows[0];
+  row.updated_by_username = currentUser.username; // Instant UI feedback
+  return mapRecipeRowToJson(row);
 }
 
-export async function deleteRecipe(id) {
+export async function deleteRecipe(id, currentUser) {
+  assertAdmin(currentUser); // Security Check
+  
   if (!id) {
     throw new ValidationError('id is required for delete.');
   }
