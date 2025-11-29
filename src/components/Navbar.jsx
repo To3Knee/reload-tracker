@@ -4,10 +4,10 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.3.0
+//Version: 2.4.0
 //About: Top-right navigation bar for Reload Tracker. Provides
 //       tab switching and Admin tools.
-//       Updated: Responsive layout fixes for mobile (scrollable).
+//       Updated: Added "Range" tab.
 //===============================================================
 
 import {
@@ -19,6 +19,7 @@ import {
   ClipboardList,
   Activity,
   Bot,
+  Target, // NEW ICON
 } from 'lucide-react'
 
 const MENU_ITEMS = [
@@ -27,6 +28,7 @@ const MENU_ITEMS = [
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'recipes', label: 'Recipes', icon: Beaker },
   { id: 'batches', label: 'Batches', icon: ClipboardList },
+  { id: 'range', label: 'Range', icon: Target }, // NEW TAB
   { id: 'analytics', label: 'Analytics', icon: Activity },
 ]
 

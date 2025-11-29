@@ -4,9 +4,9 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.6.0
+//Version: 2.7.0
 //About: Root shell for Reload Tracker. Handles routing, auth,
-//       Deep Linking, AI Assistant, and System Settings.
+//       Deep Linking, AI Assistant, System Settings, and Range Logs.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -17,12 +17,13 @@ import { Inventory } from './components/Inventory'
 import { Recipes } from './components/Recipes'
 import { Batches } from './components/Batches'
 import { Analytics } from './components/Analytics'
-import { getAllPurchases, seedData } from './lib/db'
+import { RangeLogs } from './components/RangeLogs' // NEW IMPORT
+import { getAllPurchases, getAllRecipes, seedData } from './lib/db' // UPDATED IMPORT
 import logo from './assets/logo.png'
 import { APP_VERSION_LABEL } from './version'
 import AuthModal from './components/AuthModal'
 import AiModal from './components/AiModal'
-import { fetchSettings } from './lib/settings' // NEW IMPORT
+import { fetchSettings } from './lib/settings'
 import {
   getCurrentUser,
   logoutUser,
@@ -32,6 +33,7 @@ import {
 export default function App() {
   const [activeTab, setActiveTab] = useState('calculator')
   const [purchases, setPurchases] = useState([])
+  const [recipes, setRecipes] = useState([]) // NEW STATE for RangeLogs
   const [selectedRecipe, setSelectedRecipe] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
   
@@ -53,16 +55,21 @@ export default function App() {
   useEffect(() => {
     const load = async () => {
       await seedData()
-      const data = await getAllPurchases()
-      setPurchases(data)
+      
+      // Fetch both Purchases and Recipes for global use
+      const [purchasesData, recipesData] = await Promise.all([
+        getAllPurchases(),
+        getAllRecipes()
+      ])
+      setPurchases(purchasesData)
+      setRecipes(recipesData)
       
       const user = await getCurrentUser()
       if (user) setCurrentUser(user)
 
-      // LOAD SYSTEM SETTINGS (Check if AI is enabled)
+      // LOAD SYSTEM SETTINGS
       try {
         const settings = await fetchSettings()
-        // AI is enabled only if flag is true AND key is present
         setAiEnabled(settings.ai_enabled === 'true' && settings.hasAiKey)
       } catch (e) {
         console.log('Settings load failed (likely offline or first run)', e)
@@ -141,7 +148,7 @@ export default function App() {
         currentUser={currentUser}
         onOpenSettings={() => setIsAuthOpen(true)}
         onOpenAi={() => setIsAiOpen(true)}
-        isAiEnabled={aiEnabled} // PASS FEATURE FLAG
+        isAiEnabled={aiEnabled}
       />
 
       <main className="max-w-6xl mx-auto px-4 pt-24 pb-24">
@@ -197,12 +204,17 @@ export default function App() {
         {activeTab === 'batches' && (
           <Batches highlightId={scannedId} /> 
         )}
+        {activeTab === 'range' && (
+          <RangeLogs 
+             recipes={recipes}
+             canEdit={!!isAdmin}
+          />
+        )}
         {activeTab === 'analytics' && (
           <Analytics />
         )}
       </main>
 
-      {/* Auth / Role modal */}
       {isAuthOpen && (
         <AuthModal
           open={isAuthOpen}
@@ -221,7 +233,6 @@ export default function App() {
         />
       )}
 
-      {/* AI Modal */}
       {isAiOpen && (
         <AiModal 
           open={isAiOpen} 
