@@ -1,10 +1,11 @@
 --===============================================================
---Script Name: Reload Tracker FULL Schema (v2.2)
+--Script Name: Reload Tracker FULL Schema (v2.3)
 --Script Location: backend/schema_full.sql
 --Date: 11/29/2025
 --Created By: T03KNEE
 --About: Consolidated schema script. Creates all tables:
---       Users, Sessions, Purchases, Recipes, Batches, Configs.
+--       Users, Sessions, Purchases, Recipes, Batches, Configs,
+--       Settings, and Range Logs.
 --       Run this to initialize a fresh database.
 --===============================================================
 
@@ -79,7 +80,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   zero_distance_yards NUMERIC(10,4) NULL,
   group_size_inches NUMERIC(10,4) NULL,
   range_notes TEXT NULL,
-  source TEXT NULL,                      -- Added in v2.2
+  source TEXT NULL,                      -- Reference/Manual source
   status TEXT NOT NULL DEFAULT 'active',
   
   -- Audit Columns
@@ -122,9 +123,46 @@ CREATE TABLE IF NOT EXISTS configs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 7. SETTINGS (Global App Configuration)
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Seed default settings (Safe to run multiple times)
+INSERT INTO settings (key, value) VALUES ('ai_enabled', 'false') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('ai_model', 'gemini-2.0-flash') ON CONFLICT (key) DO NOTHING;
+
+-- 8. RANGE LOGS (Future Feature Prep)
+CREATE TABLE IF NOT EXISTS range_logs (
+  id BIGSERIAL PRIMARY KEY,
+  batch_id BIGINT REFERENCES batches(id) ON DELETE SET NULL,
+  recipe_id BIGINT NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+  
+  log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  temperature NUMERIC(4,1),
+  weather TEXT,
+  distance_yards INTEGER,
+  
+  -- Performance Data
+  string_shot_count INTEGER, 
+  avg_velocity_fps NUMERIC(10,2),
+  sd_velocity NUMERIC(10,2),
+  es_velocity NUMERIC(10,2),
+  group_size_inches NUMERIC(10,3),
+  
+  image_url TEXT,
+  notes TEXT,
+  
+  created_by_user_id BIGINT NULL REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token);
 CREATE INDEX IF NOT EXISTS idx_purchases_status ON purchases (status);
 CREATE INDEX IF NOT EXISTS idx_recipes_caliber ON recipes (caliber);
 CREATE INDEX IF NOT EXISTS idx_batches_date ON batches (load_date);
+CREATE INDEX IF NOT EXISTS idx_range_logs_date ON range_logs (log_date);
