@@ -6,7 +6,8 @@
 //Github: https://github.com/To3Knee/reload-tracker
 //Version: 2.3.1
 //About: Manage component LOT purchases.
-//       Updated: Fixed ID type mismatch for QR Code highlighting.
+//       Features: Admin editing, user attribution, Pro UI,
+//       Printable Inventory Labels, and Deep-Link Highlighting.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -77,13 +78,10 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
   // Scroll to highlighted item when data loads or highlightId changes
   useEffect(() => {
     if (highlightId && purchases.length > 0) {
-      // FIX: Ensure ID match is string-to-string
       const targetId = String(highlightId)
-      // Try to find the element
       const el = document.getElementById(`purchase-${targetId}`)
       
       if (el) {
-        // Use a timeout to ensure layout is settled
         setTimeout(() => {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }, 600)
@@ -483,7 +481,6 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
                   <div className="grid md:grid-cols-2 gap-3">
                     {lots.map(p => {
                       const depleted = p.status === 'depleted'
-                      // FIX: Loose Equality Check for String/Number IDs
                       const isHighlighted = String(highlightId) === String(p.id)
                       
                       return (
@@ -587,15 +584,6 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
                           {p.notes && (
                             <div className="text-[11px] text-slate-400">
                               {p.notes}
-                            </div>
-                          )}
-                          
-                          {/* User Attribution */}
-                          {attribution && (
-                            <div className="mt-2 flex justify-end">
-                              <span className="px-2 py-[2px] rounded-full border border-slate-800 text-slate-500 bg-black/40 text-[10px]">
-                                {attribution}
-                              </span>
                             </div>
                           )}
                         </div>
