@@ -4,10 +4,11 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.8.1
+//Version: 2.9.0
 //About: Professional "Access & Roles" modal.
 //       Features: Admin-led management, System Settings.
-//       Updated: Tabs now use "Pro Pill" styling for mobile fit.
+//       Updated: Mobile scrolling fix, floated Close button, 
+//       and centered pill text.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -218,15 +219,16 @@ export default function AuthModal({
   const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
   const labelClass = "block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider"
   
-  // UPDATED: "Pro Pill" Style for Tabs
+  // FIX: Added 'flex items-center justify-center leading-none' for perfect centering
   const tabClass = (active) => `
-    px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0
+    px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0 flex items-center justify-center leading-none
     ${active 
       ? 'bg-red-900/20 border-red-500/50 text-red-200 shadow-sm' 
       : 'bg-black/40 border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'
     }
   `
 
+  // Layout classes
   const containerClass = isAdmin 
     ? "w-full max-w-4xl flex-col md:flex-row" 
     : "w-full max-w-md flex-col"
@@ -251,29 +253,33 @@ export default function AuthModal({
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
       
-      <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${containerClass} max-h-[85vh]`}>
+      <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${containerClass} max-h-[90vh] relative`}>
         
-        {/* === LEFT PANE: LOGIN & SESSION === */}
-        <div className={`${leftPaneClass} bg-black/40 p-4 md:p-6 flex flex-col relative flex-shrink-0`}>
-            
-          {!isAdmin && (
-             <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition">
-               <X size={20} />
-             </button>
-          )}
+        {/* GLOBAL CLOSE BUTTON - Floating top right to always be accessible */}
+        <button 
+            onClick={onClose} 
+            className="absolute top-4 right-4 z-50 p-1.5 bg-black/50 rounded-full text-slate-400 hover:text-white hover:bg-red-900/50 border border-transparent hover:border-red-500/50 transition"
+        >
+            <X size={18} />
+        </button>
 
-          <div className="mb-4 md:mb-6">
-            <div className="flex items-center gap-2 mb-2">
+        {/* === LEFT PANE: LOGIN & SESSION === */}
+        {/* Removed flex-shrink-0 to allow compression on small screens if needed */}
+        <div className={`${leftPaneClass} bg-black/40 p-4 md:p-6 flex flex-col relative`}>
+          
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-1">
               <Shield className="text-red-500" size={20} />
               <h2 className="text-lg font-bold text-slate-100 tracking-tight">Access & Roles</h2>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">
+            {/* Hide helper text on mobile to save vertical space */}
+            <p className="hidden md:block text-xs text-slate-500 leading-relaxed">
               Authenticate to unlock editing capabilities.
             </p>
           </div>
 
           {/* Current Session */}
-          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 mb-4 md:mb-6">
+          <div className="bg-slate-900/50 rounded-xl p-3 md:p-4 border border-slate-800 mb-4">
             <p className={labelClass}>Current Session</p>
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-full ${currentUser?.role === ROLE_ADMIN ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-400'}`}>
@@ -342,12 +348,9 @@ export default function AuthModal({
         {/* === RIGHT PANE: MANAGEMENT (ADMIN ONLY) === */}
         {isAdmin && (
           <div className="w-full md:w-[65%] p-4 md:p-6 bg-gradient-to-br from-[#121214] to-[#0a0a0a] flex flex-col overflow-hidden relative">
-            <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition">
-              <X size={20} />
-            </button>
-
-            {/* Tabs - "Pro Pill" Style */}
-            <div className="w-full max-w-full flex gap-2 mb-6 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar p-1">
+            
+            {/* Tabs - Pro Pills with perfect centering */}
+            <div className="w-full max-w-full flex gap-2 mb-4 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar p-1">
               <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>
                 Users
               </button>
@@ -378,6 +381,7 @@ export default function AuthModal({
                     </div>
 
                     <form onSubmit={handleRegisterOrUpdateSubmit} className="space-y-3">
+                      {/* 1 Col on Mobile, 2 Cols on Desktop */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className={labelClass}>First Name</label>
