@@ -4,10 +4,10 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.8.0
+//Version: 2.8.1
 //About: Professional "Access & Roles" modal.
 //       Features: Admin-led management, System Settings.
-//       Updated: Final Mobile Polish (Alignment & Breakout Fixes).
+//       Updated: Tabs now use "Pro Pill" styling for mobile fit.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -218,7 +218,14 @@ export default function AuthModal({
   const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
   const labelClass = "block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider"
   
-  const tabClass = (active) => `text-xs font-semibold px-4 py-2 rounded-full transition whitespace-nowrap flex-shrink-0 ${active ? 'bg-red-700 text-white shadow-lg shadow-red-900/20' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`
+  // UPDATED: "Pro Pill" Style for Tabs
+  const tabClass = (active) => `
+    px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0
+    ${active 
+      ? 'bg-red-900/20 border-red-500/50 text-red-200 shadow-sm' 
+      : 'bg-black/40 border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'
+    }
+  `
 
   const containerClass = isAdmin 
     ? "w-full max-w-4xl flex-col md:flex-row" 
@@ -265,6 +272,7 @@ export default function AuthModal({
             </p>
           </div>
 
+          {/* Current Session */}
           <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 mb-4 md:mb-6">
             <p className={labelClass}>Current Session</p>
             <div className="flex items-center gap-3">
@@ -338,7 +346,7 @@ export default function AuthModal({
               <X size={20} />
             </button>
 
-            {/* Tabs - FIXED: Added max-w-full to prevent breakout */}
+            {/* Tabs - "Pro Pill" Style */}
             <div className="w-full max-w-full flex gap-2 mb-6 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar p-1">
               <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>
                 Users
@@ -356,8 +364,8 @@ export default function AuthModal({
               {activeTab === 'manage' && (
                 <div className="space-y-6">
                   <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
-                    {/* HEADER: Responsive Layout with Wrapping */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    {/* HEADER: Responsive Layout */}
+                    <div className="flex flex-col items-start gap-2 md:flex-row md:justify-between md:items-center mb-4 w-full">
                       <h3 className="text-xs md:text-sm font-bold text-slate-300 flex items-center gap-2">
                         <Users size={16} className="text-red-500" />
                         {editingUserId ? 'Edit User' : 'Create New User'}
@@ -493,7 +501,7 @@ export default function AuthModal({
                       <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
                           <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
                           
-                          {/* FIXED: Flex-col on mobile for long text vs button */}
+                          {/* Responsive System Row */}
                           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-3 bg-black/20 border border-slate-800 rounded-lg mb-4">
                               <div className="flex items-center gap-3">
                                   <div className={`p-2 rounded-lg ${systemSettings.ai_enabled === 'true' ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-500'}`}>
