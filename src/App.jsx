@@ -4,9 +4,9 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.4.0
+//Version: 2.6.0
 //About: Root shell for Reload Tracker. Handles routing, auth,
-//       and now supports Analytics visualization.
+//       Deep Linking, AI Assistant, and System Settings.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -16,11 +16,13 @@ import { Purchases } from './components/Purchases'
 import { Inventory } from './components/Inventory'
 import { Recipes } from './components/Recipes'
 import { Batches } from './components/Batches'
-import { Analytics } from './components/Analytics' // NEW IMPORT
+import { Analytics } from './components/Analytics'
 import { getAllPurchases, seedData } from './lib/db'
 import logo from './assets/logo.png'
 import { APP_VERSION_LABEL } from './version'
 import AuthModal from './components/AuthModal'
+import AiModal from './components/AiModal'
+import { fetchSettings } from './lib/settings' // NEW IMPORT
 import {
   getCurrentUser,
   logoutUser,
@@ -32,7 +34,13 @@ export default function App() {
   const [purchases, setPurchases] = useState([])
   const [selectedRecipe, setSelectedRecipe] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
+  
+  // Modal States
   const [isAuthOpen, setIsAuthOpen] = useState(false)
+  const [isAiOpen, setIsAiOpen] = useState(false)
+  
+  // System Feature Flags
+  const [aiEnabled, setAiEnabled] = useState(false)
   
   const [scannedId, setScannedId] = useState(null)
 
@@ -51,6 +59,16 @@ export default function App() {
       const user = await getCurrentUser()
       if (user) setCurrentUser(user)
 
+      // LOAD SYSTEM SETTINGS (Check if AI is enabled)
+      try {
+        const settings = await fetchSettings()
+        // AI is enabled only if flag is true AND key is present
+        setAiEnabled(settings.ai_enabled === 'true' && settings.hasAiKey)
+      } catch (e) {
+        console.log('Settings load failed (likely offline or first run)', e)
+      }
+
+      // Handle Deep Linking (QR Codes)
       const params = new URLSearchParams(window.location.search)
       const batchId = params.get('batchId')
       const purchaseId = params.get('purchaseId')
@@ -122,6 +140,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         currentUser={currentUser}
         onOpenSettings={() => setIsAuthOpen(true)}
+        onOpenAi={() => setIsAiOpen(true)}
+        isAiEnabled={aiEnabled} // PASS FEATURE FLAG
       />
 
       <main className="max-w-6xl mx-auto px-4 pt-24 pb-24">
@@ -182,6 +202,7 @@ export default function App() {
         )}
       </main>
 
+      {/* Auth / Role modal */}
       {isAuthOpen && (
         <AuthModal
           open={isAuthOpen}
@@ -195,7 +216,16 @@ export default function App() {
             await logoutUser()
             setCurrentUser(null)
             setIsAuthOpen(false)
+            setIsAiOpen(false)
           }}
+        />
+      )}
+
+      {/* AI Modal */}
+      {isAiOpen && (
+        <AiModal 
+          open={isAiOpen} 
+          onClose={() => setIsAiOpen(false)} 
         />
       )}
 

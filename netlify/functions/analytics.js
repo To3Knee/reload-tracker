@@ -3,11 +3,18 @@
 //Script Location: netlify/functions/analytics.js
 //Date: 11/29/2025
 //Created By: T03KNEE
-//Version: 1.0.0
+//Version: 1.0.1
 //About: API Endpoint for fetching chart data.
+//       Updated: Fixed currentUser definition bug.
 //===============================================================
 
-import { getMonthlySpend, getComponentPriceTrends } from '../../backend/analyticsService.js'
+import { 
+  getMonthlySpend, 
+  getComponentPriceTrends,
+  getInventoryDistribution,
+  getLoadVelocity,
+  getBatchCostHistory
+} from '../../backend/analyticsService.js'
 import { getUserForSessionToken, SESSION_COOKIE_NAME } from '../../backend/authService.js'
 import { ValidationError } from '../../backend/errors.js'
 
@@ -34,7 +41,9 @@ export async function handler(event) {
     const method = event.httpMethod || 'GET'
     if (method === 'OPTIONS') return { statusCode: 204, headers: baseHeaders }
 
+    // FIX: Define currentUser here!
     const currentUser = await getCurrentUser(event)
+    
     // Analytics are viewable by everyone (Shooters/Admins), 
     // or restrict if you prefer: if (!currentUser) return 401...
 
@@ -47,6 +56,21 @@ export async function handler(event) {
     
     if (path.endsWith('/trends')) {
       const data = await getComponentPriceTrends(currentUser)
+      return jsonResponse(200, { data })
+    }
+
+    if (path.endsWith('/distribution')) {
+      const data = await getInventoryDistribution(currentUser)
+      return jsonResponse(200, { data })
+    }
+
+    if (path.endsWith('/velocity')) {
+      const data = await getLoadVelocity(currentUser)
+      return jsonResponse(200, { data })
+    }
+
+    if (path.endsWith('/history')) {
+      const data = await getBatchCostHistory(currentUser)
       return jsonResponse(200, { data })
     }
 

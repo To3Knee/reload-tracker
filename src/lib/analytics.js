@@ -3,7 +3,7 @@
 //Script Location: src/lib/analytics.js
 //Date: 11/29/2025
 //Created By: T03KNEE
-//Version: 1.0.0
+//Version: 1.1.0
 //About: Client-side fetchers for analytics data.
 //===============================================================
 
@@ -26,4 +26,17 @@ export async function getMonthlySpendData() {
 
 export async function getPriceTrendData() {
   return await fetchJson('/analytics/trends')
+}
+
+// NEW EXPORTS
+export async function getInventoryDistributionData() {
+  return await fetchJson('/analytics/distribution')
+}
+
+export async function getLoadVelocityData() {
+  return await fetchJson('/analytics/velocity')
+}
+
+export async function getBatchCostHistoryData() {
+  return await fetchJson('/analytics/history')
 }

@@ -4,10 +4,10 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.1.0
+//Version: 2.3.0
 //About: Top-right navigation bar for Reload Tracker. Provides
-//       tab switching between Calculator, Purchases, Inventory,
-//       Recipes, Batches, and Analytics.
+//       tab switching and Admin tools (AI, Settings).
+//       Updated: Conditionally renders AI button based on settings.
 //===============================================================
 
 import {
@@ -17,7 +17,8 @@ import {
   Beaker,
   Settings,
   ClipboardList,
-  Activity, // NEW ICON
+  Activity,
+  Bot,
 } from 'lucide-react'
 
 const MENU_ITEMS = [
@@ -26,7 +27,7 @@ const MENU_ITEMS = [
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'recipes', label: 'Recipes', icon: Beaker },
   { id: 'batches', label: 'Batches', icon: ClipboardList },
-  { id: 'analytics', label: 'Analytics', icon: Activity }, // NEW TAB
+  { id: 'analytics', label: 'Analytics', icon: Activity },
 ]
 
 export default function Navbar({
@@ -34,9 +35,13 @@ export default function Navbar({
   setActiveTab,
   currentUser,
   onOpenSettings,
+  onOpenAi,
+  isAiEnabled, // NEW PROP
 }) {
+  const isAdmin = currentUser?.role === 'admin'
+  
   const sessionLabel = currentUser
-    ? currentUser.role === 'admin'
+    ? isAdmin
       ? 'Reloader'
       : 'Shooter'
     : 'Shooter'
@@ -66,8 +71,20 @@ export default function Navbar({
         ))}
       </div>
 
-      {/* Session + gear */}
+      {/* Session + Tools */}
       <div className="flex items-center gap-2 pl-3 border-l border-red-500/30">
+        {/* ASK AI BUTTON (Admins Only AND Enabled in Settings) */}
+        {isAdmin && isAiEnabled && (
+          <button
+            type="button"
+            onClick={() => onOpenAi && onOpenAi()}
+            className="p-2 rounded-full border border-emerald-500/30 bg-emerald-900/10 text-emerald-400 hover:bg-emerald-900/30 transition flex items-center justify-center mr-1"
+            aria-label="Ask Ballistics AI"
+          >
+            <Bot size={16} />
+          </button>
+        )}
+
         <span className="hidden md:inline text-[10px] text-slate-500">
           {sessionLabel}{' '}
           <span className="text-slate-300">

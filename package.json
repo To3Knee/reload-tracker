@@ -1,6 +1,6 @@
 {
   "name": "reload-tracker",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "exceljs": "^4.4.0",
     "idb": "^8.0.0",
     "lucide-react": "^0.447.0",
