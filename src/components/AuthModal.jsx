@@ -4,10 +4,10 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.7.1
+//Version: 2.7.2
 //About: Professional "Access & Roles" modal.
 //       Features: Admin-led management, System Settings.
-//       Updated: Fixed Mobile Tabs (Scrolling & Shortened Labels).
+//       Updated: Fixed mobile overflow in System tab & Tab shadows.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -219,7 +219,6 @@ export default function AuthModal({
   const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
   const labelClass = "block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider"
   
-  // FIX: Added flex-shrink-0 and whitespace-nowrap to prevent smashing
   const tabClass = (active) => `text-xs font-semibold px-4 py-2 rounded-full transition whitespace-nowrap flex-shrink-0 ${active ? 'bg-red-700 text-white shadow-lg shadow-red-900/20' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`
 
   const containerClass = isAdmin 
@@ -242,7 +241,6 @@ export default function AuthModal({
             caret-color: white !important;
             border: 1px solid #334155 !important;
         }
-        /* Allow scrolling without ugly scrollbars */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
@@ -268,7 +266,6 @@ export default function AuthModal({
             </p>
           </div>
 
-          {/* Current Session */}
           <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 mb-6">
             <p className={labelClass}>Current Session</p>
             <div className="flex items-center gap-3">
@@ -286,7 +283,6 @@ export default function AuthModal({
             </div>
           </div>
 
-          {/* Login Form */}
           <div className="flex-1">
             <p className={labelClass}>Sign In</p>
             <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
@@ -325,7 +321,6 @@ export default function AuthModal({
             </form>
           </div>
 
-          {/* Status Messages */}
           {(statusMessage || errorMessage) && (
             <div className="mt-4 p-3 rounded-lg bg-black/40 border border-slate-800">
               {statusMessage && <p className="text-[10px] text-emerald-400">{statusMessage}</p>}
@@ -341,8 +336,8 @@ export default function AuthModal({
               <X size={20} />
             </button>
 
-            {/* Tabs - Scrollable on mobile with whitespace-nowrap */}
-            <div className="flex gap-2 mb-6 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar">
+            {/* Tabs - Scrollable, with PADDING to prevent shadow clipping */}
+            <div className="flex gap-2 mb-6 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar p-1">
               <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>
                 Users
               </button>
@@ -373,7 +368,6 @@ export default function AuthModal({
                     </div>
 
                     <form onSubmit={handleRegisterOrUpdateSubmit} className="space-y-3">
-                      {/* 1 Col on Mobile, 2 Cols on Desktop */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className={labelClass}>First Name</label>
@@ -410,7 +404,6 @@ export default function AuthModal({
                         </div>
                         <div>
                           <label className={labelClass}>Role</label>
-                          {/* Custom Select to fix iPhone rendering */}
                           <div className="relative">
                             <select 
                               className={`${inputClass} appearance-none`}
@@ -498,14 +491,15 @@ export default function AuthModal({
                       <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
                           <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
                           
-                          <div className="flex items-center justify-between p-3 bg-black/20 border border-slate-800 rounded-lg mb-4">
+                          {/* FIXED: Flex-col on mobile for long text vs button */}
+                          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-3 bg-black/20 border border-slate-800 rounded-lg mb-4">
                               <div className="flex items-center gap-3">
                                   <div className={`p-2 rounded-lg ${systemSettings.ai_enabled === 'true' ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-500'}`}>
                                       <Bot size={18} />
                                   </div>
                                   <div>
                                       <p className="text-xs font-bold text-slate-200">AI Ballistics Expert</p>
-                                      <p className="text-[10px] text-slate-500">Enable the 'Ask AI' button.</p>
+                                      <p className="text-[10px] text-slate-500">Enable the 'Ask AI' button in the navbar.</p>
                                   </div>
                               </div>
                               {systemSettings.hasAiKey ? (
