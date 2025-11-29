@@ -4,10 +4,10 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.4.0
+//Version: 2.5.0
 //About: Professional "Access & Roles" modal.
-//       Features: Admin-led management, System Settings with
-//       AI Configuration & Instructions.
+//       Features: Admin-led management, System Settings.
+//       Updated: Fully responsive for iPhone/Mobile (Stacking grids).
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -44,7 +44,7 @@ export default function AuthModal({
   
   // System Settings State
   const [systemSettings, setSystemSettings] = useState({ ai_enabled: 'false', ai_model: 'gemini-2.0-flash', hasAiKey: false })
-  const [newModelName, setNewModelName] = useState('') // Local state for editing model name
+  const [newModelName, setNewModelName] = useState('')
 
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -218,49 +218,101 @@ export default function AuthModal({
 
   const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
   const labelClass = "block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider"
-  const tabClass = (active) => `text-xs font-semibold px-4 py-2 rounded-full transition ${active ? 'bg-red-900/40 text-red-200 border border-red-500/30' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`
+  
+  // Red for active tabs
+  const tabClass = (active) => `text-xs font-semibold px-4 py-2 rounded-full transition whitespace-nowrap ${active ? 'bg-red-700 text-white shadow-lg shadow-red-900/20' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`
 
   const containerClass = isAdmin 
     ? "w-full max-w-4xl flex-col md:flex-row" 
     : "w-full max-w-md flex-col"
 
+  // Adjust padding on mobile (p-4) vs desktop (p-6)
   const leftPaneClass = isAdmin
     ? "w-full md:w-[35%] border-b md:border-b-0 md:border-r border-slate-800"
     : "w-full"
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 md:p-4">
       <style>{`input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus,input:-webkit-autofill:active{-webkit-box-shadow:0 0 0 30px #1a1a1a inset !important;-webkit-text-fill-color:white !important;caret-color:white !important;border:1px solid #334155 !important;}`}</style>
-      <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${containerClass} max-h-[85vh]`}>
+      <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${containerClass} max-h-[90vh]`}>
         
-        {/* === LEFT PANE === */}
-        <div className={`${leftPaneClass} bg-black/40 p-6 flex flex-col relative`}>
-          {!isAdmin && <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X size={20} /></button>}
+        {/* === LEFT PANE: LOGIN & SESSION === */}
+        <div className={`${leftPaneClass} bg-black/40 p-4 md:p-6 flex flex-col relative`}>
+            
+          {!isAdmin && (
+             <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition">
+               <X size={20} />
+             </button>
+          )}
+
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-2"><Shield className="text-red-500" size={20} /><h2 className="text-lg font-bold text-slate-100 tracking-tight">Access & Roles</h2></div>
-            <p className="text-xs text-slate-500 leading-relaxed">Authenticate to unlock editing capabilities.</p>
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="text-red-500" size={20} />
+              <h2 className="text-lg font-bold text-slate-100 tracking-tight">Access & Roles</h2>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Authenticate to unlock editing capabilities.
+            </p>
           </div>
+
+          {/* Current Session */}
           <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 mb-6">
             <p className={labelClass}>Current Session</p>
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-full ${isAdmin ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-400'}`}><UserCircle2 size={20} /></div>
+              <div className={`p-2 rounded-full ${currentUser?.role === ROLE_ADMIN ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-400'}`}>
+                <UserCircle2 size={20} />
+              </div>
               <div>
-                <p className="text-sm font-semibold text-slate-200">{currentUser ? (currentUser.username || currentUser.email) : 'Guest User'}</p>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{isAdmin ? 'Reloader (Admin)' : 'Shooter (Read-only)'}</p>
+                <p className="text-sm font-semibold text-slate-200">
+                  {currentUser ? (currentUser.username || currentUser.email) : 'Guest User'}
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                  {currentUser?.role === ROLE_ADMIN ? 'Reloader (Admin)' : 'Shooter (Read-only)'}
+                </p>
               </div>
             </div>
           </div>
+
+          {/* Login Form */}
           <div className="flex-1">
             <p className={labelClass}>Sign In</p>
             <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
-              <input className={inputClass} placeholder="Username" value={loginForm.username} onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))} />
-              <input type="password" className={inputClass} placeholder="Password" value={loginForm.password} onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))} />
+              <input
+                className={inputClass}
+                placeholder="Username or Email"
+                value={loginForm.username}
+                onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
+              />
+              <input
+                type="password"
+                className={inputClass}
+                placeholder="Password"
+                value={loginForm.password}
+                onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+              />
               <div className="pt-2 flex flex-col gap-2">
-                <button type="submit" disabled={busy} className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"><LogIn size={14} />{busy ? 'Verifying...' : 'Sign In'}</button>
-                {currentUser && <button type="button" onClick={onLogout} className="w-full py-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-400 transition">Sign Out</button>}
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <LogIn size={14} />
+                  {busy ? 'Verifying...' : 'Sign In'}
+                </button>
+                {currentUser && (
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="w-full py-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-400 transition"
+                  >
+                    Sign Out
+                  </button>
+                )}
               </div>
             </form>
           </div>
+
+          {/* Status Messages */}
           {(statusMessage || errorMessage) && (
             <div className="mt-4 p-3 rounded-lg bg-black/40 border border-slate-800">
               {statusMessage && <p className="text-[10px] text-emerald-400">{statusMessage}</p>}
@@ -269,78 +321,160 @@ export default function AuthModal({
           )}
         </div>
 
-        {/* === RIGHT PANE (ADMIN) === */}
+        {/* === RIGHT PANE: MANAGEMENT (ADMIN ONLY) === */}
         {isAdmin && (
-          <div className="w-full md:w-[65%] p-6 bg-gradient-to-br from-[#121214] to-[#0a0a0a] flex flex-col overflow-hidden relative">
-            <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition"><X size={20} /></button>
+          <div className="w-full md:w-[65%] p-4 md:p-6 bg-gradient-to-br from-[#121214] to-[#0a0a0a] flex flex-col overflow-hidden relative">
+            <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition">
+              <X size={20} />
+            </button>
 
-            <div className="flex gap-2 mb-6 border-b border-slate-800 pb-4 overflow-x-auto">
-              <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>Users</button>
-              <button onClick={() => setActiveTab('reset')} className={tabClass(activeTab === 'reset')}>Passwords</button>
-              <button onClick={() => setActiveTab('system')} className={tabClass(activeTab === 'system')}>System</button>
+            {/* Tabs - Scrollable on mobile */}
+            <div className="flex gap-2 mb-6 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar">
+              <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>
+                User Management
+              </button>
+              <button onClick={() => setActiveTab('reset')} className={tabClass(activeTab === 'reset')}>
+                Password Reset
+              </button>
+              <button onClick={() => setActiveTab('system')} className={tabClass(activeTab === 'system')}>
+                System
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              {/* View: User Management */}
               {activeTab === 'manage' && (
                 <div className="space-y-6">
                   <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2"><Users size={16} className="text-red-500" />{editingUserId ? 'Edit User' : 'Create New User'}</h3>
-                      {editingUserId && <button onClick={handleCancelEdit} className="text-[10px] text-red-400 hover:underline">Cancel Edit</button>}
+                      <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                        <Users size={16} className="text-red-500" />
+                        {editingUserId ? 'Edit User' : 'Create New User'}
+                      </h3>
+                      {editingUserId && (
+                        <button onClick={handleCancelEdit} className="text-[10px] text-red-400 hover:underline">
+                          Cancel Edit
+                        </button>
+                      )}
                     </div>
+
                     <form onSubmit={handleRegisterOrUpdateSubmit} className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div><label className={labelClass}>First Name</label><input className={inputClass} value={newUser.firstName} onChange={e => setNewUser(p => ({ ...p, firstName: e.target.value }))} /></div>
-                        <div><label className={labelClass}>Last Name</label><input className={inputClass} value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} /></div>
+                      {/* RESPONSIVE GRID: 1 Col on Mobile, 2 Cols on Desktop */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className={labelClass}>First Name</label>
+                          <input className={inputClass} value={newUser.firstName} onChange={e => setNewUser(p => ({ ...p, firstName: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Last Name</label>
+                          <input className={inputClass} value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} />
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div><label className={labelClass}>Username</label><input className={inputClass} value={newUser.username} onChange={e => setNewUser(p => ({ ...p, username: e.target.value }))} /></div>
-                        <div><label className={labelClass}>Phone</label><input className={inputClass} value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} /></div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className={labelClass}>Username</label>
+                          <input className={inputClass} value={newUser.username} onChange={e => setNewUser(p => ({ ...p, username: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Phone</label>
+                          <input className={inputClass} value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} />
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                          <div className="col-span-2"><label className={labelClass}>Email</label><input type="email" className={inputClass} value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} /></div>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className={labelClass}>Email</label>
+                          <input type="email" className={inputClass} value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} />
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div><label className={labelClass}>{editingUserId ? 'New Password (Optional)' : 'Password'}</label><input type="password" className={inputClass} value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} /></div>
-                        <div><label className={labelClass}>Role</label><select className={inputClass} value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}><option value={ROLE_SHOOTER}>Shooter (Read-only)</option><option value={ROLE_ADMIN}>Reloader (Admin)</option></select></div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className={labelClass}>{editingUserId ? 'New Password (Optional)' : 'Password'}</label>
+                          <input type="password" className={inputClass} value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Role</label>
+                          <select 
+                            className={inputClass}
+                            value={newUser.role}
+                            onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}
+                          >
+                            <option value={ROLE_SHOOTER}>Shooter (Read-only)</option>
+                            <option value={ROLE_ADMIN}>Reloader (Admin)</option>
+                          </select>
+                        </div>
                       </div>
-                      <div className="pt-2 flex justify-end"><button type="submit" disabled={busy} className="px-5 py-2 rounded-full bg-red-900/40 text-red-200 border border-red-500/30 hover:bg-red-900/60 text-xs font-bold transition">{busy ? 'Saving...' : editingUserId ? 'Save Changes' : 'Create User'}</button></div>
+                      
+                      <div className="pt-2 flex justify-end">
+                        <button type="submit" disabled={busy} className="px-5 py-2 rounded-full bg-red-900/40 text-red-200 border border-red-500/30 hover:bg-red-900/60 text-xs font-bold transition">
+                          {busy ? 'Saving...' : editingUserId ? 'Save Changes' : 'Create User'}
+                        </button>
+                      </div>
                     </form>
                   </div>
+
+                  {/* User List */}
                   <div>
                     <p className={labelClass}>User Directory</p>
-                    <div className="grid gap-2">
-                      {adminUsers.map(u => (
-                        <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-slate-800/50 group hover:border-slate-700 transition">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-2 h-2 rounded-full ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-slate-600'}`} />
-                            <div><p className="text-xs font-bold text-slate-200">{u.username}</p><p className="text-[10px] text-slate-500">{u.email}</p></div>
+                    {adminUsers.length === 0 ? (
+                      <div className="text-center p-4 border border-dashed border-slate-800 rounded-lg text-xs text-slate-600">
+                        No users found.
+                      </div>
+                    ) : (
+                      <div className="grid gap-2">
+                        {adminUsers.map(u => (
+                          <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-slate-800/50 group hover:border-slate-700 transition">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {/* Flex-shrink-0 prevents icon from squishing */}
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-slate-600'}`} />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-slate-200 truncate">{u.username}</p>
+                                {/* Truncate email to prevent overflow */}
+                                <p className="text-[10px] text-slate-500 truncate">{u.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 flex-shrink-0">
+                              <button onClick={() => handleEditUser(u)} className="px-2 py-1 rounded bg-slate-800 text-[10px] text-slate-300 hover:text-white transition">Edit</button>
+                              <button onClick={() => handleRemoveUser(u.id)} className="px-2 py-1 rounded bg-red-900/30 text-[10px] text-red-400 hover:bg-red-900/50 transition">Delete</button>
+                            </div>
                           </div>
-                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleEditUser(u)} className="px-2 py-1 rounded bg-slate-800 text-[10px] text-slate-300 hover:text-white">Edit</button>
-                            <button onClick={() => handleRemoveUser(u.id)} className="px-2 py-1 rounded bg-red-900/30 text-[10px] text-red-400 hover:bg-red-900/50">Delete</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
+              {/* View: Password Reset */}
               {activeTab === 'reset' && (
                 <div className="space-y-6">
                   <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
-                    <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4"><Lock size={16} className="text-red-500" />Admin Password Reset</h3>
+                    <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4">
+                      <Lock size={16} className="text-red-500" />
+                      Admin Password Reset
+                    </h3>
                     <form onSubmit={handleResetSubmit} className="space-y-3">
-                      <div><label className={labelClass}>Target Username</label><input className={inputClass} value={resetForm.username} onChange={e => setResetForm(p => ({ ...p, username: e.target.value }))} /></div>
-                      <div><label className={labelClass}>New Password</label><input type="password" className={inputClass} value={resetForm.newPassword} onChange={e => setResetForm(p => ({ ...p, newPassword: e.target.value }))} /></div>
-                      <div className="pt-2 flex justify-end"><button type="submit" disabled={busy} className="px-5 py-2 rounded-full bg-red-900/40 text-red-200 border border-red-500/30 hover:bg-red-900/60 text-xs font-bold transition">Reset Password</button></div>
+                      <div>
+                        <label className={labelClass}>Target Username</label>
+                        <input className={inputClass} value={resetForm.username} onChange={e => setResetForm(p => ({ ...p, username: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>New Password</label>
+                        <input type="password" className={inputClass} value={resetForm.newPassword} onChange={e => setResetForm(p => ({ ...p, newPassword: e.target.value }))} />
+                      </div>
+                      <div className="pt-2 flex justify-end">
+                        <button type="submit" disabled={busy} className="px-5 py-2 rounded-full bg-red-900/40 text-red-200 border border-red-500/30 hover:bg-red-900/60 text-xs font-bold transition">
+                          Reset Password
+                        </button>
+                      </div>
                     </form>
                   </div>
                 </div>
               )}
 
-              {/* TAB: SYSTEM SETTINGS (NEW) */}
+              {/* TAB: SYSTEM SETTINGS */}
               {activeTab === 'system' && (
                   <div className="space-y-6">
                       <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
@@ -353,7 +487,7 @@ export default function AuthModal({
                                   </div>
                                   <div>
                                       <p className="text-xs font-bold text-slate-200">AI Ballistics Expert</p>
-                                      <p className="text-[10px] text-slate-500">Enable the 'Ask AI' button in the navbar.</p>
+                                      <p className="text-[10px] text-slate-500">Enable the 'Ask AI' button.</p>
                                   </div>
                               </div>
                               {systemSettings.hasAiKey ? (
@@ -388,7 +522,7 @@ export default function AuthModal({
                                   </button>
                               </div>
                               <p className="text-[10px] text-slate-500">
-                                Updates the model used by the backend (e.g., if Google releases gemini-2.5).
+                                Updates the model used by the backend.
                               </p>
                           </div>
 
