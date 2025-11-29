@@ -4,10 +4,10 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.1.0
+//Version: 2.3.0
 //About: Manage component LOT purchases.
 //       Features: Admin editing, user attribution, Pro UI,
-//       and Printable Inventory Labels.
+//       Printable Inventory Labels, and Deep-Link Highlighting.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -18,8 +18,8 @@ import {
   calculatePerUnit,
   formatCurrency,
 } from '../lib/db'
-import { printPurchaseLabel } from '../lib/labels' // NEW IMPORT
-import { Printer } from 'lucide-react' // NEW IMPORT
+import { printPurchaseLabel } from '../lib/labels'
+import { Printer } from 'lucide-react'
 
 const COMPONENT_TYPES = [
   { value: 'powder', label: 'Powder' },
@@ -61,7 +61,7 @@ const DEFAULT_FORM = {
   caseCondition: '',
 }
 
-export function Purchases({ onChanged, canEdit = true }) {
+export function Purchases({ onChanged, canEdit = true, highlightId }) {
   const [purchases, setPurchases] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -74,6 +74,18 @@ export function Purchases({ onChanged, canEdit = true }) {
     }
     load()
   }, [])
+
+  // Scroll to highlighted item when data loads or highlightId changes
+  useEffect(() => {
+    if (highlightId && purchases.length > 0) {
+      const el = document.getElementById(`purchase-${highlightId}`)
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 500) // Slight delay to allow tab switch animation
+      }
+    }
+  }, [highlightId, purchases])
 
   const handleChange = e => {
     const { name, value } = e.target
@@ -467,22 +479,18 @@ export function Purchases({ onChanged, canEdit = true }) {
                   <div className="grid md:grid-cols-2 gap-3">
                     {lots.map(p => {
                       const depleted = p.status === 'depleted'
-                      const isEditing = editingId === p.id
+                      const isHighlighted = highlightId === p.id
                       
-                      // Calculate the attribution text
-                      const attribution = p.updatedByUsername 
-                        ? `Updated by ${p.updatedByUsername}` 
-                        : p.createdByUsername 
-                          ? `Added by ${p.createdByUsername}` 
-                          : null
-
                       return (
                         <div
+                          id={`purchase-${p.id}`} // ID for scrolling
                           key={p.id}
                           className={`bg-black/40 border rounded-xl px-3 py-3 flex flex-col gap-2 transition ${
-                            isEditing 
-                              ? 'border-red-500 ring-1 ring-red-500/50' 
-                              : 'border-red-500/20'
+                            isHighlighted
+                              ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]'
+                              : editingId === p.id
+                                ? 'border-red-500 ring-1 ring-red-500/50'
+                                : 'border-red-500/20'
                           }`}
                         >
                           <div className="flex justify-between gap-3">
@@ -520,9 +528,6 @@ export function Purchases({ onChanged, canEdit = true }) {
                                     </span>
                                   </>
                                 )}
-                                {/* NEW LABEL BUTTON - Visible to everyone or just Admins? 
-                                    Let's make it visible to everyone (even Shooters can print labels).
-                                */}
                                 <span 
                                     onClick={() => printPurchaseLabel(p)}
                                     className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer text-[11px] flex items-center gap-1"
@@ -577,15 +582,6 @@ export function Purchases({ onChanged, canEdit = true }) {
                           {p.notes && (
                             <div className="text-[11px] text-slate-400">
                               {p.notes}
-                            </div>
-                          )}
-                          
-                          {/* User Attribution - STYLED AS PILL */}
-                          {attribution && (
-                            <div className="mt-2 flex justify-end">
-                              <span className="px-2 py-[2px] rounded-full border border-slate-800 text-slate-500 bg-black/40 text-[10px]">
-                                {attribution}
-                              </span>
                             </div>
                           )}
                         </div>

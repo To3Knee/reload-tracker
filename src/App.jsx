@@ -4,12 +4,9 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.2.1
-//About: Root shell for Reload Tracker. Handles navbar/tab routing,
-//       age confirmation gate, initial purchase load from DB, and
-//       wiring selected recipes into the Live Round Calculator.
-//       Now manages real role-based access (Reloader vs Shooter)
-//       via the backend API auth.
+//Version: 2.3.0
+//About: Root shell for Reload Tracker. Handles routing, auth,
+//       and now supports Deep Linking via QR Codes.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -35,31 +32,43 @@ export default function App() {
   const [selectedRecipe, setSelectedRecipe] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
+  
+  // Deep Linking State (What did we just scan?)
+  const [scannedId, setScannedId] = useState(null)
+
   const [ageConfirmed, setAgeConfirmed] = useState(
     typeof window !== 'undefined'
       ? localStorage.getItem('ageConfirmed') === 'true'
       : false
   )
 
-  // Initial load: seed DB (if needed) and pull all purchases
+  // 1. Initial load: DB, Auth, and QR Code Logic
   useEffect(() => {
     const load = async () => {
       await seedData()
       const data = await getAllPurchases()
       setPurchases(data)
-    }
-    load()
-  }, [])
-
-  // Load any existing logged-in user from API session (cookie)
-  useEffect(() => {
-    const checkSession = async () => {
+      
       const user = await getCurrentUser()
-      if (user) {
-        setCurrentUser(user)
+      if (user) setCurrentUser(user)
+
+      // --- QR CODE DEEP LINKING ---
+      const params = new URLSearchParams(window.location.search)
+      const batchId = params.get('batchId')
+      const purchaseId = params.get('purchaseId')
+
+      if (batchId) {
+        setActiveTab('batches')
+        setScannedId(Number(batchId))
+        // Clean the URL so a refresh doesn't get stuck
+        window.history.replaceState({}, document.title, "/")
+      } else if (purchaseId) {
+        setActiveTab('purchases')
+        setScannedId(Number(purchaseId))
+        window.history.replaceState({}, document.title, "/")
       }
     }
-    checkSession()
+    load()
   }, [])
 
   const refreshPurchases = async () => {
@@ -79,8 +88,7 @@ export default function App() {
     setActiveTab('calculator')
   }
 
-  const isAdmin =
-    currentUser && currentUser.role === ROLE_ADMIN
+  const isAdmin = currentUser && currentUser.role === ROLE_ADMIN
 
   if (!ageConfirmed) {
     return (
@@ -102,8 +110,6 @@ export default function App() {
           >
             I am 21 or older
           </button>
-
-          {/* Optional: show version even on age gate */}
           <div className="mt-4 text-[10px] text-slate-600">
             Reload Tracker {APP_VERSION_LABEL}
           </div>
@@ -123,7 +129,6 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-4 pt-24 pb-24">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 mb-10">
-          {/* Logo on the LEFT */}
           <div className="flex justify-center md:justify-start">
             <img
               src={logo}
@@ -131,8 +136,6 @@ export default function App() {
               className="inline-block w-40 md:w-56 drop-shadow-2xl"
             />
           </div>
-
-          {/* Text on the RIGHT */}
           <div className="text-center md:text-right md:flex-1">
             <p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-3">
               Reload Tracker
@@ -158,6 +161,7 @@ export default function App() {
           <Purchases
             onChanged={refreshPurchases}
             canEdit={!!isAdmin}
+            highlightId={scannedId} // PASS THE ID
           />
         )}
         {activeTab === 'inventory' && (
@@ -174,11 +178,10 @@ export default function App() {
           />
         )}
         {activeTab === 'batches' && (
-          <Batches />
+          <Batches highlightId={scannedId} /> // PASS THE ID
         )}
       </main>
 
-      {/* Auth / Role modal */}
       {isAuthOpen && (
         <AuthModal
           open={isAuthOpen}
@@ -196,7 +199,6 @@ export default function App() {
         />
       )}
 
-      {/* Fixed version badge – small, bottom-right */}
       <div className="fixed bottom-2 right-3 z-50 text-[10px] text-slate-500">
         <span className="px-2 py-[2px] rounded-full border border-red-600/40 bg-black/70 backdrop-blur">
           Reload Tracker {APP_VERSION_LABEL}

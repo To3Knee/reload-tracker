@@ -3,8 +3,10 @@
 //Script Location: src/lib/labels.js
 //Date: 11/29/2025
 //Created By: T03KNEE
+//Version: 1.2.1
 //About: Generates printable labels (Dymo/Zebra style) with
 //       embedded QR codes for Batches AND Inventory.
+//       Updated: Responsive Zoom (Mobile vs Desktop) & Print Hint.
 //===============================================================
 
 import QRCode from 'qrcode'
@@ -29,14 +31,75 @@ export async function printBatchLabel(batch) {
 <html>
 <head>
 <title>Batch #${batch.id}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;900&display=swap');
+  
+  /* BASE STYLES (The Label Itself) */
   @page { size: 2.25in 1.25in; margin: 0; }
-  body {
-    margin: 0; padding: 0; width: 2.25in; height: 1.25in;
-    font-family: 'Inter', sans-serif; overflow: hidden;
-    display: flex; background: white; color: black;
+  
+  html, body { margin: 0; padding: 0; background: #eee; }
+
+  /* The physical label container */
+  .label-card {
+    width: 2.25in; 
+    height: 1.25in;
+    background: white;
+    color: black;
+    font-family: 'Inter', sans-serif; 
+    overflow: hidden;
+    display: flex;
+    box-sizing: border-box;
+    position: relative;
   }
+
+  /* --- SCREEN PREVIEW MODES --- */
+  
+  /* Desktop: Big Zoom */
+  @media screen and (min-width: 500px) {
+    .label-card {
+      transform: scale(3);
+      transform-origin: top left;
+      margin: 50px; /* Push away from top/left */
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .print-hint {
+      position: fixed; top: 10px; left: 50px;
+      font-size: 14px; font-weight: bold; color: #444;
+      background: #ddd; padding: 4px 10px; border-radius: 4px;
+      font-family: sans-serif;
+    }
+  }
+
+  /* Mobile: Fit to Screen */
+  @media screen and (max-width: 499px) {
+    .label-card {
+      transform: scale(1.4); /* Smaller zoom for phones */
+      transform-origin: top center;
+      margin: 60px auto 0 auto; /* Center horizontally, push down below hint */
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    .print-hint {
+      position: fixed; top: 0; left: 0; right: 0;
+      font-size: 12px; font-weight: bold; color: #fff;
+      background: #b33c3c; padding: 8px; text-align: center;
+      font-family: sans-serif;
+    }
+  }
+
+  /* --- PRINT MODE (The Real Deal) --- */
+  @media print {
+    body { background: white; }
+    .print-hint { display: none !important; }
+    .label-card {
+      transform: none !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      page-break-inside: avoid;
+    }
+  }
+
+  /* --- LABEL CONTENT STYLES --- */
   .label-container {
     width: 100%; height: 100%; display: flex;
     padding: 0.1in; box-sizing: border-box; align-items: center;
@@ -59,23 +122,25 @@ export async function printBatchLabel(batch) {
 </style>
 </head>
 <body>
-  <div class="label-container">
-    <div class="qr-section"><img src="${qrDataUri}" class="qr-img" /></div>
-    <div class="info-section">
-      <div class="date">${batch.date}</div>
-      <div class="recipe-name">${batch.recipe.split('(')[0]}</div>
-      <div class="details">
-        ${batch.components.split(',')[0] || 'Load Data'} <br/>
-        ${batch.rounds} Rounds
+  <div class="print-hint">🖨️ Size 30334 (2.25" x 1.25") • Margins: None</div>
+  <div class="label-card">
+    <div class="label-container">
+      <div class="qr-section"><img src="${qrDataUri}" class="qr-img" /></div>
+      <div class="info-section">
+        <div class="date">${batch.date}</div>
+        <div class="recipe-name">${batch.recipe.split('(')[0]}</div>
+        <div class="details">
+          ${batch.components.split(',')[0] || 'Load Data'} <br/>
+          ${batch.rounds} Rounds
+        </div>
+        <div class="batch-id">ID: ${batch.id}</div>
       </div>
-      <div class="batch-id">ID: ${batch.id}</div>
     </div>
   </div>
-  <script>window.onload = function() { window.print(); };</script>
 </body>
 </html>`
 
-  const win = window.open('', '_blank', 'width=400,height=300')
+  const win = window.open('', '_blank', 'width=500,height=400')
   win.document.write(html)
   win.document.close()
 }
@@ -88,7 +153,6 @@ export async function printPurchaseLabel(purchase) {
   if (!purchase) return
 
   const appUrl = window.location.origin
-  // Link to the purchase ID so scanning opens the app to this item
   const qrUrl = `${appUrl}?purchaseId=${purchase.id}`
   
   const qrDataUri = await QRCode.toDataURL(qrUrl, {
@@ -97,21 +161,75 @@ export async function printPurchaseLabel(purchase) {
     errorCorrectionLevel: 'L'
   })
 
-  // Format date slightly for display
   const dateStr = purchase.purchaseDate || ''
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
 <title>Lot ${purchase.lotId || purchase.id}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;900&display=swap');
+  
   @page { size: 2.25in 1.25in; margin: 0; }
-  body {
-    margin: 0; padding: 0; width: 2.25in; height: 1.25in;
-    font-family: 'Inter', sans-serif; overflow: hidden;
-    display: flex; background: white; color: black;
+  
+  html, body { margin: 0; padding: 0; background: #eee; }
+
+  .label-card {
+    width: 2.25in; 
+    height: 1.25in;
+    background: white;
+    color: black;
+    font-family: 'Inter', sans-serif; 
+    overflow: hidden;
+    display: flex;
+    box-sizing: border-box;
+    position: relative;
   }
+
+  /* SCREEN PREVIEW */
+  @media screen and (min-width: 500px) {
+    .label-card {
+      transform: scale(3);
+      transform-origin: top left;
+      margin: 50px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .print-hint {
+      position: fixed; top: 10px; left: 50px;
+      font-size: 14px; font-weight: bold; color: #444;
+      background: #ddd; padding: 4px 10px; border-radius: 4px;
+      font-family: sans-serif;
+    }
+  }
+
+  /* MOBILE PREVIEW */
+  @media screen and (max-width: 499px) {
+    .label-card {
+      transform: scale(1.4);
+      transform-origin: top center;
+      margin: 60px auto 0 auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    .print-hint {
+      position: fixed; top: 0; left: 0; right: 0;
+      font-size: 12px; font-weight: bold; color: #fff;
+      background: #b33c3c; padding: 8px; text-align: center;
+      font-family: sans-serif;
+    }
+  }
+
+  /* PRINT MODE */
+  @media print {
+    body { background: white; }
+    .print-hint { display: none !important; }
+    .label-card {
+      transform: none !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+    }
+  }
+
   .label-container {
     width: 100%; height: 100%; display: flex;
     padding: 0.1in; box-sizing: border-box; align-items: center;
@@ -144,23 +262,25 @@ export async function printPurchaseLabel(purchase) {
 </style>
 </head>
 <body>
-  <div class="label-container">
-    <div class="qr-section"><img src="${qrDataUri}" class="qr-img" /></div>
-    <div class="info-section">
-      <div class="type">${purchase.componentType || 'COMPONENT'}</div>
-      <div class="brand-name">${purchase.brand || ''}</div>
-      <div class="product-name">${purchase.name || ''}</div>
-      <div class="details">
-        ${purchase.qty} ${purchase.unit} ${dateStr ? '• ' + dateStr : ''}
+  <div class="print-hint">🖨️ Size 30334 (2.25" x 1.25") • Margins: None</div>
+  <div class="label-card">
+    <div class="label-container">
+      <div class="qr-section"><img src="${qrDataUri}" class="qr-img" /></div>
+      <div class="info-section">
+        <div class="type">${purchase.componentType || 'COMPONENT'}</div>
+        <div class="brand-name">${purchase.brand || ''}</div>
+        <div class="product-name">${purchase.name || ''}</div>
+        <div class="details">
+          ${purchase.qty} ${purchase.unit} ${dateStr ? '• ' + dateStr : ''}
+        </div>
+        <div class="lot-row">LOT: ${purchase.lotId || 'N/A'}</div>
       </div>
-      <div class="lot-row">LOT: ${purchase.lotId || 'N/A'}</div>
     </div>
   </div>
-  <script>window.onload = function() { window.print(); };</script>
 </body>
 </html>`
 
-  const win = window.open('', '_blank', 'width=400,height=300')
+  const win = window.open('', '_blank', 'width=500,height=400')
   win.document.write(html)
   win.document.close()
 }

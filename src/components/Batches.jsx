@@ -3,24 +3,22 @@
 //Script Location: src/components/Batches.jsx
 //Date: 11/29/2025
 //Created By: T03KNEE
-//Version: 1.4.0
+//Version: 1.5.0
 //About: Displays the history of loaded ammo batches.
-//       Updated: Added Print Label button.
+//       Updated: Added Deep-Link Highlighting.
 //===============================================================
 
 import { useEffect, useState } from 'react'
 import { getBatches, deleteBatch, updateBatch } from '../lib/batches'
-import { printBatchLabel } from '../lib/labels' // NEW IMPORT
+import { printBatchLabel } from '../lib/labels'
 import { getCurrentUser, ROLE_ADMIN } from '../lib/auth'
-import { History, Printer } from 'lucide-react' // ADD PRINTER ICON
+import { History, Printer } from 'lucide-react'
 
-export function Batches() {
+export function Batches({ highlightId }) {
   const [batches, setBatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
-
-  // Edit State
   const [editingId, setEditingId] = useState(null)
   const [editNotes, setEditNotes] = useState('')
 
@@ -28,6 +26,18 @@ export function Batches() {
     checkAdmin()
     loadHistory()
   }, [])
+
+  // Scroll to highlighted item when data loads or highlightId changes
+  useEffect(() => {
+    if (highlightId && batches.length > 0) {
+      const el = document.getElementById(`batch-${highlightId}`)
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 500)
+      }
+    }
+  }, [highlightId, batches])
 
   async function checkAdmin() {
     const user = await getCurrentUser()
@@ -104,9 +114,18 @@ export function Batches() {
         <div className="space-y-3">
           {batches.map(batch => {
             const isEditing = editingId === batch.id
+            const isHighlighted = highlightId === batch.id
 
             return (
-                <div key={batch.id} className="bg-black/40 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between hover:border-slate-600 transition">
+                <div 
+                    id={`batch-${batch.id}`} // ID for scrolling
+                    key={batch.id} 
+                    className={`bg-black/40 border rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between transition ${
+                        isHighlighted
+                          ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]'
+                          : 'border-slate-800 hover:border-slate-600'
+                    }`}
+                >
                 {/* Date & Quantity */}
                 <div className="flex items-center gap-4 min-w-[120px]">
                     <div className="text-center bg-slate-900/50 rounded-lg px-3 py-2 border border-slate-800">
@@ -146,10 +165,9 @@ export function Batches() {
                     )}
                 </div>
 
-                {/* Actions - Only show if NOT currently editing inline */}
+                {/* Actions */}
                 {!isEditing && (
                     <div className="flex items-center gap-2 self-start md:self-center">
-                        {/* NEW PRINT BUTTON */}
                         <span 
                             onClick={() => printBatchLabel(batch)}
                             className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 text-slate-300 hover:text-emerald-300 transition cursor-pointer text-[10px] flex items-center gap-1"
