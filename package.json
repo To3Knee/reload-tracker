@@ -1,6 +1,6 @@
 {
   "name": "reload-tracker",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,6 +13,7 @@
     "idb": "^8.0.0",
     "lucide-react": "^0.447.0",
     "pg": "^8.16.3",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

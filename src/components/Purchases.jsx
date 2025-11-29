@@ -1,13 +1,13 @@
 //===============================================================
 //Script Name: Purchases.jsx
 //Script Location: src/components/Purchases.jsx
-//Date: 11/28/2025
+//Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.0.0
+//Version: 2.1.0
 //About: Manage component LOT purchases.
-//       Features: Admin editing, user attribution, and 
-//       "Pro" compact UI styling (matching Dashboard).
+//       Features: Admin editing, user attribution, Pro UI,
+//       and Printable Inventory Labels.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -18,6 +18,8 @@ import {
   calculatePerUnit,
   formatCurrency,
 } from '../lib/db'
+import { printPurchaseLabel } from '../lib/labels' // NEW IMPORT
+import { Printer } from 'lucide-react' // NEW IMPORT
 
 const COMPONENT_TYPES = [
   { value: 'powder', label: 'Powder' },
@@ -166,11 +168,9 @@ export function Purchases({ onChanged, canEdit = true }) {
   const sectionLabelClass =
     'text-xs uppercase tracking-[0.25em] text-slate-500 mb-2'
 
-  // UPDATED: Matching Dashboard's compact styling
   const inputClass =
     'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60 placeholder:text-slate-600'
 
-  // UPDATED: Matching Dashboard's label styling (Removed aggressive uppercase/tracking)
   const labelClass =
     'block text-xs font-semibold text-slate-400 mb-1'
 
@@ -501,22 +501,35 @@ export function Purchases({ onChanged, canEdit = true }) {
                                 {renderPerUnit(p)}
                               </div>
                             </div>
-                            {canEdit && (
-                              <div className="flex flex-col items-end gap-2">
-                                <span
-                                  onClick={() => handleEdit(p)}
-                                  className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 transition cursor-pointer text-[11px] text-slate-300"
+                            
+                            {/* Action Buttons */}
+                            <div className="flex flex-col items-end gap-2">
+                                {canEdit && (
+                                  <>
+                                    <span
+                                      onClick={() => handleEdit(p)}
+                                      className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 transition cursor-pointer text-[11px] text-slate-300"
+                                    >
+                                      Edit
+                                    </span>
+                                    <span
+                                      onClick={() => handleDelete(p.id)}
+                                      className="px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition cursor-pointer text-[11px]"
+                                    >
+                                      Remove
+                                    </span>
+                                  </>
+                                )}
+                                {/* NEW LABEL BUTTON - Visible to everyone or just Admins? 
+                                    Let's make it visible to everyone (even Shooters can print labels).
+                                */}
+                                <span 
+                                    onClick={() => printPurchaseLabel(p)}
+                                    className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer text-[11px] flex items-center gap-1"
                                 >
-                                  Edit
+                                    <Printer size={10} /> Label
                                 </span>
-                                <span
-                                  onClick={() => handleDelete(p.id)}
-                                  className="px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition cursor-pointer text-[11px]"
-                                >
-                                  Remove
-                                </span>
-                              </div>
-                            )}
+                            </div>
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
@@ -567,7 +580,7 @@ export function Purchases({ onChanged, canEdit = true }) {
                             </div>
                           )}
                           
-                          {/* User Attribution */}
+                          {/* User Attribution - STYLED AS PILL */}
                           {attribution && (
                             <div className="mt-2 flex justify-end">
                               <span className="px-2 py-[2px] rounded-full border border-slate-800 text-slate-500 bg-black/40 text-[10px]">

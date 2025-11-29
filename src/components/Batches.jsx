@@ -3,15 +3,16 @@
 //Script Location: src/components/Batches.jsx
 //Date: 11/29/2025
 //Created By: T03KNEE
-//Version: 1.3.0
+//Version: 1.4.0
 //About: Displays the history of loaded ammo batches.
-//       Updated: Added Inline Edit mode for Notes.
+//       Updated: Added Print Label button.
 //===============================================================
 
 import { useEffect, useState } from 'react'
 import { getBatches, deleteBatch, updateBatch } from '../lib/batches'
+import { printBatchLabel } from '../lib/labels' // NEW IMPORT
 import { getCurrentUser, ROLE_ADMIN } from '../lib/auth'
-import { History } from 'lucide-react'
+import { History, Printer } from 'lucide-react' // ADD PRINTER ICON
 
 export function Batches() {
   const [batches, setBatches] = useState([])
@@ -145,21 +146,33 @@ export function Batches() {
                     )}
                 </div>
 
-                {/* Actions */}
-                {isAdmin && !isEditing && (
-                    <div className="flex gap-2 self-start md:self-center">
+                {/* Actions - Only show if NOT currently editing inline */}
+                {!isEditing && (
+                    <div className="flex items-center gap-2 self-start md:self-center">
+                        {/* NEW PRINT BUTTON */}
                         <span 
-                            onClick={() => startEdit(batch)}
-                            className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 text-slate-400 transition cursor-pointer text-[10px]"
+                            onClick={() => printBatchLabel(batch)}
+                            className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 text-slate-300 hover:text-emerald-300 transition cursor-pointer text-[10px] flex items-center gap-1"
                         >
-                            Edit
+                            <Printer size={10} /> Label
                         </span>
-                        <span 
-                            onClick={() => handleRemove(batch.id)}
-                            className="px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition cursor-pointer text-[10px]"
-                        >
-                            Remove
-                        </span>
+
+                        {isAdmin && (
+                            <>
+                                <span 
+                                    onClick={() => startEdit(batch)}
+                                    className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 text-slate-400 transition cursor-pointer text-[10px]"
+                                >
+                                    Edit
+                                </span>
+                                <span 
+                                    onClick={() => handleRemove(batch.id)}
+                                    className="px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition cursor-pointer text-[10px]"
+                                >
+                                    Remove
+                                </span>
+                            </>
+                        )}
                     </div>
                 )}
                 </div>
