@@ -4,10 +4,10 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.7.2
+//Version: 2.7.3
 //About: Professional "Access & Roles" modal.
 //       Features: Admin-led management, System Settings.
-//       Updated: Fixed mobile overflow in System tab & Tab shadows.
+//       Updated: Fixed Mobile Vertical Layout (Compacts Login view).
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -248,6 +248,7 @@ export default function AuthModal({
       <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${containerClass} max-h-[85vh]`}>
         
         {/* === LEFT PANE: LOGIN & SESSION === */}
+        {/* FIX: Use flex-shrink-0 so this pane doesn't compress, but content inside can hide */}
         <div className={`${leftPaneClass} bg-black/40 p-4 md:p-6 flex flex-col relative flex-shrink-0`}>
             
           {!isAdmin && (
@@ -256,7 +257,7 @@ export default function AuthModal({
              </button>
           )}
 
-          <div className="mb-6">
+          <div className="mb-4 md:mb-6">
             <div className="flex items-center gap-2 mb-2">
               <Shield className="text-red-500" size={20} />
               <h2 className="text-lg font-bold text-slate-100 tracking-tight">Access & Roles</h2>
@@ -266,7 +267,8 @@ export default function AuthModal({
             </p>
           </div>
 
-          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 mb-6">
+          {/* Current Session - Always show */}
+          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 mb-4 md:mb-6">
             <p className={labelClass}>Current Session</p>
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-full ${currentUser?.role === ROLE_ADMIN ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-400'}`}>
@@ -283,32 +285,38 @@ export default function AuthModal({
             </div>
           </div>
 
-          <div className="flex-1">
-            <p className={labelClass}>Sign In</p>
-            <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
-              <input
-                className={inputClass}
-                placeholder="Username or Email"
-                value={loginForm.username}
-                onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
-              />
-              <input
-                type="password"
-                className={inputClass}
-                placeholder="Password"
-                value={loginForm.password}
-                onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-              />
-              <div className="pt-2 flex flex-col gap-2">
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <LogIn size={14} />
-                  {busy ? 'Verifying...' : 'Sign In'}
-                </button>
-                {currentUser && (
+          {/* FIX: IF LOGGED IN, HIDE LOGIN FORM TO SAVE SPACE ON MOBILE */}
+          {!currentUser ? (
+            <div className="flex-1">
+                <p className={labelClass}>Sign In</p>
+                <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
+                <input
+                    className={inputClass}
+                    placeholder="Username or Email"
+                    value={loginForm.username}
+                    onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
+                />
+                <input
+                    type="password"
+                    className={inputClass}
+                    placeholder="Password"
+                    value={loginForm.password}
+                    onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                />
+                <div className="pt-2 flex flex-col gap-2">
+                    <button
+                    type="submit"
+                    disabled={busy}
+                    className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                    <LogIn size={14} />
+                    {busy ? 'Verifying...' : 'Sign In'}
+                    </button>
+                </div>
+                </form>
+            </div>
+          ) : (
+             <div className="mt-auto">
                   <button
                     type="button"
                     onClick={onLogout}
@@ -316,11 +324,10 @@ export default function AuthModal({
                   >
                     Sign Out
                   </button>
-                )}
-              </div>
-            </form>
-          </div>
+             </div>
+          )}
 
+          {/* Status Messages */}
           {(statusMessage || errorMessage) && (
             <div className="mt-4 p-3 rounded-lg bg-black/40 border border-slate-800">
               {statusMessage && <p className="text-[10px] text-emerald-400">{statusMessage}</p>}
@@ -336,7 +343,7 @@ export default function AuthModal({
               <X size={20} />
             </button>
 
-            {/* Tabs - Scrollable, with PADDING to prevent shadow clipping */}
+            {/* Tabs - Scrollable on mobile with whitespace-nowrap */}
             <div className="flex gap-2 mb-6 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar p-1">
               <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>
                 Users
@@ -368,6 +375,7 @@ export default function AuthModal({
                     </div>
 
                     <form onSubmit={handleRegisterOrUpdateSubmit} className="space-y-3">
+                      {/* 1 Col on Mobile, 2 Cols on Desktop */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className={labelClass}>First Name</label>
@@ -404,6 +412,7 @@ export default function AuthModal({
                         </div>
                         <div>
                           <label className={labelClass}>Role</label>
+                          {/* Custom Select to fix iPhone rendering */}
                           <div className="relative">
                             <select 
                               className={`${inputClass} appearance-none`}
