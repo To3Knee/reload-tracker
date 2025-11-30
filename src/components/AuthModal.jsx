@@ -3,15 +3,13 @@
 //Script Location: src/components/AuthModal.jsx
 //Date: 11/30/2025
 //Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.12.0
-//About: Professional "Access & Roles" modal.
-//       SECURE MODE: Public registration disabled.
-//       Admins must log in to create other users.
+//Version: 2.14.0
+//About: Access & Roles modal.
+//       FIX: Merged "Secure Mode" with "Password Eye Toggle".
 //===============================================================
 
 import { useEffect, useState } from 'react'
-import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, Info, ChevronDown } from 'lucide-react'
+import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, Info, ChevronDown, Eye, EyeOff } from 'lucide-react'
 import {
   ROLE_ADMIN,
   ROLE_SHOOTER,
@@ -33,7 +31,8 @@ export default function AuthModal({
 }) {
   // --- STATE ---
   const [loginForm, setLoginForm] = useState({ username: '', password: '' })
-  
+  const [showPassword, setShowPassword] = useState(false) // Toggle for Eye Icon
+
   // Registration / Management State
   const [newUser, setNewUser] = useState({
     firstName: '', lastName: '', username: '', phone: '', email: '', password: '', role: ROLE_SHOOTER,
@@ -64,6 +63,7 @@ export default function AuthModal({
     }
     clearMessages()
     handleCancelEdit()
+    setShowPassword(false) // Reset visibility on open
   }, [open, currentUser, isAdmin])
 
   async function loadUsers() {
@@ -128,7 +128,7 @@ export default function AuthModal({
     }
   }
 
-  // Admin creating users (Secure - only runs if isAdmin is true)
+  // Admin creating users (Secure)
   async function handleRegisterSubmit(e) {
     e.preventDefault()
     setBusy(true)
@@ -285,7 +285,7 @@ export default function AuthModal({
 
           {!currentUser ? (
             <div className="flex-1">
-                {/* --- SECURE LOGIN FORM ONLY --- */}
+                {/* --- LOGIN FORM WITH EYE ICON --- */}
                 <div className="animation-fade-in">
                     <p className={labelClass}>Sign In</p>
                     <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
@@ -295,13 +295,25 @@ export default function AuthModal({
                             value={loginForm.username}
                             onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
                         />
-                        <input
-                            type="password"
-                            className={inputClass}
-                            placeholder="Password"
-                            value={loginForm.password}
-                            onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                        />
+                        
+                        {/* PASSWORD FIELD WITH EYE TOGGLE */}
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                className={`${inputClass} pr-10`}
+                                placeholder="Password"
+                                value={loginForm.password}
+                                onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition z-10"
+                            >
+                                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                        </div>
+
                         <div className="pt-2 flex flex-col gap-2">
                             <button
                             type="submit"

@@ -486,9 +486,13 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     setBatchRecipe(recipe)
     HAPTIC.click()
     
+    // Try to auto-select components based on caliber/names if possible,
+    // or just default to empty.
+    // Filter purchases by caliber matches for convenience.
     const filterCaliber = (p) => !p.caliber || !recipe.caliber || p.caliber === recipe.caliber
     const active = (p) => p.status !== 'depleted'
 
+    // Auto-select first available if matches, else empty
     const recPowder = purchases.find(p => p.componentType === 'powder' && active(p) && filterCaliber(p))
     const recBullet = purchases.find(p => p.componentType === 'bullet' && active(p) && filterCaliber(p))
     const recPrimer = purchases.find(p => p.componentType === 'primer' && active(p) && filterCaliber(p))
@@ -522,6 +526,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
       HAPTIC.success()
       setBatchModalOpen(false)
       setBatchRecipe(null)
+      // Removed alert() - just close cleanly
     } catch (err) {
       alert(err.message)
     } finally {
