@@ -3,37 +3,24 @@
 //Script Location: src/lib/batches.js
 //Date: 11/29/2025
 //Created By: T03KNEE
-//Version: 1.1.1
-//About: Client-side helper for the Batches API.
-//       Updated: Added updateBatch function.
+//Version: 1.2.0
+//About: Client-side helper for Batches API.
+//       Standardized to match Range/Cloudinary implementation.
 //===============================================================
 
-const API_BASE_URL =
-  (typeof import.meta !== 'undefined' &&
-    import.meta.env &&
-    import.meta.env.VITE_API_BASE_URL) ||
-  '/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 async function batchRequest(endpoint, method = 'GET', body = null) {
   const options = {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', 
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include'
   }
-
-  if (body) {
-    options.body = JSON.stringify(body)
-  }
+  if (body) options.body = JSON.stringify(body)
 
   const res = await fetch(`${API_BASE_URL}${endpoint}`, options)
   const data = await res.json()
-
-  if (!res.ok) {
-    throw new Error(data.message || 'Batch request failed.')
-  }
-
+  if (!res.ok) throw new Error(data.message || 'Request failed')
   return data
 }
 

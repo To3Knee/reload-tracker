@@ -38,7 +38,7 @@
 
 > ⚠️ **Safety & Responsibility**
 >
-> Reload Tracker is a **cost & inventory** tool only. Follow local laws, and reload at your own risk.
+> Reload Tracker is a **data management** tool only. Follow local laws, and reload at your own risk. Always verify load data against published manuals
 
 ---
 
@@ -67,7 +67,7 @@ Reload Tracker turns all of that into **clear per-round math** with a **clean, m
 
 ---
 
-## 📚 Features
+# 📚 Features
 
 ### 🧮 Live Round Calculator
 The heart of the app.
@@ -75,15 +75,17 @@ The heart of the app.
 - Factors in **Brass Reuse**, **HazMat fees**, and **Shipping**.
 - Compare "Saved Scenarios" side-by-side.
 
-### 🧾 Inventory Management
+### 🧾 Inventory & Batches
 - Track **LOTs** of Powder, Bullets, Primers, and Brass.
-- Track **Active** vs. **Depleted** stock.
-- **Capacity Engine:** Tells you exactly how many rounds you can build right now based on your limiting component (e.g., "You are primer-limited to 450 rounds").
+- **Capacity Engine:** Tells you exactly how many rounds you can build right now.
+- **Batch Logging:** Record exactly when you loaded ammo and which components you used.
+- **QR Label Printing:** Generate 2.25" x 1.25" thermal labels for your ammo boxes. Scan the label to open the log.
 
-### 📖 Recipe Book
-- Store your load data with ballistics (Velocity, Power Factor, Zero).
-- **"Use in Calculator"** button snaps your dashboard to that recipe instantly.
-- **Printable Cards:** Generate a clean, high-contrast PDF card for your range bag.
+### 🎯 Range Logs & Ballistics
+- **Digital Range Journal:** Log group sizes, velocities (SD/ES), and weather conditions.
+- **Photo Storage:** Upload target photos directly from your phone (hosted via Cloudinary).
+- **MOA Calculator:** Auto-calculates MOA based on distance and group size.
+- **Binder Export:** Print beautiful, "Pro-style" PDF reports for your physical logbook.
 
 ### 🛡️ Admin & Security
 - **Invite-Only System:** Admins create accounts for other users.
@@ -96,96 +98,59 @@ The heart of the app.
 
 The app is organized into clean tabs in the top-right navigation bar:
 
-- **Calculator** – Live round cost calculator (default view). :contentReference[oaicite:8]{index=8}  
+- **Calculator** – Live round cost calculator.
 - **Purchases** – Add/edit LOTs and see per-unit costs.
 - **Inventory** – High-level investment + capacity overview.
 - **Recipes** – Manage recipes and ballistics data.
+- **Batches** – Track production history and print labels.
+- **Range** – Log shooting sessions and target photos.
 
 ### 🧮 Live Round Calculator
 
 Use the **Calculator** tab to see real-time costs:
-
 - Pick a **caliber** (`9mm`, `.308`, `6.5 Creedmoor`, etc.).
 - Select an optional **recipe** (or run purely manual).
 - Choose which LOTs of **powder, bullets, primers, and brass** you’re pulling from.
 - Enter your **charge weight (grains)** and **brass reuse**.
-- Set a **lot size** (e.g., `200`, `500`, `1,000` rounds).
 
 The calculator shows:
+- Cost per round, per 50 / 100 / 1,000.
+- Detailed per-round breakdown for each component.
 
-- Cost per round
-- Cost per 50 / 100 / 1,000
-- Cost for your selected lot size
-- Detailed per-round breakdown for each component
+### 📦 Batches & QR Codes
 
+The **Batches** tab creates a bridge between your reloading bench and the range:
+1. **Log a Batch:** "I loaded 100 rounds of .308 using Recipe X on Nov 29th."
+2. **Print Label:** Click the printer icon to generate a QR sticker for your ammo box.
+3. **Scan:** At the range, scan the box with your phone to instantly pull up the load data in the app.
 
-### 🧾 Purchases & LOTs
+### 🎯 Range Performance
 
-In the **Purchases** tab you can:
-
-- Record each purchase as a LOT with:
-  - Component type (powder, bullets, primers, cases)
-  - Brand & model
-  - Caliber
-  - Qty + unit (`ea`, `lb`, `gr`, `box`)
-  - Price, shipping/HazMat, tax
-  - Vendor, date, product URL, optional image URL
-  - Notes and LOT status (active / depleted) 
-- Filter by component type and caliber for quick lookup.
-- See per-unit and total cost per LOT.
-
-
-### 📦 Inventory View
-
-The **Inventory** tab gives you the high-level picture:
-
-- Total dollars invested across all LOTs
-- Number of LOTs
-- Total pieces (bullets, primers, cases, etc.)
-- A “capacity row” showing:
-  - Powder-limited rounds
-  - Bullet-limited rounds
-  - Primer-limited rounds
-  - Case-limited rounds
-  - Max buildable rounds for the selected recipe
-
-You also get gorgeous **LOT cards** with brand, caliber, per-unit cost, status, and purchase date. :contentReference[oaicite:11]{index=11}  
-
-### 📖 Recipes & Ballistics
-
-The **Recipes** tab is your “load notebook”:
-
-- Give each recipe:
-  - Name (e.g., `9mm – Range`, `.308 – Match`, `9mm – Subsonic`)
-  - Caliber
-  - Profile type (range, subsonic, competition, etc.)
-  - Charge weight (grains)
-  - Brass reuse (reloads per case)
-  - Default lot size
-  - Freeform notes
-
-- Optional ballistics / performance metadata:
-  - Bullet weight (gr)
-  - Muzzle velocity (fps)
-  - Power factor (auto-calculated)
-  - Zero distance (yards)
-  - Group size (inches)
-  - Range notes (chrono, ES/SD, POI, conditions, etc.) :contentReference[oaicite:12]{index=12}  
-
-From there:
-
-- Use **“Use in Calculator”** to instantly apply the recipe on the Calculator tab.
-- Edit or delete recipes as your data evolves.
+The **Range** tab is your performance database:
+- **Log Session:** Enter distance, group size, velocity data, and notes.
+- **Upload Photo:** Use your phone's camera to snap the target. The app auto-resizes and stores it securely.
+- **Print to PDF:** Export a high-contrast page for your physical 3-ring binder, complete with a QR code that links back to the digital record.
 
 ---
 
 ## 🛠 Tech Stack
 
 * **Frontend:** React 18, Vite, Tailwind CSS (Glassmorphism theme)
-* **Backend:** Node.js API (Adapter-based for Netlify Functions or Express)
+* **Backend:** Node.js API (Adapter-based for Netlify Functions)
 * **Database:** PostgreSQL (Neon, Supabase, or self-hosted)
-* **Auth:** Custom session-based auth with PBKDF2 hashing (No external auth providers required).
+* **Storage:** Cloudinary (for target images)
+* **Auth:** Custom session-based auth with PBKDF2 hashing.
 
+### 📦 Core Dependencies
+The app relies on these packages (auto-installed via `npm install`):
+| Package | Usage |
+| :--- | :--- |
+| **`pg`** | Database connection for Netlify Functions. |
+| **`qrcode`** | Generates QR labels for Batches and Range Logs. |
+| **`lucide-react`** | The modern UI icon set. |
+| **`exceljs`** | Powers the "Export to Excel" reporting. |
+| **`recharts`** | Renders the Analytics charts. |
+| **`@google/generative-ai`** | Powers the AI assistant. |
 ---
 
 ## 🚀 Getting Started
@@ -193,111 +158,82 @@ From there:
 ### Prerequisites
 
 - Node.js **18+**
-- npm, pnpm, or yarn
-- (Optional) [Netlify CLI](https://docs.netlify.com/cli/get-started/) for local function + front-end dev
+- (Optional) [Netlify CLI](https://docs.netlify.com/cli/get-started/) for local function dev
 
 ### Quick Start (local dev)
 
 ```bash
 # Clone your fork
-git clone https://github.com/To3Knee/reload-tracker.git
+git clone [https://github.com/To3Knee/reload-tracker.git](https://github.com/To3Knee/reload-tracker.git)
 cd reload-tracker
 
-# Install dependencies
+# Install ALL dependencies
+# (This includes pg, qrcode, exceljs, recharts, etc.)
 npm install
 
 # Start Vite dev server (front-end only)
 npm run dev
 ````
 
-Then open the printed local URL (usually `http://localhost:5173/`).
-
-If you’re using Netlify Functions + a database:
+If you’re using Netlify Functions + Database:
 
 ```bash
-# Install Netlify CLI globally (if needed)
+# Install Netlify CLI globally
 npm install -g netlify-cli
 
 # Start combined front-end + functions dev environment
 netlify dev
 ```
 
-> This will spin up the Vite dev server **and** your Netlify serverless functions (e.g., `purchases`, `recipes`).
-
 ### 🌱 Environment Variables
 
-For a server-backed deployment (Netlify + Postgres), typical `.env` values might look like:
+Create a `.env` file in the root directory:
 
 ```bash
+# Database
 DATABASE_URL=postgres://user:password@host:5432/reload_tracker
 PGSSLMODE=require
-VITE_API_BASE_URL=/  # or your API base path, e.g. /.netlify/functions
+
+# API Base
+VITE_API_BASE_URL=/ 
+
+# Cloudinary (Images)
+VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
+VITE_CLOUDINARY_UPLOAD_PRESET=reload_tracker
 ```
 
-* `DATABASE_URL` – connection string for your PostgreSQL instance.
-* `PGSSLMODE` – SSL mode (e.g., `require` for managed DBs).
-* `VITE_API_BASE_URL` – where the front-end should talk to the API (used inside `lib/db.js`).
-
-Exact values will depend on how/where you deploy (Netlify, Render, Fly.io, etc.).
-
----
+-----
 
 ## 💡 Examples / Workflows
 
-A few concrete ways you might use Reload Tracker:
+### 1\. The "Full Loop" (Load -\> Shoot -\> Log)
 
-### 1. New Powder Purchase
+1.  **Bench:** In **Recipes**, click "Load Batch". Enter 50 rounds.
+2.  **Label:** Click "Print Label" on the new Batch. Stick the QR code on your ammo box.
+3.  **Range:** Finish shooting. Scan the QR code on the box.
+4.  **Log:** The app opens. Click "Log Session". Snap a photo of your target. Enter your group size (e.g., 0.75").
+5.  **Archive:** Back home, click "Print" on the Range Log to put a physical page in your binder.
 
-1. Go to **Purchases → Add / Edit LOT**.
-2. Choose `Powder` as the component.
-3. Enter brand, name, qty (`8 lb`), price, shipping/HazMat, and tax.
-4. Save. You now have a **Powder LOT** with per-unit cost.
+### 2\. Inventory Capacity Check
 
-Now when you open the **Calculator** and pick that LOT + a recipe, the app will:
+1.  Select your primary match recipe.
+2.  Go to **Inventory**.
+3.  Look at the capacity pills to see what is holding you back (e.g., "Primer-limited: 450 rounds").
 
-* Convert pounds → grains
-* Divide total cost by total grains
-* Multiply by your per-round charge to get a precise **powder cost per round**.
-
-### 2. Range Recipe vs. Match Recipe
-
-1. In **Recipes**, create:
-
-   * `9mm – Range`
-   * `9mm – Match`
-2. Give each a different charge, brass reuse, and notes.
-3. Hit **“Use in Calculator”** on each one to compare:
-
-   * Per-round cost
-   * Lot cost for 200 / 500 / 1,000 rounds
-4. Save configurations inside the calculator to compare scenarios side-by-side.
-
-### 3. Capacity Check Before a Match
-
-1. Select your primary match recipe.
-2. Go to **Inventory**.
-3. Look at the capacity pills:
-
-   * Powder-limited? Bullet-limited? Primer-limited?
-4. Decide whether you need powder or bullets before your next big event.
-
----
+-----
 
 ## 🗺 Roadmap
 
-Some ideas for future improvements:
+  * ✅ Recipe card export to PDF (Pro styling)
+  * ✅ Range Logs with Cloudinary Image Hosting
+  * ✅ Batch Tracking with Printable QR Labels
+  * ✅ Deep Linking (Scan to open)
+  * ✅ Cloud sync & multi-device support via shared DB
+  * 🌗 Light mode / theme toggle
+  * ✅ Analytics Dashboard (Cost over time, Velocity consistency charts)
+  * 🔍 Ammo Price Finder (External API integration)
 
-* ✅ Recipe card export to PDF (more polish, custom logo placement)
-* 🔄 Cloud sync & multi-device support via shared DB
-* 📲 Optional barcode / QR scanning for purchases
-* 🌗 Light mode / theme toggle
-* 📤 CSV/JSON export & import of LOTs and recipes
-* 📈 Historical charts (costs over time, usage per caliber)
-* 🔔 Simple “reorder threshold” warnings per component
-
-If you’re reading this and thinking *“I want that feature”* — PRs are welcome. 😄
-
----
+-----
 
 ## 🤝 Contributing
 
@@ -305,28 +241,12 @@ Pull requests, issues, and ideas are all welcome.
 
 If you want to contribute:
 
-1. Fork the repo.
-2. Create a feature branch:
-   `git checkout -b feature/your-idea`
-3. Make your changes.
-4. Run the app locally and sanity check the UI (especially:
+1.  Fork the repo.
+2.  Create a feature branch: `git checkout -b feature/your-idea`
+3.  Make your changes.
+4.  Open a PR with screenshots if it impacts the UI.
 
-   * Calculator
-   * Purchases
-   * Inventory
-   * Recipes).
-5. Open a PR with:
-
-   * What you changed
-   * Screenshots if it impacts the UI
-   * Any migration notes if the data layer is affected
-
-Please avoid:
-
-* Changing the existing **core layout or visual theme** without discussion.
-* Adding real-world load data or “how-to” reloading instructions to the repo.
-
----
+-----
 
 ## 📜 License
 
@@ -334,11 +254,11 @@ Reload Tracker is licensed under the **High Five License**. 🙌
 
 By using this project you agree to:
 
-* Give a **high five** (virtual or real) for the work,
-* Take full responsibility for how you use the data and the app, and
-* Always follow safe reloading practices from authoritative sources.
+  * Give a **high five** (virtual or real) for the work,
+  * Take full responsibility for how you use the data, and
+  * Always follow safe reloading practices.
 
-See the full text in [LICENSE](LICENSE).
+See the [LICENSE](LICENSE) file for the full, fist-bumping details!
 
 ---
 

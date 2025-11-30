@@ -1,5 +1,5 @@
 --===============================================================
---Script Name: Reload Tracker FULL Schema (v2.3)
+--Script Name: Reload Tracker FULL Schema (v2.4)
 --Script Location: backend/schema_full.sql
 --Date: 11/29/2025
 --Created By: T03KNEE
@@ -134,29 +134,34 @@ CREATE TABLE IF NOT EXISTS settings (
 INSERT INTO settings (key, value) VALUES ('ai_enabled', 'false') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('ai_model', 'gemini-2.0-flash') ON CONFLICT (key) DO NOTHING;
 
--- 8. RANGE LOGS (Future Feature Prep)
+-- 8. RANGE LOGS (Performance Tracking)
 CREATE TABLE IF NOT EXISTS range_logs (
   id BIGSERIAL PRIMARY KEY,
-  batch_id BIGINT REFERENCES batches(id) ON DELETE SET NULL,
   recipe_id BIGINT NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+  batch_id BIGINT REFERENCES batches(id) ON DELETE SET NULL,
   
-  log_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  temperature NUMERIC(4,1),
-  weather TEXT,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  location TEXT,
   distance_yards INTEGER,
+  group_size_inches NUMERIC(5,3), -- e.g. 0.750
   
-  -- Performance Data
-  string_shot_count INTEGER, 
-  avg_velocity_fps NUMERIC(10,2),
-  sd_velocity NUMERIC(10,2),
-  es_velocity NUMERIC(10,2),
-  group_size_inches NUMERIC(10,3),
+  -- Ballistics
+  velocity_fps INTEGER,
+  sd NUMERIC(6,2),
+  es NUMERIC(6,2),
   
+  -- Environment
+  weather TEXT,
+  temp_f INTEGER,
+  
+  -- Media & Meta
   image_url TEXT,
   notes TEXT,
   
+  -- Audit
   created_by_user_id BIGINT NULL REFERENCES users(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Indexes for performance
@@ -165,4 +170,5 @@ CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token);
 CREATE INDEX IF NOT EXISTS idx_purchases_status ON purchases (status);
 CREATE INDEX IF NOT EXISTS idx_recipes_caliber ON recipes (caliber);
 CREATE INDEX IF NOT EXISTS idx_batches_date ON batches (load_date);
-CREATE INDEX IF NOT EXISTS idx_range_logs_date ON range_logs (log_date);
+CREATE INDEX IF NOT EXISTS idx_range_logs_date ON range_logs (date);
+CREATE INDEX IF NOT EXISTS idx_range_logs_recipe ON range_logs (recipe_id);

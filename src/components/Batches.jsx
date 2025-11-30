@@ -3,14 +3,14 @@
 //Script Location: src/components/Batches.jsx
 //Date: 11/29/2025
 //Created By: T03KNEE
-//Version: 1.5.1
+//Version: 1.6.0
 //About: Displays the history of loaded ammo batches.
-//       Updated: Fixed ID type mismatch & added Pulse animation.
+//       Updated: Uses the shared 'labels.js' library for printing.
 //===============================================================
 
 import { useEffect, useState } from 'react'
 import { getBatches, deleteBatch, updateBatch } from '../lib/batches'
-import { printBatchLabel } from '../lib/labels'
+import { printBatchLabel } from '../lib/labels' // IMPORT THE NEW SHARED LIB
 import { getCurrentUser, ROLE_ADMIN } from '../lib/auth'
 import { History, Printer } from 'lucide-react'
 
@@ -29,7 +29,6 @@ export function Batches({ highlightId }) {
 
   useEffect(() => {
     if (highlightId && batches.length > 0) {
-      // FIX: Ensure string-to-string comparison for ID
       const targetId = String(highlightId)
       const el = document.getElementById(`batch-${targetId}`)
       if (el) {
@@ -88,6 +87,19 @@ export function Batches({ highlightId }) {
     }
   }
 
+  // Wrapper to format data safely for labels.js
+  const handlePrint = (batch) => {
+    // labels.js expects 'recipe' and 'components' strings
+    // but our API might return 'recipeName' and separate brands.
+    const labelData = {
+        ...batch,
+        recipe: batch.recipeName || batch.recipe || 'Custom Load',
+        components: batch.components || `${batch.powderBrand || ''}, ${batch.bulletBrand || ''}`,
+        date: batch.date ? batch.date.split('T')[0] : ''
+    }
+    printBatchLabel(labelData)
+  }
+
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold flex items-center gap-3">
@@ -115,12 +127,11 @@ export function Batches({ highlightId }) {
         <div className="space-y-3">
           {batches.map(batch => {
             const isEditing = editingId === batch.id
-            // FIX: Loose equality for ID comparison
             const isHighlighted = String(highlightId) === String(batch.id)
 
             return (
                 <div 
-                    id={`batch-${batch.id}`} // ID for scrolling
+                    id={`batch-${batch.id}`}
                     key={batch.id} 
                     className={`bg-black/40 border rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between transition duration-500 ${
                         isHighlighted
@@ -132,7 +143,9 @@ export function Batches({ highlightId }) {
                 <div className="flex items-center gap-4 min-w-[120px]">
                     <div className="text-center bg-slate-900/50 rounded-lg px-3 py-2 border border-slate-800">
                         <span className="block text-[10px] uppercase text-slate-500 tracking-wider">Date</span>
-                        <span className="block text-sm font-bold text-slate-200">{batch.date}</span>
+                        <span className="block text-sm font-bold text-slate-200">
+                            {batch.date ? batch.date.split('T')[0] : ''}
+                        </span>
                     </div>
                     <div>
                         <span className="block text-2xl font-black text-emerald-400">{batch.rounds}</span>
@@ -142,9 +155,9 @@ export function Batches({ highlightId }) {
 
                 {/* Recipe Info & Notes */}
                 <div className="flex-1 w-full">
-                    <h3 className="text-sm font-bold text-slate-100">{batch.recipe}</h3>
+                    <h3 className="text-sm font-bold text-slate-100">{batch.recipeName}</h3>
                     <p className="text-xs text-slate-400 mt-1 line-clamp-1">
-                        <span className="text-slate-600">Components:</span> {batch.components || 'Unknown'}
+                        <span className="text-slate-600">Components:</span> {batch.powderBrand}, {batch.bulletBrand}
                     </p>
                     
                     {isEditing ? (
@@ -171,7 +184,7 @@ export function Batches({ highlightId }) {
                 {!isEditing && (
                     <div className="flex items-center gap-2 self-start md:self-center">
                         <span 
-                            onClick={() => printBatchLabel(batch)}
+                            onClick={() => handlePrint(batch)}
                             className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 text-slate-300 hover:text-emerald-300 transition cursor-pointer text-[10px] flex items-center gap-1"
                         >
                             <Printer size={10} /> Label

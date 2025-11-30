@@ -4,9 +4,8 @@
 //Date: 11/29/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.7.0
-//About: Root shell for Reload Tracker. Handles routing, auth,
-//       Deep Linking, AI Assistant, System Settings, and Range Logs.
+//Version: 2.8.0
+//About: Root shell. Updated to handle Deep Linking for Range Logs.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -17,8 +16,8 @@ import { Inventory } from './components/Inventory'
 import { Recipes } from './components/Recipes'
 import { Batches } from './components/Batches'
 import { Analytics } from './components/Analytics'
-import { RangeLogs } from './components/RangeLogs' // NEW IMPORT
-import { getAllPurchases, getAllRecipes, seedData } from './lib/db' // UPDATED IMPORT
+import { RangeLogs } from './components/RangeLogs'
+import { getAllPurchases, getAllRecipes, seedData } from './lib/db'
 import logo from './assets/logo.png'
 import { APP_VERSION_LABEL } from './version'
 import AuthModal from './components/AuthModal'
@@ -33,7 +32,7 @@ import {
 export default function App() {
   const [activeTab, setActiveTab] = useState('calculator')
   const [purchases, setPurchases] = useState([])
-  const [recipes, setRecipes] = useState([]) // NEW STATE for RangeLogs
+  const [recipes, setRecipes] = useState([]) 
   const [selectedRecipe, setSelectedRecipe] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
   
@@ -56,7 +55,6 @@ export default function App() {
     const load = async () => {
       await seedData()
       
-      // Fetch both Purchases and Recipes for global use
       const [purchasesData, recipesData] = await Promise.all([
         getAllPurchases(),
         getAllRecipes()
@@ -67,18 +65,18 @@ export default function App() {
       const user = await getCurrentUser()
       if (user) setCurrentUser(user)
 
-      // LOAD SYSTEM SETTINGS
       try {
         const settings = await fetchSettings()
         setAiEnabled(settings.ai_enabled === 'true' && settings.hasAiKey)
       } catch (e) {
-        console.log('Settings load failed (likely offline or first run)', e)
+        console.log('Settings load failed (likely offline)', e)
       }
 
       // Handle Deep Linking (QR Codes)
       const params = new URLSearchParams(window.location.search)
       const batchId = params.get('batchId')
       const purchaseId = params.get('purchaseId')
+      const rangeLogId = params.get('rangeLogId') // NEW: Handle Range Log Links
 
       if (batchId) {
         setActiveTab('batches')
@@ -87,6 +85,10 @@ export default function App() {
       } else if (purchaseId) {
         setActiveTab('purchases')
         setScannedId(Number(purchaseId))
+        window.history.replaceState({}, document.title, "/")
+      } else if (rangeLogId) {
+        setActiveTab('range')
+        setScannedId(Number(rangeLogId))
         window.history.replaceState({}, document.title, "/")
       }
     }
@@ -208,6 +210,7 @@ export default function App() {
           <RangeLogs 
              recipes={recipes}
              canEdit={!!isAdmin}
+             highlightId={scannedId} // Pass the scanned ID down
           />
         )}
         {activeTab === 'analytics' && (
