@@ -184,6 +184,19 @@ npm install -g netlify-cli
 # Start combined front-end + functions dev environment
 netlify dev
 ```
+### 🔑 First Run (Create Admin User)
+
+After deploying to Netlify and connecting your Database, your app will be empty and locked.
+To create your first **Admin** account:
+
+1. Open your Database SQL Editor (Neon, Supabase, etc).
+2. Run the schema script: `backend/sql/schema_full.sql` (Creates tables).
+3. Run the bootstrap script: `backend/sql/bootstrap_admin.sql` (Creates Admin user).
+4. Log in with:
+   * **User:** `admin`
+   * **Pass:** `admin`
+   
+> **Note:** Immediately go to Settings > Access & Roles and change your password!
 
 ### 🌱 Environment Variables
 
