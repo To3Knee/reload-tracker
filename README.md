@@ -30,7 +30,7 @@
 
 <p align="center">
   <a href="https://demo.reloadtracker.com">
-    <img alt="Live Demo" src="https://img.shields.io/badge/Live%20Demo-Demo-Reloadtracker.com-00C7B7?style=for-the-badge&logo=netlify&logoColor=white">
+    <img alt="Live Demo" src="https://img.shields.io/badge/Live%20Demo-demo.reloadtracker.com-00C7B7?style=for-the-badge&logo=netlify&logoColor=white">
   </a>
 </p>
 
