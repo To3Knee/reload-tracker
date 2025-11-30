@@ -4,8 +4,8 @@
 //Date: 11/30/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.3.0
-//About: Manage recipes. Features Haptic feedback for interactions.
+//Version: 2.4.0 (GOLD MASTER)
+//About: Manage recipes. Merged Haptics + PWA Close Button.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -19,7 +19,7 @@ import {
 import { downloadExcel } from '../lib/excel'
 import { createBatch } from '../lib/batches' 
 import { ClipboardList, X } from 'lucide-react'
-import { HAPTIC } from '../lib/haptics' // NEW: Haptics
+import { HAPTIC } from '../lib/haptics'
 
 const PROFILE_TYPES = [
   { value: 'range', label: 'Range / Plinking' },
@@ -151,7 +151,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
           }
 
       await saveRecipe(payload)
-      HAPTIC.success() // Success vibration
+      HAPTIC.success()
       resetForm()
       await loadRecipes()
     } finally {
@@ -202,7 +202,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     ) {
       return
     }
-    HAPTIC.error() // Warning buzz
+    HAPTIC.error()
     setDeletingId(id)
     try {
       await deleteRecipe(id)
@@ -280,6 +280,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     const pf = recipe.powerFactor ? recipe.powerFactor.toFixed(1) : '---'
     const source = recipe.source || ''
     
+    // --- PDF TEMPLATE WITH MOBILE CLOSE BUTTON ---
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -398,9 +399,21 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     text-transform: uppercase;
     letter-spacing: 0.1em;
   }
+  
+  /* MOBILE CLOSE BUTTON */
+  .close-btn {
+    position: fixed; top: 10px; right: 10px; z-index: 9999;
+    background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px;
+    border-radius: 50px; font-family: sans-serif; font-weight: bold; font-size: 14px;
+    text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
+    backdrop-filter: blur(10px);
+  }
+  @media print { .close-btn { display: none !important; } }
 </style>
 </head>
 <body>
+  <button onclick="window.close()" class="close-btn">Done / Close</button>
   <div class="card">
     <div class="header">
       <div class="header-text">
@@ -451,7 +464,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   </div>
   <script>
     window.onload = function() {
-      window.print();
+      setTimeout(() => window.print(), 500);
     };
   </script>
 </body>
@@ -506,7 +519,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
         caseLotId: batchForm.caseLotId,
         notes: batchForm.notes
       })
-      HAPTIC.success() // Vibrate on success
+      HAPTIC.success()
       setBatchModalOpen(false)
       setBatchRecipe(null)
     } catch (err) {

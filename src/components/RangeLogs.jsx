@@ -3,8 +3,8 @@
 //Script Location: src/components/RangeLogs.jsx
 //Date: 11/30/2025
 //Created By: T03KNEE
-//Version: 1.9.0
-//About: Range Logs with Haptic Feedback.
+//Version: 2.0.0 (GOLD MASTER)
+//About: Range Logs. Merged features: Haptics + PWA Close Button.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -13,7 +13,7 @@ import { getBatches } from '../lib/batches'
 import { Target, Plus, Wind, Thermometer, ExternalLink, Calendar, MapPin, Printer } from 'lucide-react'
 import UploadButton from './UploadButton'
 import QRCode from 'qrcode'
-import { HAPTIC } from '../lib/haptics' // NEW: Import Haptics
+import { HAPTIC } from '../lib/haptics'
 
 export function RangeLogs({ recipes = [], canEdit, highlightId }) {
   const [logs, setLogs] = useState([])
@@ -109,11 +109,11 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
       } else {
           await createRangeLog(form)
       }
-      HAPTIC.success() // Success vibration
+      HAPTIC.success()
       handleCancel()
       loadData()
     } catch (err) {
-      HAPTIC.error() // Error vibration
+      HAPTIC.error()
       alert(err.message)
     } finally {
       setLoading(false)
@@ -122,7 +122,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
 
   async function handleDelete(id) {
     if(!window.confirm('Delete this range log?')) return
-    HAPTIC.error() // Destructive action vibration
+    HAPTIC.error()
     await deleteRangeLog(id)
     loadData()
   }
@@ -141,6 +141,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     return r ? `${r.name} (${r.caliber})` : 'Unknown Load'
   }
 
+  // --- PDF EXPORT (WITH CLOSE BUTTON & QR) ---
   const handlePrintLog = async (log) => {
     HAPTIC.click()
     const title = getRecipeDisplay(log)
@@ -193,11 +194,21 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
           .notes-label { font-size: 8px; font-weight: 900; text-transform: uppercase; color: #b33c3c; margin-bottom: 4px; display: block; }
           .notes-text { font-size: 9px; line-height: 1.4; color: #333; }
           .footer { padding: 10px 20px; background: #f4f4f4 !important; border-top: 1px solid #e0e0e0; font-size: 8px; color: #888; text-transform: uppercase; letter-spacing: 0.1em; display: flex; justify-content: space-between; }
-          @media screen { .print-warning { position: fixed; top: 0; left: 0; right: 0; background: #b33c3c; color: white; text-align: center; padding: 10px; font-weight: bold; font-size: 14px; } }
-          @media print { .print-warning { display: none; } }
+          
+          /* === MOBILE CLOSE BUTTON === */
+          .close-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px;
+            border-radius: 50px; font-family: sans-serif; font-weight: bold; font-size: 14px;
+            text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
+            backdrop-filter: blur(10px);
+          }
+          @media print { .close-btn, .print-warning { display: none !important; } }
         </style>
       </head>
       <body>
+        <button onclick="window.close()" class="close-btn">Done / Close</button>
         <div class="print-warning">⚠️ IMPORTANT: Check "Background graphics" in print settings!</div>
         <div class="card">
           <div class="header">
