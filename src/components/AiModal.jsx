@@ -5,7 +5,6 @@
 //Created By: T03KNEE
 //Version: 1.1.0
 //About: Chat interface for the AI Ballistics Expert.
-//       Restored: Chat history state and UI logic.
 //===============================================================
 
 import { useState, useEffect, useRef } from 'react'

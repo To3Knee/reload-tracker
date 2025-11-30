@@ -1,106 +1,94 @@
 //===============================================================
-//Script Name: ai.js
+//Script Name: AI Proxy Function (Gemini Edition)
 //Script Location: netlify/functions/ai.js
-//Date: 11/30/2025
+//Date: 11/29/2025
 //Created By: T03KNEE
-//About: Connects to Google Gemini with Full Chat History context.
+//About: Securely calls Google Gemini for reloading advice.
+//       Updated: Fetches Model Name from DB settings for future-proofing.
 //===============================================================
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getUserForSessionToken, SESSION_COOKIE_NAME } from '../../backend/authService.js'
-import { getSetting } from '../../backend/settingsService.js'
+import { getSettings } from '../../backend/settingsService.js' // NEW IMPORT
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+const baseHeaders = { 'Content-Type': 'application/json' }
+
+async function getCurrentUser(event) {
+  const cookieHeader = event.headers.cookie || event.headers.Cookie || ''
+  const cookies = {};
+  cookieHeader.split(';').forEach(c => {
+    const [k, v] = c.trim().split('=');
+    if (k) cookies[k] = decodeURIComponent(v || '')
+  })
+  const token = cookies[SESSION_COOKIE_NAME]
+  if (!token) return null
+  return await getUserForSessionToken(token)
 }
 
 export async function handler(event) {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' }
-  if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: 'Method Not Allowed' }
+  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' }
 
   try {
-    // 1. Check Auth (Admins Only)
-    const cookies = event.headers.cookie || ''
-    const token = cookies.split(';').find(c => c.trim().startsWith(SESSION_COOKIE_NAME + '='))?.split('=')[1]
-    if (!token) return { statusCode: 401, headers, body: JSON.stringify({ message: 'Unauthorized' }) }
-    
-    const user = await getUserForSessionToken(token)
-    if (!user || user.role !== 'admin') return { statusCode: 403, headers, body: JSON.stringify({ message: 'Admins only' }) }
-
-    // 2. Get Settings
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) return { statusCode: 500, headers, body: JSON.stringify({ message: 'Server missing API Key' }) }
-    
-    const modelName = await getSetting('ai_model') || 'gemini-2.0-flash'
-    const enabled = await getSetting('ai_enabled')
-
-    if (enabled !== 'true') {
-        return { statusCode: 400, headers, body: JSON.stringify({ message: 'AI is currently disabled in settings.' }) }
+    // 1. Security Check: Admin Only
+    const user = await getCurrentUser(event)
+    if (!user || user.role !== 'admin') {
+      return { statusCode: 403, headers: baseHeaders, body: JSON.stringify({ message: 'Admin access required.' }) }
     }
 
-    // 3. Prepare the Chat
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: modelName })
+    // 2. Get Settings (for Model Name)
+    const settings = await getSettings()
+    // Default to 2.0-flash if DB is empty/missing key
+    const modelName = settings.ai_model || 'gemini-2.0-flash' 
 
-    const body = JSON.parse(event.body)
-    const incomingHistory = body.history || []
-
-    // 4. Construct the Chat History for Gemini
-    // We filter out system messages from the frontend and replace them with our server-side instruction
-    const chatHistory = incomingHistory
-      .filter(msg => msg.role !== 'system') // Remove UI system messages
-      .map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      }))
-
-    // Start the chat with the history
-    const chat = model.startChat({
-      history: chatHistory.slice(0, -1), // All messages except the last one
-      generationConfig: {
-        maxOutputTokens: 500,
-      },
+    // 3. Get History
+    const { history } = JSON.parse(event.body)
+    
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    const model = genAI.getGenerativeModel({ 
+        model: modelName, // DYNAMIC MODEL NAME
+        systemInstruction: `
+          You are a precision Ballistics Assistant.
+          Rules:
+          1. Be concise. No fluff.
+          2. Answer technical questions directly.
+          3. Format data in lists.
+          4. Only warn about safety if providing specific load data.
+          5. If asked about prices, explain that you cannot browse live markets.
+        `
     })
 
-    // 5. Send the System Prompt + Latest Message
-    const lastMessage = chatHistory[chatHistory.length - 1].parts[0].text
-    
-    const systemInstruction = `
-      SYSTEM CONTEXT:
-      You are the expert ballistics assistant for "Reload Tracker".
-      Your tone is helpful, precise, and safety-conscious but friendly.
-      
-      CAPABILITIES:
-      - Explain concepts like Standard Deviation (SD) vs Extreme Spread (ES).
-      - Estimate costs based on component prices provided by the user.
-      - Analyze group sizes (MOA).
-      
-      SAFETY RULES:
-      - NEVER provide specific load data (powder charges) for unverified wildcat cartridges.
-      - ALWAYS advise consulting official manuals (Hornady, Lyman, Hodgdon).
-      
-      USER QUESTION:
-      ${lastMessage}
-    `
+    // 4. Prepare History
+    let chatHistory = history.slice(0, -1).map(msg => ({
+        role: msg.role === 'ai' ? 'model' : 'user',
+        parts: [{ text: msg.text }]
+    }))
 
-    const result = await chat.sendMessage(systemInstruction)
+    if (chatHistory.length > 0 && chatHistory[0].role === 'model') {
+        chatHistory.shift()
+    }
+
+    const chat = model.startChat({ history: chatHistory })
+
+    // 5. Send Message
+    const lastMessage = history[history.length - 1].text
+    const result = await chat.sendMessage(lastMessage)
     const response = await result.response
     const text = response.text()
 
     return {
       statusCode: 200,
-      headers,
-      body: JSON.stringify({ reply: text })
+      headers: baseHeaders,
+      body: JSON.stringify({ answer: text })
     }
 
   } catch (err) {
-    console.error('AI Error:', err)
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ message: 'AI Service Error: ' + err.message })
+    console.error("AI Error:", err)
+    
+    let msg = err.message
+    if (msg.includes('404') && msg.includes('models/')) {
+       msg = `Model '${settings?.ai_model}' not found. Update the Model Name in Admin Settings.`
     }
+
+    return { statusCode: 500, headers: baseHeaders, body: JSON.stringify({ message: "AI Error: " + msg }) }
   }
 }
