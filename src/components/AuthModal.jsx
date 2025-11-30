@@ -3,12 +3,13 @@
 //Script Location: src/components/AuthModal.jsx
 //Date: 11/30/2025
 //Created By: T03KNEE
-//Version: 2.15.0
-//About: Login/Admin Modal. Fixed: Added Eye Icon.
+//Version: 2.18.0
+//About: Login/Admin Modal. 
+//       Updated: Fixed Close 'X' button positioning/overlap on mobile.
 //===============================================================
 
 import { useEffect, useState } from 'react'
-import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, Info, ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, ChevronDown, Eye, EyeOff } from 'lucide-react'
 import {
   ROLE_ADMIN,
   ROLE_SHOOTER,
@@ -29,7 +30,7 @@ export default function AuthModal({
   onLogout,
 }) {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' })
-  const [showPassword, setShowPassword] = useState(false) // Toggle state
+  const [showPassword, setShowPassword] = useState(false)
 
   // Registration State
   const [newUser, setNewUser] = useState({
@@ -57,7 +58,7 @@ export default function AuthModal({
     }
     clearMessages()
     handleCancelEdit()
-    setShowPassword(false) // Reset on open
+    setShowPassword(false)
   }, [open, currentUser, isAdmin])
 
   async function loadUsers() {
@@ -175,38 +176,42 @@ export default function AuthModal({
     try {
         await saveSetting('ai_enabled', enabled)
         setSystemSettings(prev => ({ ...prev, ai_enabled: String(enabled) }))
-        window.location.reload() 
+        setTimeout(() => window.location.reload(), 500)
     } catch (err) { setErrorMessage(err.message) } 
     finally { setBusy(false) }
   }
   
-  async function saveModelName() {
-    setBusy(true)
-    try {
-        await saveSetting('ai_model', newModelName)
-        setSystemSettings(prev => ({ ...prev, ai_model: newModelName }))
-        setStatusMessage('Updated.')
-    } catch (err) { setErrorMessage(err.message) } 
-    finally { setBusy(false) }
-  }
-
   if (!open) return null
 
-  const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
-  const labelClass = "block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider"
-  
-  const tabClass = (active) => `px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-slate-800 text-slate-500'}`
+  const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-[11px] text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
+  const labelClass = "block text-[11px] font-semibold text-slate-400 mb-1"
+  const tabClass = (active) => `flex-1 md:flex-none text-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-slate-800 text-slate-500'}`
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 md:p-4">
-      <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${isAdmin ? "w-full max-w-4xl flex-col md:flex-row" : "w-full max-w-md flex-col"} max-h-[90vh] relative`}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-4">
+      {/* Container */}
+      <div className={`bg-[#0f0f10] border-slate-800 md:border rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex ${isAdmin ? "w-full max-w-4xl flex-col md:flex-row" : "w-full max-w-md flex-col"} h-full md:h-auto md:max-h-[90vh] relative`}>
         
-        <button onClick={onClose} className="absolute top-4 right-4 z-50 p-1.5 bg-black/50 rounded-full text-slate-400 hover:text-white hover:bg-red-900/50 border border-transparent hover:border-red-500/50 transition"><X size={18} /></button>
+        {/* CLOSE BUTTON - UPDATED POSITIONING */}
+        <button 
+            onClick={onClose} 
+            className="absolute top-2 right-2 md:top-4 md:right-4 z-50 p-2 bg-[#1a1a1a] rounded-full text-slate-400 hover:text-white hover:bg-red-900/50 border border-transparent md:border-slate-800 transition shadow-lg"
+        >
+            <X size={18} />
+        </button>
 
-        <div className={`${isAdmin ? "w-full md:w-[35%] border-b md:border-b-0 md:border-r border-slate-800" : "w-full"} bg-black/40 p-4 md:p-6 flex flex-col relative`}>
+        {/* LEFT PANEL */}
+        <div className={`
+            bg-black/40 p-6 flex flex-col relative border-b border-slate-800 md:border-b-0 md:border-r
+            ${isAdmin ? "w-full md:w-[35%] shrink-0" : "w-full flex-1"}
+            ${isAdmin ? "min-h-[auto]" : ""}
+        `}>
           <div className="mb-4">
-            <div className="flex items-center gap-2 mb-1"><Shield className="text-red-500" size={20} /><h2 className="text-lg font-bold text-slate-100">Access & Roles</h2></div>
-            <p className="hidden md:block text-xs text-slate-500">Authenticate to unlock editing capabilities.</p>
+            <div className="flex items-center gap-2 mb-1">
+                <Shield className="text-red-500" size={20} />
+                <h2 className="text-lg font-bold text-slate-100">Access & Roles</h2>
+            </div>
+            {!isAdmin && <p className="text-xs text-slate-500">Authenticate to unlock editing capabilities.</p>}
           </div>
 
           <div className="bg-slate-900/50 rounded-xl p-3 md:p-4 border border-slate-800 mb-4">
@@ -221,32 +226,37 @@ export default function AuthModal({
                 <p className={labelClass}>Sign In</p>
                 <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
                     <input className={inputClass} placeholder="Username or Email" value={loginForm.username} onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))} />
-                    
-                    {/* PASSWORD FIELD WITH EYE */}
                     <div className="relative">
                         <input type={showPassword ? "text" : "password"} className={`${inputClass} pr-10`} placeholder="Password" value={loginForm.password} onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))} />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition z-10">{showPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>
                     </div>
-
-                    <div className="pt-2"><button type="submit" disabled={busy} className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition"><LogIn size={14} className="inline mr-2"/>{busy ? 'Verifying...' : 'Sign In'}</button></div>
+                    <div className="pt-2"><button type="submit" disabled={busy} className="w-full py-3 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition"><LogIn size={14} className="inline mr-2"/>{busy ? 'Verifying...' : 'Sign In'}</button></div>
                 </form>
             </div>
           ) : (
              <div className="mt-auto"><button type="button" onClick={onLogout} className="w-full py-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-400 transition">Sign Out</button></div>
           )}
+          
           {(statusMessage || errorMessage) && (<div className="mt-4 p-3 rounded-lg bg-black/40 border border-slate-800">{statusMessage && <p className="text-[10px] text-emerald-400">{statusMessage}</p>}{errorMessage && <p className="text-[10px] text-red-400">{errorMessage}</p>}</div>)}
         </div>
 
+        {/* RIGHT PANEL: ADMIN TOOLS */}
         {isAdmin && (
-          <div className="w-full md:w-[65%] p-4 md:p-6 bg-gradient-to-br from-[#121214] to-[#0a0a0a] flex flex-col overflow-hidden relative">
-            <div className="w-full max-w-full flex gap-2 mb-4 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar p-1">
-              <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>Users</button>
-              <button onClick={() => setActiveTab('reset')} className={tabClass(activeTab === 'reset')}>Passwords</button>
-              <button onClick={() => setActiveTab('system')} className={tabClass(activeTab === 'system')}>System</button>
+          <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-br from-[#121214] to-[#0a0a0a]">
+            
+            {/* TABS */}
+            <div className="flex-shrink-0 border-b border-slate-800 p-2 bg-[#0f0f10]/95 backdrop-blur z-10">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                    <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>Users</button>
+                    <button onClick={() => setActiveTab('reset')} className={tabClass(activeTab === 'reset')}>Passwords</button>
+                    <button onClick={() => setActiveTab('system')} className={tabClass(activeTab === 'system')}>Systems</button>
+                </div>
             </div>
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+
+            {/* CONTENT */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
               {activeTab === 'manage' && (
-                <div className="space-y-6">
+                <div className="space-y-6 pb-20 md:pb-0">
                   <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
                     <h3 className="text-xs md:text-sm font-bold text-slate-300 flex items-center gap-2 mb-4"><Users size={16} className="text-red-500" />{editingUserId ? 'Edit User' : 'Create New User'}</h3>
                     <form onSubmit={handleRegisterSubmit} className="space-y-3">
@@ -258,21 +268,43 @@ export default function AuthModal({
                         <div><label className={labelClass}>Username</label><input className={inputClass} value={newUser.username} onChange={e => setNewUser(p => ({ ...p, username: e.target.value }))} /></div>
                         <div><label className={labelClass}>Phone</label><input className={inputClass} value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} /></div>
                       </div>
-                      <div className="grid grid-cols-1 gap-3"><div><label className={labelClass}>Email</label><input type="email" className={inputClass} value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} /></div></div>
+                      <div><label className={labelClass}>Email</label><input type="email" className={inputClass} value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} /></div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div><label className={labelClass}>{editingUserId ? 'New Password' : 'Password'}</label><input type="password" className={inputClass} value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} /></div>
                         <div><label className={labelClass}>Role</label><div className="relative"><select className={`${inputClass} appearance-none`} value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}><option value={ROLE_SHOOTER}>Shooter</option><option value={ROLE_ADMIN}>Reloader (Admin)</option></select><div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><ChevronDown size={14} /></div></div></div>
                       </div>
-                      <div className="pt-2 flex justify-end"><button type="submit" disabled={busy} className="px-5 py-2 rounded-full bg-red-900/40 text-red-200 border border-red-500/30 hover:bg-red-900/60 text-xs font-bold transition">{busy ? 'Saving...' : editingUserId ? 'Save Changes' : 'Create User'}</button></div>
+                      <div className="pt-2 flex justify-end gap-2">
+                        {editingUserId && <button type="button" onClick={handleCancelEdit} className="px-4 py-2 rounded-full border border-slate-700 text-slate-400 hover:bg-slate-800 text-xs font-bold transition">Cancel</button>}
+                        <button type="submit" disabled={busy} className="px-5 py-2 rounded-full bg-red-900/40 text-red-200 border border-red-500/30 hover:bg-red-900/60 text-xs font-bold transition">{busy ? 'Saving...' : editingUserId ? 'Save Changes' : 'Create User'}</button>
+                      </div>
                     </form>
                   </div>
-                  {/* User List rendering... */}
-                  <div><p className={labelClass}>User Directory</p><div className="grid gap-2">{adminUsers.map(u => (<div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-slate-800/50"><div className="flex items-center gap-3"><div className={`w-2 h-2 rounded-full ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-slate-600'}`} /><div className="min-w-0"><p className="text-xs font-bold text-slate-200">{u.username}</p></div></div><div className="flex gap-2"><button onClick={() => handleEditUser(u)} className="px-2 py-1 rounded bg-slate-800 text-[10px] text-slate-300">Edit</button><button onClick={() => handleRemoveUser(u.id)} className="px-2 py-1 rounded bg-red-900/30 text-[10px] text-red-400">Delete</button></div></div>))}</div></div>
+                  
+                  <div>
+                    <p className={labelClass + " mb-2"}>User Directory</p>
+                    <div className="grid gap-2">
+                        {adminUsers.map(u => (
+                            <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-slate-800/50">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-slate-600'}`} />
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold text-slate-200 truncate">{u.username}</p>
+                                        <p className="text-[10px] text-slate-500 truncate">{u.email}</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleEditUser(u)} className="px-3 py-1.5 rounded bg-slate-800 text-[10px] text-slate-300 font-medium">Edit</button>
+                                    <button onClick={() => handleRemoveUser(u.id)} className="px-3 py-1.5 rounded bg-red-900/30 text-[10px] text-red-400 font-medium">Delete</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                  </div>
                 </div>
               )}
+
               {activeTab === 'reset' && (
                   <div className="space-y-6">
-                    {/* Reset Password Form ... */}
                      <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
                         <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4"><Lock size={16} className="text-red-500" />Admin Password Reset</h3>
                         <form onSubmit={handleResetSubmit} className="space-y-3">
@@ -283,13 +315,35 @@ export default function AuthModal({
                      </div>
                   </div>
               )}
+
               {activeTab === 'system' && (
                   <div className="space-y-6">
                      <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
                         <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
-                        <div className="flex items-center justify-between gap-4 p-3 bg-black/20 border border-slate-800 rounded-lg mb-4">
-                            <div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-slate-800 text-slate-500"><Bot size={18} /></div><div><p className="text-xs font-bold text-slate-200">AI Ballistics Expert</p><p className="text-[10px] text-slate-500">Enable 'Ask AI' in navbar.</p></div></div>
-                            {systemSettings.hasAiKey ? (<button onClick={() => toggleAi(systemSettings.ai_enabled === 'true' ? 'false' : 'true')} className={`px-3 py-1 rounded-full text-[10px] font-bold border ${systemSettings.ai_enabled === 'true' ? 'border-red-500/50 text-red-400 bg-red-900/20' : 'border-slate-600 text-slate-400'}`}>{systemSettings.ai_enabled === 'true' ? 'Enabled' : 'Disabled'}</button>) : (<span className="text-[10px] text-red-400"><AlertTriangle size={10} /> Missing Key</span>)}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-slate-800 rounded-lg">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-slate-800 text-slate-500 mt-1"><Bot size={18} /></div>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-200">AI Ballistics Expert</p>
+                                    <p className="text-[10px] text-slate-500 leading-relaxed mt-1">
+                                        Enable the generative AI chat assistant for users. Requires a valid Google Gemini API Key.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-end">
+                                {systemSettings.hasAiKey ? (
+                                    <button 
+                                        onClick={() => toggleAi(systemSettings.ai_enabled === 'true' ? 'false' : 'true')} 
+                                        className={`px-4 py-2 rounded-full text-[10px] font-bold border transition w-full sm:w-auto ${systemSettings.ai_enabled === 'true' ? 'border-red-500/50 text-red-400 bg-red-900/20' : 'border-slate-600 text-slate-400 bg-black/40'}`}
+                                    >
+                                        {systemSettings.ai_enabled === 'true' ? 'Enabled' : 'Disabled'}
+                                    </button>
+                                ) : (
+                                    <span className="px-3 py-1 rounded bg-amber-900/20 text-amber-500 text-[10px] border border-amber-900/50 flex items-center gap-1">
+                                        <AlertTriangle size={10} /> Missing API Key
+                                    </span>
+                                )}
+                            </div>
                         </div>
                      </div>
                   </div>
