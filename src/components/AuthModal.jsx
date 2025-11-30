@@ -4,13 +4,14 @@
 //Date: 11/30/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.10.0
+//Version: 2.12.0
 //About: Professional "Access & Roles" modal.
-//       Updated: Added "Rescue Registration" mode for empty DBs.
+//       SECURE MODE: Public registration disabled.
+//       Admins must log in to create other users.
 //===============================================================
 
 import { useEffect, useState } from 'react'
-import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, Info, ChevronDown, UserPlus } from 'lucide-react'
+import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, Info, ChevronDown } from 'lucide-react'
 import {
   ROLE_ADMIN,
   ROLE_SHOOTER,
@@ -38,7 +39,6 @@ export default function AuthModal({
     firstName: '', lastName: '', username: '', phone: '', email: '', password: '', role: ROLE_SHOOTER,
   })
   
-  const [isRegistering, setIsRegistering] = useState(false) // Toggle for "Rescue" mode
   const [editingUserId, setEditingUserId] = useState(null)
   
   const [resetForm, setResetForm] = useState({ username: '', newPassword: '' })
@@ -64,7 +64,6 @@ export default function AuthModal({
     }
     clearMessages()
     handleCancelEdit()
-    setIsRegistering(false) // Reset view on open
   }, [open, currentUser, isAdmin])
 
   async function loadUsers() {
@@ -129,7 +128,7 @@ export default function AuthModal({
     }
   }
 
-  // Unified Handler for Admin creating users OR Guest creating First Admin
+  // Admin creating users (Secure - only runs if isAdmin is true)
   async function handleRegisterSubmit(e) {
     e.preventDefault()
     setBusy(true)
@@ -145,27 +144,11 @@ export default function AuthModal({
         handleCancelEdit()
         if (isAdmin) loadUsers()
       } else {
-        // Creating New User
-        // If "Rescue Registering" (not logged in), force Admin role
-        const userPayload = isRegistering 
-            ? { ...newUser, role: ROLE_ADMIN } 
-            : newUser
-
-        await registerUser(userPayload)
-        
-        if (isRegistering) {
-            // If this was a self-registration, auto-login immediately
-            const user = await loginUser({
-                username: newUser.username,
-                password: newUser.password
-            })
-            if (onLogin) onLogin(user)
-            setStatusMessage(`Welcome! Account created.`)
-        } else {
-            setStatusMessage(`User "${newUser.username}" created successfully.`)
-            handleCancelEdit()
-            if (isAdmin) loadUsers()
-        }
+        // Admin Creating New User
+        await registerUser(newUser)
+        setStatusMessage(`User "${newUser.username}" created successfully.`)
+        handleCancelEdit()
+        if (isAdmin) loadUsers()
       }
     } catch (err) {
       setErrorMessage(err?.message || 'Operation failed.')
@@ -302,69 +285,35 @@ export default function AuthModal({
 
           {!currentUser ? (
             <div className="flex-1">
-                {isRegistering ? (
-                    // --- RESCUE REGISTRATION FORM ---
-                    <div className="animation-fade-in">
-                        <p className={labelClass}>Create First Admin</p>
-                        <form onSubmit={handleRegisterSubmit} className="space-y-3 mt-2">
-                            <div className="grid grid-cols-2 gap-2">
-                                <input className={inputClass} placeholder="First Name" value={newUser.firstName} onChange={e => setNewUser(p => ({...p, firstName: e.target.value}))} required />
-                                <input className={inputClass} placeholder="Last Name" value={newUser.lastName} onChange={e => setNewUser(p => ({...p, lastName: e.target.value}))} required />
-                            </div>
-                            <input className={inputClass} placeholder="Username" value={newUser.username} onChange={e => setNewUser(p => ({...p, username: e.target.value}))} required />
-                            <input type="email" className={inputClass} placeholder="Email" value={newUser.email} onChange={e => setNewUser(p => ({...p, email: e.target.value}))} required />
-                            <input type="password" className={inputClass} placeholder="Password" value={newUser.password} onChange={e => setNewUser(p => ({...p, password: e.target.value}))} required />
-                            
-                            <div className="pt-2 flex flex-col gap-2">
-                                <button type="submit" disabled={busy} className="w-full py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-xs font-bold text-white transition flex items-center justify-center gap-2">
-                                    <UserPlus size={14} /> {busy ? 'Creating...' : 'Create Admin'}
-                                </button>
-                                <button type="button" onClick={() => setIsRegistering(false)} className="text-[10px] text-slate-500 hover:text-slate-300 text-center">
-                                    Back to Login
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                ) : (
-                    // --- STANDARD LOGIN FORM ---
-                    <div className="animation-fade-in">
-                        <p className={labelClass}>Sign In</p>
-                        <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
-                            <input
-                                className={inputClass}
-                                placeholder="Username or Email"
-                                value={loginForm.username}
-                                onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
-                            />
-                            <input
-                                type="password"
-                                className={inputClass}
-                                placeholder="Password"
-                                value={loginForm.password}
-                                onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                            />
-                            <div className="pt-2 flex flex-col gap-2">
-                                <button
-                                type="submit"
-                                disabled={busy}
-                                className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                <LogIn size={14} />
-                                {busy ? 'Verifying...' : 'Sign In'}
-                                </button>
-                                
-                                {/* TOGGLE TO REGISTER */}
-                                <button 
-                                    type="button" 
-                                    onClick={() => setIsRegistering(true)}
-                                    className="text-[10px] text-slate-500 hover:text-red-400 mt-2 text-center"
-                                >
-                                    Need to setup the first admin?
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
+                {/* --- SECURE LOGIN FORM ONLY --- */}
+                <div className="animation-fade-in">
+                    <p className={labelClass}>Sign In</p>
+                    <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
+                        <input
+                            className={inputClass}
+                            placeholder="Username or Email"
+                            value={loginForm.username}
+                            onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
+                        />
+                        <input
+                            type="password"
+                            className={inputClass}
+                            placeholder="Password"
+                            value={loginForm.password}
+                            onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                        />
+                        <div className="pt-2 flex flex-col gap-2">
+                            <button
+                            type="submit"
+                            disabled={busy}
+                            className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                            <LogIn size={14} />
+                            {busy ? 'Verifying...' : 'Sign In'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
           ) : (
              <div className="mt-auto">
@@ -510,7 +459,7 @@ export default function AuthModal({
                 </div>
               )}
 
-              {/* ... (Existing Reset and System tabs remain unchanged) ... */}
+              {/* ... (Reset and System tabs) ... */}
               {activeTab === 'reset' && (
                 <div className="space-y-6">
                   <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
@@ -580,9 +529,6 @@ export default function AuthModal({
                                     Save
                                   </button>
                               </div>
-                              <p className="text-[10px] text-slate-500">
-                                Updates the model used by the backend.
-                              </p>
                           </div>
                       </div>
                   </div>
