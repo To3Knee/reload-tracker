@@ -3,11 +3,9 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 11/29/2025
 //Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.3.1
+//Version: 2.4.0
 //About: Manage component LOT purchases.
-//       Features: Admin editing, user attribution, Pro UI,
-//       Printable Inventory Labels, and Deep-Link Highlighting.
+//       Updated: Haptic Feedback.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -20,6 +18,7 @@ import {
 } from '../lib/db'
 import { printPurchaseLabel } from '../lib/labels'
 import { Printer } from 'lucide-react'
+import { HAPTIC } from '../lib/haptics' // NEW: Haptics
 
 const COMPONENT_TYPES = [
   { value: 'powder', label: 'Powder' },
@@ -115,11 +114,13 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
       caseCondition: lot.caseCondition || '',
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    HAPTIC.click()
   }
 
   const handleCancelEdit = () => {
     setEditingId(null)
     setForm(DEFAULT_FORM)
+    HAPTIC.soft()
   }
 
   const handleSubmit = async e => {
@@ -136,6 +137,7 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
         tax: Number(form.tax) || 0,
         purchaseDate: form.date,
       })
+      HAPTIC.success() // Vibrate on Save
       const data = await getAllPurchases()
       setPurchases(data)
       if (onChanged) onChanged()
@@ -150,6 +152,7 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
     if (typeof window !== 'undefined' && !window.confirm('Delete this purchase?')) {
       return
     }
+    HAPTIC.error() // Vibrate on Delete
     await deletePurchase(id)
     const data = await getAllPurchases()
     setPurchases(data)
@@ -531,7 +534,7 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
                                   </>
                                 )}
                                 <span 
-                                    onClick={() => printPurchaseLabel(p)}
+                                    onClick={() => { printPurchaseLabel(p); HAPTIC.click(); }}
                                     className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer text-[11px] flex items-center gap-1"
                                 >
                                     <Printer size={10} /> Label

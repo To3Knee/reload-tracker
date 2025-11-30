@@ -1,13 +1,11 @@
 //===============================================================
 //Script Name: Recipes.jsx
 //Script Location: src/components/Recipes.jsx
-//Date: 11/29/2025
+//Date: 11/30/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.2.1
-//About: Manage saved load recipes and optional ballistics data.
-//       Features: "Sexy" PDF export, Pro Excel export,
-//       Admin editing, user attribution, AND Batch Logging.
+//Version: 2.3.0
+//About: Manage recipes. Features Haptic feedback for interactions.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -19,8 +17,9 @@ import {
   calculatePerUnit
 } from '../lib/db'
 import { downloadExcel } from '../lib/excel'
-import { createBatch } from '../lib/batches' // NEW: Import batch helper
-import { ClipboardList, X } from 'lucide-react' // Icons for modal
+import { createBatch } from '../lib/batches' 
+import { ClipboardList, X } from 'lucide-react'
+import { HAPTIC } from '../lib/haptics' // NEW: Haptics
 
 const PROFILE_TYPES = [
   { value: 'range', label: 'Range / Plinking' },
@@ -34,7 +33,7 @@ const DEFAULT_FORM = {
   name: '',
   caliber: '',
   profileType: 'range',
-  source: '', // NEW FIELD
+  source: '', 
   chargeGrains: '',
   brassReuse: 5,
   lotSize: 200,
@@ -105,7 +104,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
         name: form.name?.trim() || '',
         caliber: form.caliber?.trim() || '',
         profileType: form.profileType || 'custom',
-        source: form.source?.trim() || '', // Save Source
+        source: form.source?.trim() || '',
         chargeGrains:
           form.chargeGrains !== '' ? Number(form.chargeGrains) : null,
         brassReuse:
@@ -130,9 +129,6 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
         rangeNotes: form.rangeNotes || '',
       }
 
-      // Calculate Power Factor on save if not provided by user input? 
-      // Actually, backend/service handles PF calculation, but we can pass it if we want.
-      // For now, let's let the backend calculate it to be safe, or pass it.
       const powerFactor =
         base.bulletWeightGr && base.muzzleVelocityFps
           ? (base.bulletWeightGr * base.muzzleVelocityFps) / 1000
@@ -155,6 +151,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
           }
 
       await saveRecipe(payload)
+      HAPTIC.success() // Success vibration
       resetForm()
       await loadRecipes()
     } finally {
@@ -169,7 +166,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
       name: recipe.name || '',
       caliber: recipe.caliber || '',
       profileType: recipe.profileType || 'custom',
-      source: recipe.source || '', // Populate Source
+      source: recipe.source || '',
       chargeGrains:
         recipe.chargeGrains != null ? String(recipe.chargeGrains) : '',
       brassReuse: recipe.brassReuse != null ? recipe.brassReuse : 5,
@@ -194,6 +191,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
       rangeNotes: recipe.rangeNotes || '',
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    HAPTIC.click()
   }
 
   async function handleDelete(id) {
@@ -204,6 +202,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     ) {
       return
     }
+    HAPTIC.error() // Warning buzz
     setDeletingId(id)
     try {
       await deleteRecipe(id)
@@ -223,6 +222,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
         archived: !recipe.archived,
       }
       await saveRecipe(updated)
+      HAPTIC.soft()
       if (editingRecipe && editingRecipe.id === recipe.id) {
         setEditingRecipe(updated)
       }
@@ -244,13 +244,14 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   }
 
   function handleExportExcel(dataToExport = recipes, filenameSuffix = 'all') {
+    HAPTIC.click()
     const timestamp = new Date().toISOString().slice(0, 10)
     
     const columns = [
       { header: 'Recipe Name', key: 'name', width: 25 },
       { header: 'Caliber', key: 'caliber', width: 15 },
       { header: 'Profile', key: 'profileType', width: 15 },
-      { header: 'Source', key: 'source', width: 20 }, // Export Source
+      { header: 'Source', key: 'source', width: 20 },
       { header: 'Bullet (gr)', key: 'bulletWeightGr', width: 12 },
       { header: 'Velocity (fps)', key: 'muzzleVelocityFps', width: 15 },
       { header: 'Power Factor', key: 'powerFactor', width: 15 },
@@ -267,6 +268,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
 
   function handleExportPdf(recipe) {
     if (!recipe) return
+    HAPTIC.click()
 
     const logoUrl = `${window.location.origin}/logo.png`
     
@@ -278,7 +280,6 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     const pf = recipe.powerFactor ? recipe.powerFactor.toFixed(1) : '---'
     const source = recipe.source || ''
     
-    // Added Source to PDF HTML
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -470,14 +471,11 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   function openBatchModal(recipe) {
     if (!canEdit) return
     setBatchRecipe(recipe)
+    HAPTIC.click()
     
-    // Try to auto-select components based on caliber/names if possible,
-    // or just default to empty.
-    // Filter purchases by caliber matches for convenience.
     const filterCaliber = (p) => !p.caliber || !recipe.caliber || p.caliber === recipe.caliber
     const active = (p) => p.status !== 'depleted'
 
-    // Auto-select first available if matches, else empty
     const recPowder = purchases.find(p => p.componentType === 'powder' && active(p) && filterCaliber(p))
     const recBullet = purchases.find(p => p.componentType === 'bullet' && active(p) && filterCaliber(p))
     const recPrimer = purchases.find(p => p.componentType === 'primer' && active(p) && filterCaliber(p))
@@ -508,9 +506,9 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
         caseLotId: batchForm.caseLotId,
         notes: batchForm.notes
       })
+      HAPTIC.success() // Vibrate on success
       setBatchModalOpen(false)
       setBatchRecipe(null)
-      // Removed alert() - just close cleanly
     } catch (err) {
       alert(err.message)
     } finally {

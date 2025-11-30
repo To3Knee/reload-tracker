@@ -1,11 +1,10 @@
 //===============================================================
 //Script Name: RangeLogs.jsx
 //Script Location: src/components/RangeLogs.jsx
-//Date: 11/29/2025
+//Date: 11/30/2025
 //Created By: T03KNEE
-//Version: 1.8.0
-//About: Range Logs with unobstructed Target Image.
-//       Updated: Moved QR Code to Header.
+//Version: 1.9.0
+//About: Range Logs with Haptic Feedback.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -14,6 +13,7 @@ import { getBatches } from '../lib/batches'
 import { Target, Plus, Wind, Thermometer, ExternalLink, Calendar, MapPin, Printer } from 'lucide-react'
 import UploadButton from './UploadButton'
 import QRCode from 'qrcode'
+import { HAPTIC } from '../lib/haptics' // NEW: Import Haptics
 
 export function RangeLogs({ recipes = [], canEdit, highlightId }) {
   const [logs, setLogs] = useState([])
@@ -45,7 +45,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     loadData()
   }, [])
 
-  // Handle Deep Linking
   useEffect(() => {
     if (highlightId && logs.length > 0) {
       const targetId = String(highlightId)
@@ -91,12 +90,14 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     })
     setIsFormOpen(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    HAPTIC.click()
   }
 
   function handleCancel() {
     setEditingId(null)
     setForm(DEFAULT_FORM)
     setIsFormOpen(false)
+    HAPTIC.soft()
   }
 
   async function handleSubmit(e) {
@@ -108,9 +109,11 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
       } else {
           await createRangeLog(form)
       }
+      HAPTIC.success() // Success vibration
       handleCancel()
       loadData()
     } catch (err) {
+      HAPTIC.error() // Error vibration
       alert(err.message)
     } finally {
       setLoading(false)
@@ -119,6 +122,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
 
   async function handleDelete(id) {
     if(!window.confirm('Delete this range log?')) return
+    HAPTIC.error() // Destructive action vibration
     await deleteRangeLog(id)
     loadData()
   }
@@ -137,8 +141,8 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     return r ? `${r.name} (${r.caliber})` : 'Unknown Load'
   }
 
-  // --- PDF EXPORT (QR IN HEADER VERSION) ---
   const handlePrintLog = async (log) => {
+    HAPTIC.click()
     const title = getRecipeDisplay(log)
     const [recipeName, caliber] = title.includes('(') ? title.split('(') : [title, '']
     const cleanCaliber = caliber ? caliber.replace(')', '') : ''
@@ -162,189 +166,61 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
           @page { margin: 0; size: 4in 6in; }
-          
-          /* FORCE COLORS ON PRINT */
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
           body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #fff; color: #111; }
-          
-          .card { 
-            width: 4in; height: 6in; 
-            display: flex; flex-direction: column; 
-            overflow: hidden; 
-            position: relative;
-            background: #fff;
-          }
-          
-          /* HEADER */
-          .header { 
-            background-color: #0f0f0f !important; 
-            color: white !important; 
-            padding: 12px 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 5px solid #b33c3c !important; 
-          }
-          
+          .card { width: 4in; height: 6in; display: flex; flex-direction: column; overflow: hidden; position: relative; background: #fff; }
+          .header { background-color: #0f0f0f !important; color: white !important; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #b33c3c !important; }
           .header-left { flex: 1; }
           .header-left h1 { font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.05em; line-height:1.1; }
           .header-left h2 { font-size: 11px; font-weight: 600; color: #b33c3c !important; margin: 2px 0 0 0; text-transform: uppercase; letter-spacing: 0.1em; }
           .header-left p { font-size: 9px; color: #aaa !important; margin: 4px 0 0 0; font-weight:400; }
-          
           .header-right { display: flex; align-items: center; gap: 15px; }
           .logo { height: 40px; width: auto; }
-
-          /* Header QR Code */
-          .header-qr {
-            background: white !important;
-            padding: 3px;
-            border-radius: 3px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          }
+          .header-qr { background: white !important; padding: 3px; border-radius: 3px; display: flex; flex-direction: column; align-items: center; }
           .qr-img { width: 38px; height: 38px; display: block; }
           .qr-label { font-size: 4px; color: black; font-weight: 900; text-transform: uppercase; margin-top: 1px; letter-spacing: 0.05em; }
-
-          /* CONTENT */
           .content { padding: 15px 20px; flex: 1; display: flex; flex-direction: column; }
-
-          .target-container { 
-            width: 100%; height: 2.2in; 
-            background: #f0f0f0 !important; 
-            border-radius: 6px; 
-            overflow: hidden; 
-            margin-bottom: 15px; 
-            border: 1px solid #ddd;
-            position: relative;
-          }
+          .target-container { width: 100%; height: 2.2in; background: #f0f0f0 !important; border-radius: 6px; overflow: hidden; margin-bottom: 15px; border: 1px solid #ddd; position: relative; }
           .main-img { width: 100%; height: 100%; object-fit: cover; }
           .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #999; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-
-          /* Data Grid */
           .grid-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-          
-          .stat-box { 
-            background-color: #f4f4f4 !important; 
-            padding: 6px 8px; 
-            border-radius: 4px; 
-            border-left: 3px solid #ddd !important;
-          }
-          .stat-box.highlight { 
-            border-left-color: #b33c3c !important; 
-            background-color: #fff0f0 !important; 
-          }
-          
+          .stat-box { background-color: #f4f4f4 !important; padding: 6px 8px; border-radius: 4px; border-left: 3px solid #ddd !important; }
+          .stat-box.highlight { border-left-color: #b33c3c !important; background-color: #fff0f0 !important; }
           .stat-label { font-size: 7px; text-transform: uppercase; color: #666; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 1px; }
           .stat-val { font-size: 12px; font-weight: 800; color: #111; display: block; }
           .stat-unit { font-size: 8px; font-weight: 500; color: #888; margin-left: 1px; }
-
-          .notes-section { 
-            margin-top: 8px; 
-            background: #fff; 
-            border: 1px dashed #ccc; 
-            padding: 10px; 
-            border-radius: 4px; 
-            flex: 1;
-          }
+          .notes-section { margin-top: 8px; background: #fff; border: 1px dashed #ccc; padding: 10px; border-radius: 4px; flex: 1; }
           .notes-label { font-size: 8px; font-weight: 900; text-transform: uppercase; color: #b33c3c; margin-bottom: 4px; display: block; }
           .notes-text { font-size: 9px; line-height: 1.4; color: #333; }
-
-          .footer { 
-            padding: 10px 20px; 
-            background: #f4f4f4 !important; 
-            border-top: 1px solid #e0e0e0; 
-            font-size: 8px; 
-            color: #888; 
-            text-transform: uppercase; 
-            letter-spacing: 0.1em;
-            display: flex; justify-content: space-between;
-          }
-          
-          @media screen {
-            .print-warning {
-              position: fixed; top: 0; left: 0; right: 0;
-              background: #b33c3c; color: white;
-              text-align: center; padding: 10px; font-weight: bold; font-size: 14px;
-            }
-          }
+          .footer { padding: 10px 20px; background: #f4f4f4 !important; border-top: 1px solid #e0e0e0; font-size: 8px; color: #888; text-transform: uppercase; letter-spacing: 0.1em; display: flex; justify-content: space-between; }
+          @media screen { .print-warning { position: fixed; top: 0; left: 0; right: 0; background: #b33c3c; color: white; text-align: center; padding: 10px; font-weight: bold; font-size: 14px; } }
           @media print { .print-warning { display: none; } }
         </style>
       </head>
       <body>
-        <div class="print-warning">
-           ⚠️ IMPORTANT: Check "Background graphics" in print settings!
-        </div>
+        <div class="print-warning">⚠️ IMPORTANT: Check "Background graphics" in print settings!</div>
         <div class="card">
           <div class="header">
-            <div class="header-left">
-              <h1>${recipeName}</h1>
-              <h2>${cleanCaliber}</h2>
-              <p>${dateStr} • ${log.location || 'Range'}</p>
-            </div>
-            
-            <div class="header-right">
-                <div class="header-qr">
-                    <img src="${qrDataUri}" class="qr-img" />
-                    <span class="qr-label">Scan</span>
-                </div>
-                <img src="${logoUrl}" class="logo" />
-            </div>
+            <div class="header-left"><h1>${recipeName}</h1><h2>${cleanCaliber}</h2><p>${dateStr} • ${log.location || 'Range'}</p></div>
+            <div class="header-right"><div class="header-qr"><img src="${qrDataUri}" class="qr-img" /><span class="qr-label">Scan</span></div><img src="${logoUrl}" class="logo" /></div>
           </div>
-          
           <div class="content">
-            <div class="target-container">
-               ${log.imageUrl ? `<img src="${log.imageUrl}" class="main-img" />` : '<div class="no-img">No Image</div>'}
-            </div>
-
+            <div class="target-container">${log.imageUrl ? `<img src="${log.imageUrl}" class="main-img" />` : '<div class="no-img">No Image</div>'}</div>
             <div class="grid-row">
-                <div class="stat-box highlight">
-                    <span class="stat-label">Group Size</span>
-                    <span class="stat-val">${log.groupSize || '--'}<span class="stat-unit">IN</span></span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">MOA</span>
-                    <span class="stat-val">${moa}</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">Distance</span>
-                    <span class="stat-val">${log.distance || '--'}<span class="stat-unit">YDS</span></span>
-                </div>
+                <div class="stat-box highlight"><span class="stat-label">Group Size</span><span class="stat-val">${log.groupSize || '--'}<span class="stat-unit">IN</span></span></div>
+                <div class="stat-box"><span class="stat-label">MOA</span><span class="stat-val">${moa}</span></div>
+                <div class="stat-box"><span class="stat-label">Distance</span><span class="stat-val">${log.distance || '--'}<span class="stat-unit">YDS</span></span></div>
             </div>
-
             <div class="grid-row">
-                <div class="stat-box">
-                    <span class="stat-label">Avg Velocity</span>
-                    <span class="stat-val">${log.velocity || '--'}<span class="stat-unit">FPS</span></span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">SD</span>
-                    <span class="stat-val">${log.sd || '--'}</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">ES</span>
-                    <span class="stat-val">${log.es || '--'}</span>
-                </div>
+                <div class="stat-box"><span class="stat-label">Avg Velocity</span><span class="stat-val">${log.velocity || '--'}<span class="stat-unit">FPS</span></span></div>
+                <div class="stat-box"><span class="stat-label">SD</span><span class="stat-val">${log.sd || '--'}</span></div>
+                <div class="stat-box"><span class="stat-label">ES</span><span class="stat-val">${log.es || '--'}</span></div>
             </div>
-
-            <div class="notes-section">
-                <span class="notes-label">Session Notes</span>
-                <div class="notes-text">
-                    ${log.notes || 'No notes recorded for this session.'}
-                    ${log.weather ? `<br/><br/><strong>Conditions:</strong> ${log.weather} ${log.temp ? `(${log.temp}°F)` : ''}` : ''}
-                </div>
-            </div>
+            <div class="notes-section"><span class="notes-label">Session Notes</span><div class="notes-text">${log.notes || 'No notes recorded.'}${log.weather ? `<br/><br/><strong>Conditions:</strong> ${log.weather} ${log.temp ? `(${log.temp}°F)` : ''}` : ''}</div></div>
           </div>
-
-          <div class="footer">
-             <span>Log ID: ${log.id}</span>
-             <span>Reload Tracker</span>
-          </div>
+          <div class="footer"><span>Log ID: ${log.id}</span><span>Reload Tracker</span></div>
         </div>
-        <script>
-            window.onload = () => { setTimeout(() => window.print(), 500); };
-        </script>
+        <script>window.onload = () => { setTimeout(() => window.print(), 500); };</script>
       </body>
       </html>
     `
@@ -368,7 +244,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
         
         {canEdit && !isFormOpen && (
             <button 
-                onClick={() => { setForm(DEFAULT_FORM); setIsFormOpen(true); }} 
+                onClick={() => { setForm(DEFAULT_FORM); setIsFormOpen(true); HAPTIC.click(); }} 
                 className="px-4 py-2 rounded-full bg-red-700 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-red-900/20 hover:bg-red-600 transition"
             >
                 <Plus size={14} /> Log Session
@@ -376,7 +252,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
         )}
       </div>
 
-      {/* ADD/EDIT FORM */}
       {isFormOpen && (
         <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in">
             <h3 className="text-sm font-bold text-slate-200 mb-4 flex justify-between items-center">

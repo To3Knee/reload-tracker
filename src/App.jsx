@@ -1,11 +1,12 @@
 //===============================================================
 //Script Name: App.jsx
 //Script Location: src/App.jsx
-//Date: 11/29/2025
+//Date: 11/30/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.8.0
-//About: Root shell. Updated to handle Deep Linking for Range Logs.
+//Version: 2.9.0
+//About: Root shell. 
+//       Updated: Mobile Badge Hidden + Haptic Tab Switching.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -23,11 +24,8 @@ import { APP_VERSION_LABEL } from './version'
 import AuthModal from './components/AuthModal'
 import AiModal from './components/AiModal'
 import { fetchSettings } from './lib/settings'
-import {
-  getCurrentUser,
-  logoutUser,
-  ROLE_ADMIN,
-} from './lib/auth'
+import { getCurrentUser, logoutUser, ROLE_ADMIN } from './lib/auth'
+import { HAPTIC } from './lib/haptics' // NEW: Haptics Library
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('calculator')
@@ -76,7 +74,7 @@ export default function App() {
       const params = new URLSearchParams(window.location.search)
       const batchId = params.get('batchId')
       const purchaseId = params.get('purchaseId')
-      const rangeLogId = params.get('rangeLogId') // NEW: Handle Range Log Links
+      const rangeLogId = params.get('rangeLogId')
 
       if (batchId) {
         setActiveTab('batches')
@@ -105,11 +103,18 @@ export default function App() {
       localStorage.setItem('ageConfirmed', 'true')
     }
     setAgeConfirmed(true)
+    HAPTIC.click() // Vibrate on confirm
   }
 
   const handleUseRecipe = recipe => {
     setSelectedRecipe(recipe)
     setActiveTab('calculator')
+    HAPTIC.soft()
+  }
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId)
+    HAPTIC.soft() // Vibrate on tab switch
   }
 
   const isAdmin = currentUser && currentUser.role === ROLE_ADMIN
@@ -130,7 +135,7 @@ export default function App() {
           </p>
           <button
             onClick={confirmAge}
-            className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-red-700 hover:bg-red-600 text-sm font-semibold shadow-lg shadow-red-900/40 transition"
+            className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-red-700 hover:bg-red-600 text-sm font-semibold shadow-lg shadow-red-900/40 transition active:scale-95"
           >
             I am 21 or older
           </button>
@@ -146,10 +151,10 @@ export default function App() {
     <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100">
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange} // Use wrapper for haptics
         currentUser={currentUser}
-        onOpenSettings={() => setIsAuthOpen(true)}
-        onOpenAi={() => setIsAiOpen(true)}
+        onOpenSettings={() => { setIsAuthOpen(true); HAPTIC.click(); }}
+        onOpenAi={() => { setIsAiOpen(true); HAPTIC.click(); }}
         isAiEnabled={aiEnabled}
       />
 
@@ -210,7 +215,7 @@ export default function App() {
           <RangeLogs 
              recipes={recipes}
              canEdit={!!isAdmin}
-             highlightId={scannedId} // Pass the scanned ID down
+             highlightId={scannedId}
           />
         )}
         {activeTab === 'analytics' && (
@@ -226,12 +231,14 @@ export default function App() {
           onLogin={user => {
             setCurrentUser(user)
             setIsAuthOpen(false)
+            HAPTIC.success()
           }}
           onLogout={async () => {
             await logoutUser()
             setCurrentUser(null)
             setIsAuthOpen(false)
             setIsAiOpen(false)
+            HAPTIC.soft()
           }}
         />
       )}
@@ -243,7 +250,8 @@ export default function App() {
         />
       )}
 
-      <div className="fixed bottom-2 right-3 z-50 text-[10px] text-slate-500">
+      {/* UPDATED FOOTER: HIDDEN ON MOBILE (hidden md:block) */}
+      <div className="hidden md:block fixed bottom-2 right-3 z-50 text-[10px] text-slate-500">
         <span className="px-2 py-[2px] rounded-full border border-red-600/40 bg-black/70 backdrop-blur">
           Reload Tracker {APP_VERSION_LABEL}
         </span>
