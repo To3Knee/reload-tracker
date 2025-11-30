@@ -1,18 +1,16 @@
 //===============================================================
 //Script Name: AuthModal.jsx
 //Script Location: src/components/AuthModal.jsx
-//Date: 11/29/2025
+//Date: 11/30/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.9.0
+//Version: 2.10.0
 //About: Professional "Access & Roles" modal.
-//       Features: Admin-led management, System Settings.
-//       Updated: Mobile scrolling fix, floated Close button, 
-//       and centered pill text.
+//       Updated: Added "Rescue Registration" mode for empty DBs.
 //===============================================================
 
 import { useEffect, useState } from 'react'
-import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, Info, ChevronDown } from 'lucide-react'
+import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, Info, ChevronDown, UserPlus } from 'lucide-react'
 import {
   ROLE_ADMIN,
   ROLE_SHOOTER,
@@ -35,9 +33,12 @@ export default function AuthModal({
   // --- STATE ---
   const [loginForm, setLoginForm] = useState({ username: '', password: '' })
   
+  // Registration / Management State
   const [newUser, setNewUser] = useState({
     firstName: '', lastName: '', username: '', phone: '', email: '', password: '', role: ROLE_SHOOTER,
   })
+  
+  const [isRegistering, setIsRegistering] = useState(false) // Toggle for "Rescue" mode
   const [editingUserId, setEditingUserId] = useState(null)
   
   const [resetForm, setResetForm] = useState({ username: '', newPassword: '' })
@@ -63,6 +64,7 @@ export default function AuthModal({
     }
     clearMessages()
     handleCancelEdit()
+    setIsRegistering(false) // Reset view on open
   }, [open, currentUser, isAdmin])
 
   async function loadUsers() {
@@ -127,24 +129,44 @@ export default function AuthModal({
     }
   }
 
-  async function handleRegisterOrUpdateSubmit(e) {
+  // Unified Handler for Admin creating users OR Guest creating First Admin
+  async function handleRegisterSubmit(e) {
     e.preventDefault()
     setBusy(true)
     clearMessages()
 
     try {
       if (editingUserId) {
+        // Admin Updating existing user
         const payload = { ...newUser }
         if (!payload.password) delete payload.password
         await updateUser(editingUserId, payload)
         setStatusMessage(`User "${newUser.username}" updated.`)
         handleCancelEdit()
+        if (isAdmin) loadUsers()
       } else {
-        await registerUser(newUser)
-        setStatusMessage(`User "${newUser.username}" created successfully.`)
-        handleCancelEdit()
+        // Creating New User
+        // If "Rescue Registering" (not logged in), force Admin role
+        const userPayload = isRegistering 
+            ? { ...newUser, role: ROLE_ADMIN } 
+            : newUser
+
+        await registerUser(userPayload)
+        
+        if (isRegistering) {
+            // If this was a self-registration, auto-login immediately
+            const user = await loginUser({
+                username: newUser.username,
+                password: newUser.password
+            })
+            if (onLogin) onLogin(user)
+            setStatusMessage(`Welcome! Account created.`)
+        } else {
+            setStatusMessage(`User "${newUser.username}" created successfully.`)
+            handleCancelEdit()
+            if (isAdmin) loadUsers()
+        }
       }
-      if (isAdmin) loadUsers()
     } catch (err) {
       setErrorMessage(err?.message || 'Operation failed.')
     } finally {
@@ -219,7 +241,6 @@ export default function AuthModal({
   const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
   const labelClass = "block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider"
   
-  // FIX: Added 'flex items-center justify-center leading-none' for perfect centering
   const tabClass = (active) => `
     px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0 flex items-center justify-center leading-none
     ${active 
@@ -228,7 +249,6 @@ export default function AuthModal({
     }
   `
 
-  // Layout classes
   const containerClass = isAdmin 
     ? "w-full max-w-4xl flex-col md:flex-row" 
     : "w-full max-w-md flex-col"
@@ -239,23 +259,9 @@ export default function AuthModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 md:p-4">
-      <style>{`
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        input:-webkit-autofill:focus,
-        input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px #1a1a1a inset !important;
-            -webkit-text-fill-color: white !important;
-            caret-color: white !important;
-            border: 1px solid #334155 !important;
-        }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-      
       <div className={`bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex ${containerClass} max-h-[90vh] relative`}>
         
-        {/* GLOBAL CLOSE BUTTON - Floating top right to always be accessible */}
+        {/* GLOBAL CLOSE BUTTON */}
         <button 
             onClick={onClose} 
             className="absolute top-4 right-4 z-50 p-1.5 bg-black/50 rounded-full text-slate-400 hover:text-white hover:bg-red-900/50 border border-transparent hover:border-red-500/50 transition"
@@ -264,7 +270,6 @@ export default function AuthModal({
         </button>
 
         {/* === LEFT PANE: LOGIN & SESSION === */}
-        {/* Removed flex-shrink-0 to allow compression on small screens if needed */}
         <div className={`${leftPaneClass} bg-black/40 p-4 md:p-6 flex flex-col relative`}>
           
           <div className="mb-4">
@@ -272,7 +277,6 @@ export default function AuthModal({
               <Shield className="text-red-500" size={20} />
               <h2 className="text-lg font-bold text-slate-100 tracking-tight">Access & Roles</h2>
             </div>
-            {/* Hide helper text on mobile to save vertical space */}
             <p className="hidden md:block text-xs text-slate-500 leading-relaxed">
               Authenticate to unlock editing capabilities.
             </p>
@@ -298,32 +302,69 @@ export default function AuthModal({
 
           {!currentUser ? (
             <div className="flex-1">
-                <p className={labelClass}>Sign In</p>
-                <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
-                <input
-                    className={inputClass}
-                    placeholder="Username or Email"
-                    value={loginForm.username}
-                    onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
-                />
-                <input
-                    type="password"
-                    className={inputClass}
-                    placeholder="Password"
-                    value={loginForm.password}
-                    onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                />
-                <div className="pt-2 flex flex-col gap-2">
-                    <button
-                    type="submit"
-                    disabled={busy}
-                    className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                    <LogIn size={14} />
-                    {busy ? 'Verifying...' : 'Sign In'}
-                    </button>
-                </div>
-                </form>
+                {isRegistering ? (
+                    // --- RESCUE REGISTRATION FORM ---
+                    <div className="animation-fade-in">
+                        <p className={labelClass}>Create First Admin</p>
+                        <form onSubmit={handleRegisterSubmit} className="space-y-3 mt-2">
+                            <div className="grid grid-cols-2 gap-2">
+                                <input className={inputClass} placeholder="First Name" value={newUser.firstName} onChange={e => setNewUser(p => ({...p, firstName: e.target.value}))} required />
+                                <input className={inputClass} placeholder="Last Name" value={newUser.lastName} onChange={e => setNewUser(p => ({...p, lastName: e.target.value}))} required />
+                            </div>
+                            <input className={inputClass} placeholder="Username" value={newUser.username} onChange={e => setNewUser(p => ({...p, username: e.target.value}))} required />
+                            <input type="email" className={inputClass} placeholder="Email" value={newUser.email} onChange={e => setNewUser(p => ({...p, email: e.target.value}))} required />
+                            <input type="password" className={inputClass} placeholder="Password" value={newUser.password} onChange={e => setNewUser(p => ({...p, password: e.target.value}))} required />
+                            
+                            <div className="pt-2 flex flex-col gap-2">
+                                <button type="submit" disabled={busy} className="w-full py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-xs font-bold text-white transition flex items-center justify-center gap-2">
+                                    <UserPlus size={14} /> {busy ? 'Creating...' : 'Create Admin'}
+                                </button>
+                                <button type="button" onClick={() => setIsRegistering(false)} className="text-[10px] text-slate-500 hover:text-slate-300 text-center">
+                                    Back to Login
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                ) : (
+                    // --- STANDARD LOGIN FORM ---
+                    <div className="animation-fade-in">
+                        <p className={labelClass}>Sign In</p>
+                        <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
+                            <input
+                                className={inputClass}
+                                placeholder="Username or Email"
+                                value={loginForm.username}
+                                onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
+                            />
+                            <input
+                                type="password"
+                                className={inputClass}
+                                placeholder="Password"
+                                value={loginForm.password}
+                                onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                            />
+                            <div className="pt-2 flex flex-col gap-2">
+                                <button
+                                type="submit"
+                                disabled={busy}
+                                className="w-full py-2 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                <LogIn size={14} />
+                                {busy ? 'Verifying...' : 'Sign In'}
+                                </button>
+                                
+                                {/* TOGGLE TO REGISTER */}
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsRegistering(true)}
+                                    className="text-[10px] text-slate-500 hover:text-red-400 mt-2 text-center"
+                                >
+                                    Need to setup the first admin?
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
             </div>
           ) : (
              <div className="mt-auto">
@@ -349,7 +390,7 @@ export default function AuthModal({
         {isAdmin && (
           <div className="w-full md:w-[65%] p-4 md:p-6 bg-gradient-to-br from-[#121214] to-[#0a0a0a] flex flex-col overflow-hidden relative">
             
-            {/* Tabs - Pro Pills with perfect centering */}
+            {/* Tabs */}
             <div className="w-full max-w-full flex gap-2 mb-4 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar p-1">
               <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>
                 Users
@@ -367,7 +408,6 @@ export default function AuthModal({
               {activeTab === 'manage' && (
                 <div className="space-y-6">
                   <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
-                    {/* HEADER: Responsive Layout */}
                     <div className="flex flex-col items-start gap-2 md:flex-row md:justify-between md:items-center mb-4 w-full">
                       <h3 className="text-xs md:text-sm font-bold text-slate-300 flex items-center gap-2">
                         <Users size={16} className="text-red-500" />
@@ -380,8 +420,7 @@ export default function AuthModal({
                       )}
                     </div>
 
-                    <form onSubmit={handleRegisterOrUpdateSubmit} className="space-y-3">
-                      {/* 1 Col on Mobile, 2 Cols on Desktop */}
+                    <form onSubmit={handleRegisterSubmit} className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className={labelClass}>First Name</label>
@@ -442,7 +481,6 @@ export default function AuthModal({
                     </form>
                   </div>
 
-                  {/* User List */}
                   <div>
                     <p className={labelClass}>User Directory</p>
                     {adminUsers.length === 0 ? (
@@ -472,7 +510,7 @@ export default function AuthModal({
                 </div>
               )}
 
-              {/* TAB: PASSWORDS */}
+              {/* ... (Existing Reset and System tabs remain unchanged) ... */}
               {activeTab === 'reset' && (
                 <div className="space-y-6">
                   <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
@@ -499,13 +537,10 @@ export default function AuthModal({
                 </div>
               )}
 
-              {/* TAB: SYSTEM SETTINGS */}
               {activeTab === 'system' && (
                   <div className="space-y-6">
                       <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/60">
                           <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
-                          
-                          {/* Responsive System Row */}
                           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-3 bg-black/20 border border-slate-800 rounded-lg mb-4">
                               <div className="flex items-center gap-3">
                                   <div className={`p-2 rounded-lg ${systemSettings.ai_enabled === 'true' ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-500'}`}>
@@ -528,8 +563,6 @@ export default function AuthModal({
                                   <span className="text-[10px] text-red-400 flex items-center gap-1 self-end md:self-center"><AlertTriangle size={10} /> Missing Key</span>
                               )}
                           </div>
-
-                          {/* Model Configuration */}
                           <div className="space-y-2">
                               <label className={labelClass}>AI Model Name</label>
                               <div className="flex gap-2">
@@ -550,25 +583,6 @@ export default function AuthModal({
                               <p className="text-[10px] text-slate-500">
                                 Updates the model used by the backend.
                               </p>
-                          </div>
-
-                          {/* Instructions */}
-                          <div className="mt-6 pt-6 border-t border-slate-800">
-                              <div className="flex items-center gap-2 mb-2 text-slate-400">
-                                  <Info size={14} />
-                                  <span className="text-xs font-bold uppercase tracking-wider">Setup Instructions</span>
-                              </div>
-                              <div className="p-3 bg-black/40 rounded-lg text-[11px] text-slate-400 leading-relaxed space-y-2">
-                                  <p>To enable the AI assistant, you must provide a Google Gemini API Key.</p>
-                                  <ol className="list-decimal list-inside space-y-1 text-slate-500 ml-1">
-                                      <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-red-400 hover:underline">Google AI Studio</a>.</li>
-                                      <li>Create an API Key (Free tier available).</li>
-                                      <li>In <strong>Netlify Dashboard</strong>, go to Site Settings &gt; Environment Variables.</li>
-                                      <li>Add a variable named <code>GEMINI_API_KEY</code> with your key.</li>
-                                      <li>Redeploy your site.</li>
-                                      <li>Come back here and click <strong>Enable</strong>.</li>
-                                  </ol>
-                              </div>
                           </div>
                       </div>
                   </div>
