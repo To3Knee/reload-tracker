@@ -3,8 +3,9 @@
 //Script Location: src/components/RangeLogs.jsx
 //Date: 11/30/2025
 //Created By: T03KNEE
-//Version: 2.0.0 (GOLD MASTER)
-//About: Range Logs. Merged features: Haptics + PWA Close Button.
+//Version: 2.2.0
+//About: Range Logs. 
+//       Updated: Unified "Sexy" Print style (Matches Recipes).
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -141,7 +142,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     return r ? `${r.name} (${r.caliber})` : 'Unknown Load'
   }
 
-  // --- PDF EXPORT (WITH CLOSE BUTTON & QR) ---
+  // --- PDF EXPORT (MATCHES RECIPE STYLE) ---
   const handlePrintLog = async (log) => {
     HAPTIC.click()
     const title = getRecipeDisplay(log)
@@ -168,8 +169,23 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
           @page { margin: 0; size: 4in 6in; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #fff; color: #111; }
-          .card { width: 4in; height: 6in; display: flex; flex-direction: column; overflow: hidden; position: relative; background: #fff; }
+          
+          /* MATCHING RECIPE CARD BODY STYLE */
+          body { 
+            margin: 0; padding: 0; 
+            font-family: 'Inter', sans-serif; 
+            background: #000; /* Dark background on screen */
+            color: #111; 
+          }
+
+          .card { 
+            width: 4in; height: 6in; 
+            display: flex; flex-direction: column; 
+            overflow: hidden; 
+            position: relative;
+            background: #fff; /* White card */
+          }
+          
           .header { background-color: #0f0f0f !important; color: white !important; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #b33c3c !important; }
           .header-left { flex: 1; }
           .header-left h1 { font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.05em; line-height:1.1; }
@@ -195,21 +211,20 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
           .notes-text { font-size: 9px; line-height: 1.4; color: #333; }
           .footer { padding: 10px 20px; background: #f4f4f4 !important; border-top: 1px solid #e0e0e0; font-size: 8px; color: #888; text-transform: uppercase; letter-spacing: 0.1em; display: flex; justify-content: space-between; }
           
-          /* === MOBILE CLOSE BUTTON === */
+          /* MATCHING RECIPE STYLE CLOSE BUTTON */
           .close-btn {
-            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            position: fixed; top: 10px; right: 10px; z-index: 9999;
             background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px;
             border-radius: 50px; font-family: sans-serif; font-weight: bold; font-size: 14px;
             text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
             backdrop-filter: blur(10px);
           }
-          @media print { .close-btn, .print-warning { display: none !important; } }
+          @media print { .close-btn { display: none !important; } }
         </style>
       </head>
       <body>
         <button onclick="window.close()" class="close-btn">Done / Close</button>
-        <div class="print-warning">⚠️ IMPORTANT: Check "Background graphics" in print settings!</div>
         <div class="card">
           <div class="header">
             <div class="header-left"><h1>${recipeName}</h1><h2>${cleanCaliber}</h2><p>${dateStr} • ${log.location || 'Range'}</p></div>
@@ -231,7 +246,9 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
           </div>
           <div class="footer"><span>Log ID: ${log.id}</span><span>Reload Tracker</span></div>
         </div>
-        <script>window.onload = () => { setTimeout(() => window.print(), 500); };</script>
+        <script>
+            window.onload = () => { setTimeout(() => window.print(), 500); };
+        </script>
       </body>
       </html>
     `
