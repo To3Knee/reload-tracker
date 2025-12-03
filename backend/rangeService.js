@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Reload Tracker Range Service
 //Script Location: backend/rangeService.js
-//Date: 11/29/2025
+//Date: 12/01/2025
 //Created By: T03KNEE
-//Version: 1.1.0
-//About: Business logic for managing Range / Performance Logs.
-//       Updated: Added updateRangeLog support.
+//Version: 2.6.0
+//About: Business logic for Range Logs.
+//       Updated: Added User Attribution.
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -21,35 +21,46 @@ export async function listRangeLogs(filters = {}) {
   const sql = `
     SELECT 
       rl.*,
-      r.name as recipe_name, r.caliber,
-      b.load_date as batch_date
+      r.name as recipe_name, r.caliber as recipe_caliber,
+      f.name as firearm_name, f.platform as firearm_platform,
+      b.load_date as batch_date,
+      uc.username as created_by,
+      uu.username as updated_by
     FROM range_logs rl
     JOIN recipes r ON rl.recipe_id = r.id
+    LEFT JOIN firearms f ON rl.firearm_id = f.id
     LEFT JOIN batches b ON rl.batch_id = b.id
-    ORDER BY rl.log_date DESC, rl.id DESC
+    LEFT JOIN users uc ON rl.created_by_user_id = uc.id
+    LEFT JOIN users uu ON rl.updated_by_user_id = uu.id
+    ORDER BY rl.date DESC, rl.id DESC
     LIMIT 50
   `
   const res = await query(sql)
   
   return res.rows.map(row => ({
     id: row.id,
-    date: row.log_date.toISOString().slice(0, 10),
+    date: row.date ? new Date(row.date).toISOString().slice(0, 10) : null,
     recipeId: row.recipe_id,
     recipeName: row.recipe_name,
-    caliber: row.caliber,
+    caliber: row.recipe_caliber,
+    firearmId: row.firearm_id,
+    firearmName: row.firearm_name,
+    roundsFired: row.rounds_fired || 0,
     batchId: row.batch_id,
-    batchDate: row.batch_date ? row.batch_date.toISOString().slice(0, 10) : null,
-    
+    batchDate: row.batch_date ? new Date(row.batch_date).toISOString().slice(0, 10) : null,
     distance: Number(row.distance_yards),
     groupSize: Number(row.group_size_inches),
-    velocity: Number(row.avg_velocity_fps),
-    sd: Number(row.sd_velocity),
-    es: Number(row.es_velocity),
-    
+    velocity: Number(row.velocity_fps),
+    sd: Number(row.sd),
+    es: Number(row.es),
+    shots: row.shots || [],
     weather: row.weather,
-    temp: Number(row.temperature),
+    temp: Number(row.temp_f),
     notes: row.notes,
-    imageUrl: row.image_url
+    imageUrl: row.image_url,
+    createdBy: row.created_by,
+    updatedBy: row.updated_by,
+    updatedAt: row.updated_at
   }))
 }
 
@@ -59,45 +70,43 @@ export async function createRangeLog(payload, currentUser) {
   }
 
   const {
-    recipeId, batchId, date,
-    distance, groupSize,
-    velocity, sd, es,
+    recipeId, batchId, firearmId, date,
+    roundsFired, distance, groupSize,
+    velocity, sd, es, shots,
     weather, temp, notes, imageUrl
   } = payload
 
   if (!recipeId) throw new ValidationError('Recipe is required.')
 
-  // Insert
   const sql = `
     INSERT INTO range_logs (
-      recipe_id, batch_id, log_date, 
+      recipe_id, batch_id, firearm_id, date, rounds_fired,
       distance_yards, group_size_inches, 
-      avg_velocity_fps, sd_velocity, es_velocity,
-      weather, temperature, notes, image_url,
+      velocity_fps, sd, es, shots,
+      weather, temp_f, notes, image_url,
       created_by_user_id
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
     )
     RETURNING id
   `
   
+  const rCount = normalizeNumber(roundsFired) || 0
   const params = [
-    recipeId, 
-    batchId || null, 
-    date || new Date(),
-    normalizeNumber(distance),
-    normalizeNumber(groupSize),
-    normalizeNumber(velocity),
-    normalizeNumber(sd),
-    normalizeNumber(es),
-    weather,
-    normalizeNumber(temp),
-    notes,
-    imageUrl,
-    currentUser.id
+    recipeId, batchId || null, firearmId || null, date || new Date(), rCount,
+    normalizeNumber(distance), normalizeNumber(groupSize), normalizeNumber(velocity),
+    normalizeNumber(sd), normalizeNumber(es), JSON.stringify(shots || []),
+    weather, normalizeNumber(temp), notes, imageUrl, currentUser.id
   ]
 
   const res = await query(sql, params)
+
+  if (firearmId && rCount > 0) {
+    await query(
+      `UPDATE firearms SET round_count = round_count + $1, updated_at = NOW() WHERE id = $2`,
+      [rCount, firearmId]
+    )
+  }
   return { id: res.rows[0].id, message: 'Range session logged.' }
 }
 
@@ -106,20 +115,10 @@ export async function updateRangeLog(id, updates, currentUser) {
     throw new ValidationError('Only Reloaders can edit logs.')
   }
   
-  // Build dynamic update query
   const fields = {
-    recipeId: 'recipe_id',
-    batchId: 'batch_id',
-    date: 'log_date',
-    distance: 'distance_yards',
-    groupSize: 'group_size_inches',
-    velocity: 'avg_velocity_fps',
-    sd: 'sd_velocity',
-    es: 'es_velocity',
-    weather: 'weather',
-    temp: 'temperature',
-    notes: 'notes',
-    imageUrl: 'image_url'
+    recipeId: 'recipe_id', batchId: 'batch_id', firearmId: 'firearm_id', roundsFired: 'rounds_fired',
+    date: 'date', distance: 'distance_yards', groupSize: 'group_size_inches', velocity: 'velocity_fps',
+    sd: 'sd', es: 'es', shots: 'shots', weather: 'weather', temp: 'temp_f', notes: 'notes', imageUrl: 'image_url'
   }
 
   const setParts = []
@@ -132,17 +131,22 @@ export async function updateRangeLog(id, updates, currentUser) {
 
     setParts.push(`${dbCol} = $${idx++}`)
     
-    // Normalize numbers/dates based on key
-    if (['distance','groupSize','velocity','sd','es','temp'].includes(key)) {
+    if (['distance','groupSize','velocity','sd','es','temp','roundsFired'].includes(key)) {
       values.push(normalizeNumber(val))
-    } else if (key === 'batchId') {
-      values.push(val || null) // Allow clearing batch
+    } else if (['batchId', 'firearmId'].includes(key)) {
+      values.push(val || null)
+    } else if (key === 'shots') {
+      values.push(JSON.stringify(val || []))
     } else {
       values.push(val)
     }
   }
 
   if (setParts.length === 0) return { message: 'No changes.' }
+
+  setParts.push(`updated_by_user_id = $${idx++}`)
+  values.push(currentUser.id)
+  setParts.push(`updated_at = NOW()`)
 
   values.push(id)
   const sql = `UPDATE range_logs SET ${setParts.join(', ')} WHERE id = $${idx}`

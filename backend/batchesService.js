@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Reload Tracker Batches Service
 //Script Location: backend/batchesService.js
-//Date: 11/29/2025
+//Date: 12/01/2025
 //Created By: T03KNEE
-//Version: 1.2.0
+//Version: 1.3.0
 //About: Business logic for logging loaded batches.
-//       Updated: Added updateBatch (Notes only) for safe editing.
+//       Updated: Added User Attribution (Created/Updated By).
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -34,17 +34,22 @@ export async function listBatches(currentUser) {
   const sql = `
     SELECT 
       b.id, b.load_date, b.rounds_loaded, b.notes,
+      b.created_at, b.updated_at,
       r.name as recipe_name, r.caliber,
       p.brand as powder_brand,
       bu.brand as bullet_brand,
       pr.brand as primer_brand,
-      ca.brand as case_brand
+      ca.brand as case_brand,
+      uc.username as created_by,
+      uu.username as updated_by
     FROM batches b
     JOIN recipes r ON b.recipe_id = r.id
     LEFT JOIN purchases p ON b.powder_lot_id = p.id
     LEFT JOIN purchases bu ON b.bullet_lot_id = bu.id
     LEFT JOIN purchases pr ON b.primer_lot_id = pr.id
     LEFT JOIN purchases ca ON b.case_lot_id = ca.id
+    LEFT JOIN users uc ON b.created_by_user_id = uc.id
+    LEFT JOIN users uu ON b.updated_by_user_id = uu.id
     ORDER BY b.load_date DESC, b.id DESC
     LIMIT 50
   `
@@ -55,7 +60,11 @@ export async function listBatches(currentUser) {
     rounds: row.rounds_loaded,
     recipe: `${row.recipe_name} (${row.caliber})`,
     components: [row.powder_brand, row.bullet_brand, row.primer_brand, row.case_brand].filter(Boolean).join(', '),
-    notes: row.notes
+    notes: row.notes,
+    createdBy: row.created_by,
+    updatedBy: row.updated_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   }))
 }
 
@@ -81,12 +90,7 @@ export async function createBatch(payload, currentUser) {
       const lot = powRes.rows[0]
       const charge = Number(recipe.charge_grains) || 0
       const totalGrainsNeeded = charge * roundsLoaded
-      
       const currentGrains = getAvailableGrains(lot.qty, lot.unit)
-      
-      if (currentGrains < totalGrainsNeeded) {
-         console.warn(`[Batch] Warning: Powder lot ${lot.lot_id} going negative.`)
-      }
       
       const remainingGrains = currentGrains - totalGrainsNeeded
       const newQty = convertGrainsToUnit(remainingGrains, lot.unit)
@@ -126,28 +130,24 @@ export async function createBatch(payload, currentUser) {
     recipeId, roundsLoaded, powderLotId, bulletLotId, primerLotId, caseLotId, notes, currentUser.id
   ])
 
-  return { id: res.rows[0].id, message: 'Batch logged and inventory updated.' }
+  return { id: res.rows[0].id, message: 'Batch logged.' }
 }
 
 export async function updateBatch(id, updates, currentUser) {
   if (!currentUser || currentUser.role !== 'admin') {
     throw new ValidationError('Only Reloaders can edit batches.')
   }
-  if (!id) throw new ValidationError('Batch ID is required.')
-
-  // Safe updates only (Metadata)
-  // We DO NOT update rounds/inventory here to avoid refund complexity.
+  
   const notes = updates.notes !== undefined ? updates.notes : null
   
   const res = await query(
-    'UPDATE batches SET notes = $1 WHERE id = $2 RETURNING *',
-    [notes, id]
+    `UPDATE batches 
+     SET notes = $1, updated_by_user_id = $2, updated_at = NOW() 
+     WHERE id = $3 RETURNING *`,
+    [notes, currentUser.id, id]
   )
   
-  if (res.rowCount === 0) {
-    throw new NotFoundError('Batch not found.')
-  }
-  
+  if (res.rowCount === 0) throw new NotFoundError('Batch not found.')
   return res.rows[0]
 }
 
@@ -155,13 +155,7 @@ export async function deleteBatch(id, currentUser) {
   if (!currentUser || currentUser.role !== 'admin') {
     throw new ValidationError('Only Reloaders can delete batches.')
   }
-  if (!id) throw new ValidationError('Batch ID is required.')
-
   const res = await query('DELETE FROM batches WHERE id = $1', [id])
-  
-  if (res.rowCount === 0) {
-    throw new NotFoundError('Batch not found.')
-  }
-  
+  if (res.rowCount === 0) throw new NotFoundError('Batch not found.')
   return { success: true }
 }

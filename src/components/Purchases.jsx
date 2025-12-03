@@ -1,30 +1,28 @@
 //===============================================================
 //Script Name: Purchases.jsx
 //Script Location: src/components/Purchases.jsx
-//Date: 11/29/2025
+//Date: 12/02/2025
 //Created By: T03KNEE
-//Version: 2.4.0
+//Version: 2.30.0 (No-Alerts UI Update)
 //About: Manage component LOT purchases.
-//       Updated: Haptic Feedback.
+//       - REMOVED: Browser alerts and confirms.
+//       - ADDED: Custom Delete Modal & Inline Error Banners.
+//       - UX: Consistent error handling patterns.
 //===============================================================
 
-import { useEffect, useMemo, useState } from 'react'
-import {
-  addPurchase,
-  deletePurchase,
-  getAllPurchases,
-  calculatePerUnit,
-  formatCurrency,
-} from '../lib/db'
-import { printPurchaseLabel } from '../lib/labels'
-import { Printer } from 'lucide-react'
-import { HAPTIC } from '../lib/haptics' // NEW: Haptics
+import { useState, useEffect, useMemo } from 'react'
+import { getAllPurchases, addPurchase, deletePurchase, formatCurrency, calculatePerUnit } from '../lib/db'
+import { Trash2, Plus, ShoppingCart, Search, Printer, X, Edit, User, Clock, Image as ImageIcon, AlertTriangle } from 'lucide-react'
+import { printPurchaseLabel } from '../lib/labels' 
+import { HAPTIC } from '../lib/haptics'
+import UploadButton from './UploadButton'
 
 const COMPONENT_TYPES = [
   { value: 'powder', label: 'Powder' },
-  { value: 'bullet', label: 'Bullets' },
-  { value: 'primer', label: 'Primers' },
-  { value: 'case', label: 'Cases / Brass' },
+  { value: 'bullet', label: 'Bullet / Projectile' },
+  { value: 'primer', label: 'Primer' },
+  { value: 'case', label: 'Brass / Case' },
+  { value: 'other', label: 'Other' },
 ]
 
 const UNITS = [
@@ -43,562 +41,393 @@ const CASE_CONDITIONS = [
 
 const DEFAULT_FORM = {
   componentType: 'powder',
-  caliber: '',
-  brand: '',
-  name: '',
-  lotId: '',
-  qty: '',
-  unit: '',
-  price: '',
-  shipping: '',
-  tax: '',
-  vendor: '',
-  date: '',
-  notes: '',
-  url: '',
-  status: 'active',
-  caseCondition: '',
+  caliber: '', brand: '', name: '', typeDetail: '',
+  lotId: '', qty: '', unit: 'lb', 
+  price: '', shipping: '', tax: '', 
+  vendor: '', date: new Date().toISOString().slice(0, 10), 
+  notes: '', url: '', imageUrl: '',
+  status: 'active', caseCondition: ''
 }
 
 export function Purchases({ onChanged, canEdit = true, highlightId }) {
   const [purchases, setPurchases] = useState([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const [form, setForm] = useState(DEFAULT_FORM)
+  
+  // UI States for No-Alerts
+  const [error, setError] = useState(null)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  useEffect(() => {
-    const load = async () => {
-      const data = await getAllPurchases()
-      setPurchases(data)
-    }
-    load()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
-  // Scroll to highlighted item when data loads or highlightId changes
   useEffect(() => {
     if (highlightId && purchases.length > 0) {
-      const targetId = String(highlightId)
-      const el = document.getElementById(`purchase-${targetId}`)
-      
-      if (el) {
+        const targetId = String(highlightId)
         setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            const el = document.getElementById(`purchase-${targetId}`)
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }, 600)
-      }
     }
   }, [highlightId, purchases])
 
-  const handleChange = e => {
-    const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
+  async function loadData() {
+    try {
+        const data = await getAllPurchases()
+        setPurchases(data)
+        if (onChanged) onChanged()
+    } catch (err) {
+        console.error("Failed to load purchases", err)
+        setError("Failed to sync inventory data.")
+    }
   }
 
-  const handleEdit = (lot) => {
-    setEditingId(lot.id)
+  function handleAddNew() {
+    setEditingId(null)
+    setForm(DEFAULT_FORM)
+    setError(null)
+    setIsFormOpen(true)
+    HAPTIC.click()
+  }
+
+  function handleEdit(item) {
+    setEditingId(item.id)
     setForm({
-      componentType: lot.componentType || 'powder',
-      caliber: lot.caliber || '',
-      brand: lot.brand || '',
-      name: lot.name || '',
-      lotId: lot.lotId || '',
-      qty: lot.qty != null ? String(lot.qty) : '',
-      unit: lot.unit || '',
-      price: lot.price != null ? String(lot.price) : '',
-      shipping: lot.shipping != null ? String(lot.shipping) : '',
-      tax: lot.tax != null ? String(lot.tax) : '',
-      vendor: lot.vendor || '',
-      date: lot.purchaseDate || '', 
-      notes: lot.notes || '',
-      url: lot.url || '',
-      status: lot.status || 'active',
-      caseCondition: lot.caseCondition || '',
+        componentType: item.componentType || 'powder',
+        date: item.purchaseDate ? item.purchaseDate.substring(0, 10) : '',
+        vendor: item.vendor || '', brand: item.brand || '', name: item.name || '', 
+        typeDetail: item.typeDetail || '',
+        lotId: item.lotId || '',
+        qty: item.qty != null ? String(item.qty) : '', 
+        unit: item.unit || '', 
+        price: item.price != null ? String(item.price) : '', 
+        shipping: item.shipping != null ? String(item.shipping) : '', 
+        tax: item.tax != null ? String(item.tax) : '', 
+        notes: item.notes || '', status: item.status || 'active',
+        url: item.url || '', imageUrl: item.imageUrl || '',
+        caseCondition: item.caseCondition || ''
     })
+    setError(null)
+    setIsFormOpen(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
     HAPTIC.click()
   }
 
-  const handleCancelEdit = () => {
-    setEditingId(null)
-    setForm(DEFAULT_FORM)
-    HAPTIC.soft()
+  // --- SAFE DELETE ---
+  function promptDelete(item) {
+    if (!canEdit) return
+    setItemToDelete(item)
+    setDeleteModalOpen(true)
+    HAPTIC.click()
   }
 
-  const handleSubmit = async e => {
-    e.preventDefault()
-    if (!canEdit) return
-    setIsSubmitting(true)
+  async function executeDelete() {
+    if (!itemToDelete) return
+    setIsDeleting(true)
     try {
-      await addPurchase({
-        ...form,
-        id: editingId,
-        qty: Number(form.qty) || 0,
-        price: Number(form.price) || 0,
-        shipping: Number(form.shipping) || 0,
-        tax: Number(form.tax) || 0,
-        purchaseDate: form.date,
-      })
-      HAPTIC.success() // Vibrate on Save
-      const data = await getAllPurchases()
-      setPurchases(data)
-      if (onChanged) onChanged()
-      handleCancelEdit()
+        await deletePurchase(itemToDelete.id)
+        HAPTIC.success()
+        loadData()
+        setDeleteModalOpen(false)
+        setItemToDelete(null)
+    } catch (err) {
+        setError(`Failed to delete: ${err.message}`)
+        HAPTIC.error()
+        setDeleteModalOpen(false) // Close modal so user sees error banner
     } finally {
-      setIsSubmitting(false)
+        setIsDeleting(false)
     }
   }
 
-  const handleDelete = async id => {
-    if (!canEdit) return
-    if (typeof window !== 'undefined' && !window.confirm('Delete this purchase?')) {
-      return
+  // --- SAFE SAVE ---
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+        const payload = {
+            ...form,
+            id: editingId, 
+            qty: Number(form.qty),
+            price: Number(form.price),
+            shipping: Number(form.shipping),
+            tax: Number(form.tax),
+            purchaseDate: form.date
+        }
+        await addPurchase(payload) 
+        HAPTIC.success()
+        setIsFormOpen(false)
+        loadData()
+    } catch (err) {
+        setError(`Failed to save: ${err.message}`)
+        HAPTIC.error()
+    } finally {
+        setLoading(false)
     }
-    HAPTIC.error() // Vibrate on Delete
-    await deletePurchase(id)
-    const data = await getAllPurchases()
-    setPurchases(data)
-    if (onChanged) onChanged()
-    if (editingId === id) handleCancelEdit()
   }
 
+  const liveUnitCost = calculatePerUnit(form.price, form.shipping, form.tax, form.qty)
+
+  const filteredPurchases = purchases.filter(p => {
+    const term = searchTerm.toLowerCase()
+    return `${p.brand} ${p.name} ${p.lotId} ${p.vendor} ${p.componentType}`.toLowerCase().includes(term)
+  })
+  
   const lotsByType = useMemo(() => {
-    const groups = { powder: [], bullet: [], primer: [], case: [] }
-    for (const p of purchases) {
-      if (!groups[p.componentType]) continue
-      groups[p.componentType].push(p)
-    }
-    for (const key of Object.keys(groups)) {
-      groups[key].sort((a, b) => {
-        const aBrand = (a.brand || '').toLowerCase()
-        const bBrand = (b.brand || '').toLowerCase()
-        if (aBrand < bBrand) return -1
-        if (aBrand > bBrand) return 1
-        const aName = (a.name || '').toLowerCase()
-        const bName = (b.name || '').toLowerCase()
-        if (aName < bName) return -1
-        if (aName > bName) return 1
-        return (a.lotId || '').localeCompare(b.lotId || '')
-      })
+    const groups = { powder: [], bullet: [], primer: [], case: [], other: [] }
+    for (const p of filteredPurchases) {
+      const type = groups[p.componentType] ? p.componentType : 'other'
+      groups[type].push(p)
     }
     return groups
-  }, [purchases])
+  }, [filteredPurchases])
 
-  const sectionLabelClass =
-    'text-xs uppercase tracking-[0.25em] text-slate-500 mb-2'
-
-  const inputClass =
-    'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60 placeholder:text-slate-600'
-
-  const labelClass =
-    'block text-xs font-semibold text-slate-400 mb-1'
-
-  const renderPerUnit = p => {
-    const per = calculatePerUnit(p.price, p.shipping, p.tax, p.qty)
-    return `${formatCurrency(per)} / ${p.unit || 'unit'}`
-  }
-
-  const hasAny = purchases.length > 0
+  const inputClass = "w-full bg-[#1a1a1a] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-slate-600"
+  const labelClass = "block text-xs font-semibold text-slate-400 mb-1"
+  const helpClass = "text-[9px] text-slate-600 mt-0.5 italic"
+  const sectionLabelClass = "text-xs uppercase tracking-[0.25em] text-slate-500 mb-4 block"
 
   return (
-    <div className="space-y-8">
-      <section className="glass rounded-2xl p-6">
-        <p className={sectionLabelClass}>
-          {editingId ? 'EDIT PURCHASE' : 'ADD PURCHASE'}
-        </p>
-        <p className="text-slate-300 text-xs mb-4">
-          Record powders, bullets, primers, and brass as you buy them. The live
-          calculator will use these lots to drive cost per round and inventory
-          capacity.
-        </p>
-
-        {canEdit ? (
-          <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-4">
-            {/* Component type */}
-            <div>
-              <label className={labelClass}>Component type</label>
-              <select
-                name="componentType"
-                value={form.componentType}
-                onChange={handleChange}
-                className={inputClass}
-              >
-                {COMPONENT_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Caliber */}
-            <div>
-              <label className={labelClass}>Caliber (optional)</label>
-              <input
-                name="caliber"
-                value={form.caliber}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="9mm, .308, 6.5 Creedmoor…"
-              />
-            </div>
-
-            {/* Brand */}
-            <div>
-              <label className={labelClass}>Brand</label>
-              <input
-                name="brand"
-                value={form.brand}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="Hodgdon, Hornady, CCI…"
-                required
-              />
-            </div>
-
-            {/* Name */}
-            <div>
-              <label className={labelClass}>Product name</label>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="H4350, 147gr RN, Small Rifle…"
-                required
-              />
-            </div>
-
-            {/* Lot ID */}
-            <div>
-              <label className={labelClass}>Lot ID (optional)</label>
-              <input
-                name="lotId"
-                value={form.lotId}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="Lot code from jug / box"
-              />
-            </div>
-
-            {/* Case condition */}
-            <div>
-              <label className={labelClass}>
-                Case condition (if component is brass)
-              </label>
-              <select
-                name="caseCondition"
-                value={form.caseCondition}
-                onChange={handleChange}
-                className={inputClass}
-              >
-                <option value="">Not brass / not set</option>
-                {CASE_CONDITIONS.map(c => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Quantity */}
-            <div>
-              <label className={labelClass}>Quantity</label>
-              <input
-                type="number"
-                name="qty"
-                value={form.qty}
-                onChange={handleChange}
-                className={inputClass}
-                min="0"
-                step="1"
-                required
-              />
-            </div>
-
-            {/* Unit */}
-            <div>
-              <label className={labelClass}>Unit</label>
-              <select
-                name="unit"
-                value={form.unit}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
-                <option value="">Select unit…</option>
-                {UNITS.map(u => (
-                  <option key={u.value} value={u.value}>
-                    {u.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Price */}
-            <div>
-              <label className={labelClass}>Price</label>
-              <input
-                type="number"
-                name="price"
-                value={form.price}
-                onChange={handleChange}
-                className={inputClass}
-                min="0"
-                step="0.01"
-                required
-              />
-            </div>
-
-            {/* Shipping */}
-            <div>
-              <label className={labelClass}>Shipping</label>
-              <input
-                type="number"
-                name="shipping"
-                value={form.shipping}
-                onChange={handleChange}
-                className={inputClass}
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            {/* Tax */}
-            <div>
-              <label className={labelClass}>Tax</label>
-              <input
-                type="number"
-                name="tax"
-                value={form.tax}
-                onChange={handleChange}
-                className={inputClass}
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            {/* Vendor */}
-            <div>
-              <label className={labelClass}>Vendor</label>
-              <input
-                name="vendor"
-                value={form.vendor}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="Where you bought it"
-              />
-            </div>
-
-            {/* Date */}
-            <div>
-              <label className={labelClass}>Purchase date</label>
-              <input
-                type="date"
-                name="date"
-                value={form.date}
-                onChange={handleChange}
-                className={inputClass}
-              />
-            </div>
-
-            {/* URL */}
-            <div>
-              <label className={labelClass}>Product URL (optional)</label>
-              <input
-                name="url"
-                value={form.url}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="Paste product link here"
-              />
-            </div>
-
-            {/* Notes */}
-            <div className="md:col-span-2">
-              <label className={labelClass}>Notes</label>
-              <textarea
-                name="notes"
-                value={form.notes}
-                onChange={handleChange}
-                className={inputClass + ' resize-none min-h-[60px]'}
-                rows={2}
-                placeholder="Any details you want to remember about this lot."
-              />
-            </div>
-
-            <div className="md:col-span-2 flex justify-end gap-3 pt-2">
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="px-4 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800/60 text-[11px] font-semibold transition"
-                >
-                  Cancel
+    <div className="space-y-6">
+      {/* HUD HEADER */}
+      <div className="flex items-start gap-4">
+        <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
+        <div>
+            <span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Supply Chain</span>
+            <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">PURCHASES</h2>
+        </div>
+        <div className="ml-auto flex items-end">
+             {canEdit && !isFormOpen && (
+                <button onClick={handleAddNew} className="px-4 py-2 rounded-full bg-red-700 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-red-900/20 hover:bg-red-600 transition">
+                    <Plus size={14} /> New Lot
                 </button>
-              )}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-5 py-1.5 rounded-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-[11px] font-semibold shadow-lg shadow-red-900/40 transition"
-              >
-                {isSubmitting
-                  ? 'Saving…'
-                  : editingId
-                  ? 'Update Purchase'
-                  : 'Add Purchase'}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="mt-4 text-xs text-slate-400 border border-dashed border-slate-700/70 rounded-xl px-3 py-3 bg-black/30">
-            You are currently in{' '}
-            <span className="font-semibold text-slate-100">
-              Shooter (read-only)
-            </span>{' '}
-            mode. Sign in as a{' '}
-            <span className="font-semibold text-red-400">
-              Reloader (admin)
-            </span>{' '}
-            using the gear icon to add or edit purchases on this device.
-          </div>
-        )}
-      </section>
+            )}
+        </div>
+      </div>
 
-      <section className="glass rounded-2xl p-6">
-        <p className={sectionLabelClass}>LOTS BY COMPONENT</p>
-        {!hasAny ? (
-          <p className="text-slate-400 text-xs">
-            No purchases recorded yet. Add your first powder, bullets, primers,
-            or brass above.
-          </p>
-        ) : (
-          <div className="space-y-6">
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+            <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
+            <div className="flex-1">
+                <p className="text-xs font-bold text-red-400">System Notification</p>
+                <p className="text-xs text-red-200/80">{error}</p>
+            </div>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button>
+        </div>
+      )}
+
+      {isFormOpen && (
+        <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in relative">
+            <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X size={18} /></button>
+            
+            <span className={sectionLabelClass}>{editingId ? 'EDIT PURCHASE' : 'ADD PURCHASE'}</span>
+            <p className="text-xs text-slate-400 mb-6">
+                Record powders, bullets, primers, and brass as you buy them. The live calculator will use these lots to drive cost per round and inventory capacity.
+            </p>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+                
+                {/* Row 1 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div><label className={labelClass}>Type</label><select className={inputClass} value={form.componentType} onChange={e => setForm({...form, componentType: e.target.value})}>{COMPONENT_TYPES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
+                    <div><label className={labelClass}>Date</label><input type="date" className={inputClass} value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
+                    <div className="md:col-span-2">
+                        <label className={labelClass}>Vendor</label>
+                        <input className={inputClass} value={form.vendor} onChange={e => setForm({...form, vendor: e.target.value})} placeholder="e.g. Brownells, Local Shop" />
+                        <p className={helpClass}>Where did you buy this?</p>
+                    </div>
+                </div>
+
+                {/* Row 2 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div><label className={labelClass}>Brand</label><input className={inputClass} value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} placeholder="e.g. CCI" /></div>
+                    <div className="md:col-span-2"><label className={labelClass}>Product Name</label><input className={inputClass} value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. #400 Small Rifle" /></div>
+                    <div>
+                        <label className={labelClass}>Lot #</label>
+                        <input className={inputClass} value={form.lotId} onChange={e => setForm({...form, lotId: e.target.value})} placeholder="Auto-generated if empty" />
+                        <p className={helpClass}>Found on the box/jug.</p>
+                    </div>
+                </div>
+
+                {/* Row 3 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div><label className={labelClass}>Caliber (Opt)</label><input className={inputClass} value={form.caliber} onChange={e => setForm({...form, caliber: e.target.value})} placeholder="Specific cal?" /></div>
+                    <div className="md:col-span-2">
+                        <label className={labelClass}>Type Details (Opt)</label>
+                        <input className={inputClass} value={form.typeDetail} onChange={e => setForm({...form, typeDetail: e.target.value})} placeholder="e.g. Match, Magnum, Extruded" />
+                        <p className={helpClass}>Extra details (e.g. 'Match Grade' or 'Spherical')</p>
+                    </div>
+                    <div><label className={labelClass}>Condition</label><select className={inputClass} value={form.caseCondition} onChange={e => setForm({...form, caseCondition: e.target.value})}><option value="">N/A</option>{CASE_CONDITIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
+                </div>
+
+                {/* Row 4: Quantity & Cost */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-800/50 bg-black/20 p-3 rounded-xl">
+                    <div><label className={labelClass}>Quantity</label><input type="number" step="0.01" className={inputClass} value={form.qty} onChange={e => setForm({...form, qty: e.target.value})} placeholder="e.g. 1000" /></div>
+                    <div><label className={labelClass}>Unit</label><select className={inputClass} value={form.unit} onChange={e => setForm({...form, unit: e.target.value})}>{UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}</select></div>
+                    <div>
+                        <label className={labelClass}>Total Price</label>
+                        <input type="number" step="0.01" className={inputClass} value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="0.00" />
+                        <p className={helpClass}>Price for the whole lot</p>
+                    </div>
+                    <div>
+                        <label className={labelClass}>Tax/Ship</label>
+                        <div className="flex gap-1"><input type="number" step="0.01" className={inputClass} placeholder="Ship" value={form.shipping} onChange={e => setForm({...form, shipping: e.target.value})} /><input type="number" step="0.01" className={inputClass} placeholder="Tax" value={form.tax} onChange={e => setForm({...form, tax: e.target.value})} /></div>
+                    </div>
+                    
+                    {/* Live Preview */}
+                    <div className="col-span-2 md:col-span-4 flex justify-end mt-1">
+                        <span className="text-[10px] text-slate-400">Calculated Unit Cost: <span className="text-emerald-400 font-mono font-bold">{formatCurrency(liveUnitCost)} / {form.unit || 'unit'}</span></span>
+                    </div>
+                </div>
+
+                {/* Row 5: Media & Notes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-black/20 rounded-xl p-3 border border-slate-800 flex flex-col justify-between">
+                        <label className={labelClass}>Reference Photo</label>
+                        <div className="flex-1 flex flex-col justify-center">
+                            <UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} />
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <div><label className={labelClass}>Product URL</label><input className={inputClass} value={form.url} onChange={e => setForm({...form, url: e.target.value})} placeholder="https://..." /></div>
+                        <div><label className={labelClass}>Notes</label><textarea className={inputClass + " h-20 resize-none"} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Performance notes, where stored, etc." /></div>
+                        <div><label className={labelClass}>Status</label><select className={inputClass} value={form.status} onChange={e => setForm({...form, status: e.target.value})}><option value="active">Active</option><option value="depleted">Depleted</option></select></div>
+                    </div>
+                </div>
+
+                <div className="pt-2 flex justify-end gap-3">
+                    <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-full border border-slate-700 text-slate-400 hover:text-white text-xs font-bold transition">Cancel</button>
+                    <button type="submit" disabled={loading} className="px-6 py-2 rounded-full bg-red-700 hover:bg-red-600 text-white text-xs font-bold transition">{loading ? 'Saving...' : 'Save Record'}</button>
+                </div>
+            </form>
+        </div>
+      )}
+
+      <div className="glass rounded-2xl p-6">
+         <div className="flex items-center gap-2 mb-6 bg-black/40 p-2 rounded-xl border border-slate-800">
+            <Search size={16} className="text-slate-500 ml-2" />
+            <input className="bg-transparent border-none focus:outline-none text-xs text-slate-200 w-full placeholder:text-slate-600" placeholder="Search purchases..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+         </div>
+
+         <div className="space-y-8">
             {COMPONENT_TYPES.map(type => {
               const lots = lotsByType[type.value]
               if (!lots || lots.length === 0) return null
 
               return (
                 <div key={type.value}>
-                  <h3 className="text-sm font-semibold text-slate-200 mb-2">
-                    {type.label}
-                  </h3>
+                  <h3 className="text-sm font-semibold text-slate-200 mb-2 uppercase tracking-wider border-b border-slate-800 pb-1 inline-block pr-4">{type.label}</h3>
                   <div className="grid md:grid-cols-2 gap-3">
                     {lots.map(p => {
-                      const depleted = p.status === 'depleted'
-                      const isHighlighted = String(highlightId) === String(p.id)
-                      
-                      return (
-                        <div
-                          id={`purchase-${p.id}`}
-                          key={p.id}
-                          className={`bg-black/40 border rounded-xl px-3 py-3 flex flex-col gap-2 transition duration-500 ${
-                            isHighlighted
-                              ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)] scale-[1.02]'
-                              : editingId === p.id
-                                ? 'border-red-500 ring-1 ring-red-500/50'
-                                : 'border-red-500/20'
-                          }`}
-                        >
-                          <div className="flex justify-between gap-3">
-                            <div>
-                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                                {p.caliber || 'General'}
-                              </div>
-                              <div className="font-semibold text-sm text-slate-100">
-                                {p.brand}{' '}
-                                <span className="text-slate-400">
-                                  {p.name}
-                                </span>
-                              </div>
-                              <div className="text-[11px] text-slate-500">
-                                Lot {p.lotId || '—'} • {p.qty} {p.unit} •{' '}
-                                {renderPerUnit(p)}
-                              </div>
-                            </div>
-                            
-                            {/* Action Buttons */}
-                            <div className="flex flex-col items-end gap-2">
-                                {canEdit && (
-                                  <>
-                                    <span
-                                      onClick={() => handleEdit(p)}
-                                      className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 transition cursor-pointer text-[11px] text-slate-300"
-                                    >
-                                      Edit
-                                    </span>
-                                    <span
-                                      onClick={() => handleDelete(p.id)}
-                                      className="px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition cursor-pointer text-[11px]"
-                                    >
-                                      Remove
-                                    </span>
-                                  </>
-                                )}
-                                <span 
-                                    onClick={() => { printPurchaseLabel(p); HAPTIC.click(); }}
-                                    className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer text-[11px] flex items-center gap-1"
-                                >
-                                    <Printer size={10} /> Label
-                                </span>
-                            </div>
-                          </div>
+                        const unitCost = calculatePerUnit(p.price, p.shipping, p.tax, p.qty)
+                        const isHighlighted = String(highlightId) === String(p.id)
+                        const depleted = p.status === 'depleted'
+                        const attribution = p.updatedByUsername ? `Updated by ${p.updatedByUsername}` : p.createdByUsername ? `Added by ${p.createdByUsername}` : null
 
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                            {p.vendor && (
-                              <span className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700">
-                                {p.vendor}
-                              </span>
-                            )}
-                            {p.purchaseDate && (
-                              <span className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700">
-                                {p.purchaseDate}
-                              </span>
-                            )}
-                            {p.url && (
-                              <a
-                                href={p.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition"
-                              >
-                                Product page ↗
-                              </a>
-                            )}
-                            {p.caseCondition &&
-                              p.componentType === 'case' && (
-                                <span className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700">
-                                  {
-                                    CASE_CONDITIONS.find(
-                                      c => c.value === p.caseCondition
-                                    )?.label
-                                  }
-                                </span>
-                              )}
-                            <span
-                              className={`px-2 py-[2px] rounded-full border ${
-                                depleted
-                                  ? 'border-slate-600 text-slate-400'
-                                  : 'border-emerald-500/70 text-emerald-300'
-                              }`}
-                            >
-                              {depleted ? 'Depleted' : 'Active'}
-                            </span>
-                          </div>
+                        return (
+                            <div id={`purchase-${p.id}`} key={p.id} className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl bg-black/20 border transition ${isHighlighted ? 'border-emerald-500 ring-1 ring-emerald-500/50 shadow-lg shadow-emerald-900/20' : 'border-slate-800/50 hover:border-slate-700'}`}>
+                                
+                                {/* LEFT COLUMN: Info & Image */}
+                                <div className="flex-1 flex gap-4">
+                                    {/* THUMBNAIL */}
+                                    {p.imageUrl && (
+                                        <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-slate-700 bg-black">
+                                            <img src={p.imageUrl} alt="Lot" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition" />
+                                        </div>
+                                    )}
+                                    
+                                    <div>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${depleted ? 'bg-slate-800 text-slate-500 border-slate-700' : 'bg-red-900/20 text-red-400 border-red-900/50'}`}>{p.componentType}</span>
+                                            <span className="text-xs text-slate-500 font-mono">{p.lotId}</span>
+                                        </div>
+                                        <h4 className="text-sm font-bold text-slate-200 mt-1">{p.brand} {p.name}</h4>
+                                        
+                                        {/* PILLS ROW */}
+                                        <div className="text-[11px] text-slate-500 mt-1 flex flex-wrap gap-2">
+                                            {p.caliber && <span className="text-slate-400">{p.caliber}</span>}
+                                            {p.typeDetail && <span className="text-slate-400 italic">{p.typeDetail}</span>}
+                                            {p.vendor && <span className="px-2 py-[1px] bg-black/40 border border-slate-700 rounded-full">{p.vendor}</span>}
+                                            {p.purchaseDate && <span className="px-2 py-[1px] bg-black/40 border border-slate-700 rounded-full">{p.purchaseDate.substring(0,10)}</span>}
+                                            {p.caseCondition && <span className="px-2 py-[1px] bg-black/40 border border-slate-700 rounded-full">{CASE_CONDITIONS.find(c=>c.value===p.caseCondition)?.label || p.caseCondition}</span>}
+                                            {p.url && <a href={p.url} target="_blank" rel="noreferrer" className="px-2 py-[1px] bg-black/40 border border-emerald-900/50 text-emerald-500 hover:text-emerald-300 hover:border-emerald-500/50 rounded-full transition">Page ↗</a>}
+                                        </div>
 
-                          {p.notes && (
-                            <div className="text-[11px] text-slate-400">
-                              {p.notes}
+                                        {/* ATTRIBUTION ROW */}
+                                        {attribution && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <span className="flex items-center gap-1 text-[9px] text-slate-500 px-2 py-0.5 bg-black/20 rounded-full border border-slate-800">
+                                                    {p.updatedByUsername ? <Clock size={10}/> : <User size={10}/>} {attribution}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                {/* RIGHT COLUMN: Stacked Data & Buttons */}
+                                <div className="mt-3 md:mt-0 flex items-center justify-between md:justify-end gap-6">
+                                    
+                                    {/* STACKED DATA */}
+                                    <div className="text-right flex flex-col justify-center">
+                                        <span className="text-sm font-bold text-slate-200 leading-none">{p.qty} <span className="text-xs font-normal text-slate-500">{p.unit}</span></span>
+                                        <span className="text-xs font-bold text-emerald-400 mt-1">{formatCurrency(unitCost)} <span className="text-[10px] font-normal text-emerald-600/80">/ unit</span></span>
+                                    </div>
+                                    
+                                    {/* BUTTON STACK (Pills) */}
+                                    <div className="flex flex-col items-end gap-2 min-w-[70px]">
+                                        {canEdit && (
+                                            <>
+                                                <button onClick={() => handleEdit(p)} className="px-3 py-1 rounded-full bg-black/60 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center">
+                                                    <Edit size={12} /> Edit
+                                                </button>
+                                                <button onClick={() => promptDelete(p)} className="px-3 py-1 rounded-full bg-black/60 border border-red-900/40 text-red-400 hover:text-red-300 hover:bg-red-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center">
+                                                    <Trash2 size={12} /> Remove
+                                                </button>
+                                            </>
+                                        )}
+                                        <button onClick={() => { HAPTIC.click(); printPurchaseLabel(p); }} className="px-3 py-1 rounded-full bg-black/60 border border-emerald-900/40 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center">
+                                            <Printer size={12} /> Label
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                          )}
-                        </div>
-                      )
+                        )
                     })}
                   </div>
                 </div>
               )
             })}
-          </div>
-        )}
-      </section>
+         </div>
+      </div>
+
+      {/* CUSTOM DELETE MODAL */}
+      {deleteModalOpen && itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
+                <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto">
+                    <Trash2 className="text-red-500" size={24} />
+                </div>
+                <div>
+                    <h3 className="text-lg font-bold text-white">Delete Lot?</h3>
+                    <p className="text-sm text-slate-400 mt-1">
+                        Are you sure you want to delete <span className="text-white font-medium">{itemToDelete.brand} {itemToDelete.name}</span>?
+                        <br/>This action cannot be undone.
+                    </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                    <button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 font-medium text-sm transition">Cancel</button>
+                    <button onClick={executeDelete} disabled={isDeleting} className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">
+                        {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   )
 }

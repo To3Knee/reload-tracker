@@ -1,19 +1,13 @@
 //===============================================================
-//Script Name: Reload Tracker Range Function
-//Script Location: netlify/functions/range.js
+//Script Name: Reload Tracker Firearms Function
+//Script Location: netlify/functions/firearms.js
 //Date: 12/01/2025
 //Created By: T03KNEE
-//Version: 2.1.0
-//About: API Endpoint for Range Logs.
-//       Updated: Connects to the Service Layer (Fixes "Gone" logs).
+//Version: 1.0.0
+//About: API Endpoint for The Armory.
 //===============================================================
 
-import { 
-  listRangeLogs, 
-  createRangeLog, 
-  updateRangeLog, 
-  deleteRangeLog 
-} from '../../backend/rangeService.js'
+import { listFirearms, createFirearm, updateFirearm, deleteFirearm } from '../../backend/firearmsService.js'
 import { getUserForSessionToken, SESSION_COOKIE_NAME } from '../../backend/authService.js'
 import { ValidationError, NotFoundError } from '../../backend/errors.js'
 
@@ -47,41 +41,45 @@ export async function handler(event) {
 
   try {
     const currentUser = await getCurrentUser(event)
-    
-    // Ensure user is logged in
     if (!currentUser) return jsonResponse(401, { message: 'Authentication required.' })
+
+    // Unlike Recipes, Shooters MUST be Admins (Reloaders) to manage their own Armory?
+    // Actually, purely tracking guns might be useful for Shooters too, but for now let's stick to Admin only
+    // to align with the "Reloader = Power User" model, or we can open it up.
+    // Decision: Let's enforce Admin for now to keep it simple, we can relax later.
+    if (currentUser.role !== 'admin') {
+        return jsonResponse(403, { message: 'Armory access is restricted to Reloaders.' })
+    }
 
     const id = extractId(event.path)
 
     if (method === 'GET') {
-      // This calls the Service, which does the JOINs correctly
-      const logs = await listRangeLogs()
-      return jsonResponse(200, { logs })
+      const guns = await listFirearms(currentUser)
+      return jsonResponse(200, guns)
     }
 
     if (method === 'POST') {
       const body = JSON.parse(event.body || '{}')
-      const result = await createRangeLog(body, currentUser)
-      return jsonResponse(201, result)
+      const gun = await createFirearm(body, currentUser)
+      return jsonResponse(201, gun)
     }
 
     if (method === 'PUT') {
       if (!id) return jsonResponse(400, { message: 'ID required' })
       const body = JSON.parse(event.body || '{}')
-      const result = await updateRangeLog(id, body, currentUser)
-      return jsonResponse(200, result)
+      const updated = await updateFirearm(id, body, currentUser)
+      return jsonResponse(200, updated)
     }
 
     if (method === 'DELETE') {
       if (!id) return jsonResponse(400, { message: 'ID required' })
-      const result = await deleteRangeLog(id, currentUser)
-      return jsonResponse(200, result)
+      await deleteFirearm(id, currentUser)
+      return jsonResponse(200, { success: true })
     }
 
     return jsonResponse(405, { message: 'Method Not Allowed' })
 
   } catch (err) {
-    console.error('Range Function Error:', err)
     const status = err instanceof ValidationError ? 400 : (err instanceof NotFoundError ? 404 : 500)
     return jsonResponse(status, { message: err.message })
   }

@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: AuthModal.jsx
 //Script Location: src/components/AuthModal.jsx
-//Date: 11/30/2025
+//Date: 12/01/2025
 //Created By: T03KNEE
-//Version: 2.21.0
+//Version: 2.22.0
 //About: Login/Admin Modal.
-//       Updated: Increased label font to text-xs (12px) to match Recipes/Range.
+//       Fixed: Moved PasswordInput outside component to fix focus loss bug.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -21,6 +21,27 @@ import {
   removeUser,
 } from '../lib/auth'
 import { fetchSettings, saveSetting } from '../lib/settings'
+
+// --- HELPER COMPONENTS (Defined Outside to prevent Focus Loss) ---
+const PasswordInput = ({ value, onChange, show, onToggle, placeholder = "Password" }) => (
+  <div className="relative">
+      <input 
+          type={show ? "text" : "password"} 
+          className="w-full bg-[#1a1a1a] border border-zinc-800 rounded-lg px-3 py-2 text-[11px] text-zinc-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-zinc-600 pr-10" 
+          placeholder={placeholder} 
+          value={value} 
+          onChange={onChange}
+          autoComplete="new-password" 
+      />
+      <button 
+          type="button" 
+          onClick={onToggle} 
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition z-10"
+      >
+          {show ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+  </div>
+)
 
 export default function AuthModal({
   open,
@@ -191,16 +212,10 @@ export default function AuthModal({
   
   if (!open) return null
 
-  // --- STYLES ---
-  // Input: text-[11px] (Matches RangeLogs inputs)
   const inputClass = "w-full bg-[#1a1a1a] border border-zinc-800 rounded-lg px-3 py-2 text-[11px] text-zinc-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-zinc-600"
-  
-  // Label: text-xs (12px) - Standardized to match Dashboard/Recipes/RangeLogs labels
   const labelClass = "block text-xs font-semibold text-zinc-400 mb-1"
-  
   const tabClass = (active) => `flex-1 md:flex-none text-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-zinc-800 text-zinc-500'}`
 
-  // --- AUTOFILL OVERRIDE STYLE ---
   const autofillStyles = `
     input:-webkit-autofill,
     input:-webkit-autofill:hover, 
@@ -213,53 +228,20 @@ export default function AuthModal({
     }
   `
 
-  // Helper for password fields with toggle
-  const PasswordInput = ({ value, onChange, show, onToggle, placeholder = "Password" }) => (
-    <div className="relative">
-        <input 
-            type={show ? "text" : "password"} 
-            className={`${inputClass} pr-10`} 
-            placeholder={placeholder} 
-            value={value} 
-            onChange={onChange}
-            autoComplete="new-password" 
-        />
-        <button 
-            type="button" 
-            onClick={onToggle} 
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition z-10"
-        >
-            {show ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
-    </div>
-  )
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-4">
       <style>{autofillStyles}</style>
       
-      {/* Container */}
       <div className={`bg-[#0f0f10] border-zinc-800 md:border rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex ${isAdmin ? "w-full max-w-4xl flex-col md:flex-row" : "w-full max-w-md flex-col"} h-full md:h-auto md:max-h-[90vh] relative`}>
         
-        {/* CLOSE BUTTON */}
-        <button 
-            onClick={onClose} 
-            className="absolute top-2 right-2 md:top-4 md:right-4 z-50 p-2 bg-[#1a1a1a] rounded-full text-zinc-400 hover:text-white hover:bg-red-900/50 border border-transparent md:border-zinc-800 transition shadow-lg"
-        >
+        <button onClick={onClose} className="absolute top-2 right-2 md:top-4 md:right-4 z-50 p-2 bg-[#1a1a1a] rounded-full text-zinc-400 hover:text-white hover:bg-red-900/50 border border-transparent md:border-zinc-800 transition shadow-lg">
             <X size={18} />
         </button>
 
         {/* LEFT PANEL */}
-        <div className={`
-            bg-black/40 p-6 flex flex-col relative border-b border-zinc-800 md:border-b-0 md:border-r
-            ${isAdmin ? "w-full md:w-[35%] shrink-0" : "w-full flex-1"}
-            ${isAdmin ? "min-h-[auto]" : ""}
-        `}>
+        <div className={`bg-black/40 p-6 flex flex-col relative border-b border-zinc-800 md:border-b-0 md:border-r ${isAdmin ? "w-full md:w-[35%] shrink-0" : "w-full flex-1"} ${isAdmin ? "min-h-[auto]" : ""}`}>
           <div className="mb-4">
-            <div className="flex items-center gap-2 mb-1">
-                <Shield className="text-red-500" size={20} />
-                <h2 className="text-lg font-bold text-zinc-100">Access & Roles</h2>
-            </div>
+            <div className="flex items-center gap-2 mb-1"><Shield className="text-red-500" size={20} /><h2 className="text-lg font-bold text-zinc-100">Access & Roles</h2></div>
             {!isAdmin && <p className="text-xs text-zinc-500">Authenticate to unlock editing capabilities.</p>}
           </div>
 
@@ -275,12 +257,7 @@ export default function AuthModal({
                 <p className={labelClass}>Sign In</p>
                 <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
                     <input className={inputClass} placeholder="Username or Email" value={loginForm.username} onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))} />
-                    <PasswordInput 
-                        value={loginForm.password} 
-                        onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                        show={showLoginPass}
-                        onToggle={() => setShowLoginPass(!showLoginPass)}
-                    />
+                    <PasswordInput value={loginForm.password} onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))} show={showLoginPass} onToggle={() => setShowLoginPass(!showLoginPass)} />
                     <div className="pt-2"><button type="submit" disabled={busy} className="w-full py-3 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition"><LogIn size={14} className="inline mr-2"/>{busy ? 'Verifying...' : 'Sign In'}</button></div>
                 </form>
             </div>
@@ -294,8 +271,6 @@ export default function AuthModal({
         {/* RIGHT PANEL: ADMIN TOOLS */}
         {isAdmin && (
           <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-br from-[#121214] to-[#0a0a0a]">
-            
-            {/* TABS */}
             <div className="flex-shrink-0 border-b border-zinc-800 p-2 bg-[#0f0f10]/95 backdrop-blur z-10">
                 <div className="flex gap-2 overflow-x-auto no-scrollbar">
                     <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>Users</button>
@@ -304,7 +279,6 @@ export default function AuthModal({
                 </div>
             </div>
 
-            {/* CONTENT */}
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
               {activeTab === 'manage' && (
                 <div className="space-y-6 pb-20 md:pb-0">
@@ -321,15 +295,7 @@ export default function AuthModal({
                       </div>
                       <div><label className={labelClass}>Email</label><input type="email" className={inputClass} value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} /></div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <label className={labelClass}>{editingUserId ? 'New Password' : 'Password'}</label>
-                            <PasswordInput 
-                                value={newUser.password} 
-                                onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))}
-                                show={showRegPass}
-                                onToggle={() => setShowRegPass(!showRegPass)}
-                            />
-                        </div>
+                        <div><label className={labelClass}>{editingUserId ? 'New Password' : 'Password'}</label><PasswordInput value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} show={showRegPass} onToggle={() => setShowRegPass(!showRegPass)} /></div>
                         <div><label className={labelClass}>Role</label><div className="relative"><select className={`${inputClass} appearance-none`} value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}><option value={ROLE_SHOOTER}>Shooter</option><option value={ROLE_ADMIN}>Reloader (Admin)</option></select><div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400"><ChevronDown size={14} /></div></div></div>
                       </div>
                       <div className="pt-2 flex justify-end gap-2">
@@ -338,79 +304,28 @@ export default function AuthModal({
                       </div>
                     </form>
                   </div>
-                  
-                  <div>
-                    <p className={labelClass + " mb-2"}>User Directory</p>
-                    <div className="grid gap-2">
-                        {adminUsers.map(u => (
-                            <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-zinc-800/50">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-zinc-600'}`} />
-                                    <div className="min-w-0">
-                                        <p className="text-xs font-bold text-zinc-200 truncate">{u.username}</p>
-                                        <p className="text-[10px] text-zinc-500 truncate">{u.email}</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => handleEditUser(u)} className="px-3 py-1.5 rounded bg-zinc-800 text-[10px] text-zinc-300 font-medium border border-zinc-700/50 hover:border-zinc-600 transition">Edit</button>
-                                    <button onClick={() => handleRemoveUser(u.id)} className="px-3 py-1.5 rounded bg-red-900/20 text-[10px] text-red-400 font-medium border border-red-900/30 hover:bg-red-900/30 transition">Delete</button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                  </div>
+                  <div><p className={labelClass + " mb-2"}>User Directory</p><div className="grid gap-2">{adminUsers.map(u => (<div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-zinc-800/50"><div className="flex items-center gap-3"><div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-zinc-600'}`} /><div className="min-w-0"><p className="text-xs font-bold text-zinc-200 truncate">{u.username}</p><p className="text-[10px] text-zinc-500 truncate">{u.email}</p></div></div><div className="flex gap-2"><button onClick={() => handleEditUser(u)} className="px-3 py-1.5 rounded bg-zinc-800 text-[10px] text-zinc-300 font-medium border border-zinc-700/50 hover:border-zinc-600 transition">Edit</button><button onClick={() => handleRemoveUser(u.id)} className="px-3 py-1.5 rounded bg-red-900/20 text-[10px] text-red-400 font-medium border border-red-900/30 hover:bg-red-900/30 transition">Delete</button></div></div>))}</div></div>
                 </div>
               )}
-
               {activeTab === 'reset' && (
                   <div className="space-y-6">
                      <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
                         <h3 className="text-sm font-bold text-zinc-300 flex items-center gap-2 mb-4"><Lock size={16} className="text-red-500" />Admin Password Reset</h3>
                         <form onSubmit={handleResetSubmit} className="space-y-3">
                            <div><label className={labelClass}>Target Username</label><input className={inputClass} value={resetForm.username} onChange={e => setResetForm(p => ({ ...p, username: e.target.value }))} /></div>
-                           <div>
-                                <label className={labelClass}>New Password</label>
-                                <PasswordInput 
-                                    value={resetForm.newPassword} 
-                                    onChange={e => setResetForm(p => ({ ...p, newPassword: e.target.value }))}
-                                    show={showResetPass}
-                                    onToggle={() => setShowResetPass(!showResetPass)}
-                                />
-                           </div>
+                           <div><label className={labelClass}>New Password</label><PasswordInput value={resetForm.newPassword} onChange={e => setResetForm(p => ({ ...p, newPassword: e.target.value }))} show={showResetPass} onToggle={() => setShowResetPass(!showResetPass)} /></div>
                            <div className="pt-2 flex justify-end"><button type="submit" disabled={busy} className="px-5 py-2 rounded-full bg-red-900/40 text-red-200 border border-red-500/30 hover:bg-red-900/60 text-xs font-bold transition">Reset Password</button></div>
                         </form>
                      </div>
                   </div>
               )}
-
               {activeTab === 'system' && (
                   <div className="space-y-6">
                      <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
                         <h3 className="text-sm font-bold text-zinc-300 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-zinc-800 rounded-lg">
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-lg bg-zinc-800 text-zinc-500 mt-1"><Bot size={18} /></div>
-                                <div>
-                                    <p className="text-xs font-bold text-zinc-200">AI Ballistics Expert</p>
-                                    <p className="text-[10px] text-zinc-500 leading-relaxed mt-1">
-                                        Enable the generative AI chat assistant for users. Requires a valid Google Gemini API Key.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-end">
-                                {systemSettings.hasAiKey ? (
-                                    <button 
-                                        onClick={() => toggleAi(systemSettings.ai_enabled === 'true' ? 'false' : 'true')} 
-                                        className={`px-4 py-2 rounded-full text-[10px] font-bold border transition w-full sm:w-auto ${systemSettings.ai_enabled === 'true' ? 'border-red-500/50 text-red-400 bg-red-900/20' : 'border-zinc-600 text-zinc-400 bg-black/40'}`}
-                                    >
-                                        {systemSettings.ai_enabled === 'true' ? 'Enabled' : 'Disabled'}
-                                    </button>
-                                ) : (
-                                    <span className="px-3 py-1 rounded bg-amber-900/20 text-amber-500 text-[10px] border border-amber-900/50 flex items-center gap-1">
-                                        <AlertTriangle size={10} /> Missing API Key
-                                    </span>
-                                )}
-                            </div>
+                            <div className="flex items-start gap-3"><div className="p-2 rounded-lg bg-zinc-800 text-zinc-500 mt-1"><Bot size={18} /></div><div><p className="text-xs font-bold text-zinc-200">AI Ballistics Expert</p><p className="text-[10px] text-zinc-500 leading-relaxed mt-1">Enable the generative AI chat assistant.</p></div></div>
+                            <div className="flex items-center justify-end">{systemSettings.hasAiKey ? (<button onClick={() => toggleAi(systemSettings.ai_enabled === 'true' ? 'false' : 'true')} className={`px-4 py-2 rounded-full text-[10px] font-bold border transition w-full sm:w-auto ${systemSettings.ai_enabled === 'true' ? 'border-red-500/50 text-red-400 bg-red-900/20' : 'border-zinc-600 text-zinc-400 bg-black/40'}`}>{systemSettings.ai_enabled === 'true' ? 'Enabled' : 'Disabled'}</button>) : (<span className="px-3 py-1 rounded bg-amber-900/20 text-amber-500 text-[10px] border border-amber-900/50 flex items-center gap-1"><AlertTriangle size={10} /> Missing API Key</span>)}</div>
                         </div>
                      </div>
                   </div>

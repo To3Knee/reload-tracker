@@ -1,12 +1,11 @@
 //===============================================================
 //Script Name: Inventory.jsx
 //Script Location: src/components/Inventory.jsx
-//Date: 11/28/2025
+//Date: 12/02/2025
 //Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 2.0.0
+//Version: 2.1.0
 //About: Inventory overview and capacity planning.
-//       Updated to use src/lib/math.js and dynamic wiring.
+//       Updated: Added HUD Header for symmetry.
 //===============================================================
 
 import { useMemo } from 'react'
@@ -54,17 +53,13 @@ export function Inventory({ purchases = [], selectedRecipe }) {
     totalQty,
     capacityRounds,
   } = useMemo(() => {
-    // 1. Calculate Total Investment using Math Lib
     const totalInvestment = list.reduce((sum, p) => {
       return sum + calculateLotTotalCost(p)
     }, 0)
 
     const totalLots = list.length
-    
-    // 2. Sum Total Pieces (Treats 1 lb as 1 unit, 1000 primers as 1000 units)
     const totalQty = list.reduce((sum, p) => sum + (Number(p.qty) || 0), 0)
 
-    // 3. Capacity Logic (Requires Recipe)
     if (!selectedRecipe) {
       return {
         totalInvestment,
@@ -86,7 +81,6 @@ export function Inventory({ purchases = [], selectedRecipe }) {
     const chargeGrains = Number(selectedRecipe.chargeGrains) || 0
     const brassReuse = Number(selectedRecipe.brassReuse) || 1
 
-    // Math Lib Conversion for Powder
     const totalPowderGrains = powders.reduce((sum, p) => {
       return sum + convertToGrains(p.qty, p.unit)
     }, 0)
@@ -100,9 +94,6 @@ export function Inventory({ purchases = [], selectedRecipe }) {
     const primerLimited = totalPrimerCount
     const caseLimited = brassReuse > 0 ? Math.floor(totalCaseCount * brassReuse) : 0
 
-    // If a component count is 0 (e.g. no powder), capacity is 0.
-    // If charge weight is 0, powder capacity is infinite (logic handled in render).
-    
     const limits = []
     if (chargeGrains > 0) limits.push(powderLimited)
     if (totalBulletCount > 0) limits.push(bulletLimited)
@@ -125,7 +116,6 @@ export function Inventory({ purchases = [], selectedRecipe }) {
     }
   }, [list, selectedRecipe])
 
-  // Dynamic Profile Label
   const profileLabel = selectedRecipe
     ? PROFILE_TYPES.find(p => p.value === selectedRecipe.profileType)?.label || 'Custom'
     : 'N/A'
@@ -136,6 +126,15 @@ export function Inventory({ purchases = [], selectedRecipe }) {
 
   return (
     <div className="space-y-6">
+      {/* HUD HEADER */}
+      <div className="flex items-start gap-4">
+        <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
+        <div>
+            <span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Supply Chain</span>
+            <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">INVENTORY</h2>
+        </div>
+      </div>
+
       {/* Summary row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <SummaryCard
@@ -236,7 +235,6 @@ function SummaryCard({ label, value, sub }) {
 
 function CapacityPill({ label, rounds, highlight = false }) {
   const val = rounds != null ? rounds : 0
-  // If we have > 0 but it's massive, format K. Else just comma number.
   const formatted = val.toLocaleString()
 
   return (
@@ -258,7 +256,6 @@ function CapacityPill({ label, rounds, highlight = false }) {
 }
 
 function LotCard({ lot }) {
-  // Use the precision math helpers
   const perUnit = calculateCostPerUnit(lot.price, lot.shipping, lot.tax, lot.qty)
   const totalCost = calculateLotTotalCost(lot)
 
@@ -276,7 +273,6 @@ function LotCard({ lot }) {
   return (
     <div className={cardClass}>
       <div className="relative h-24 bg-gradient-to-br from-slate-900 via-black to-slate-900">
-        {/* Optional Image or Fallback Gradient */}
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,_#b33c3c_0,_transparent_60%)]" />
         
         <div className="relative z-10 flex items-start justify-between px-3 pt-2">

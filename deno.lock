@@ -11,14 +11,18 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@google/generative-ai@~0.24.1",
         "npm:@vitejs/plugin-react@^4.3.2",
         "npm:autoprefixer@^10.4.20",
+        "npm:exceljs@^4.4.0",
         "npm:idb@8",
         "npm:lucide-react@0.447",
         "npm:pg@^8.16.3",
         "npm:postcss@^8.4.47",
+        "npm:qrcode@^1.5.4",
         "npm:react-dom@^18.3.1",
         "npm:react@^18.3.1",
+        "npm:recharts@^3.5.1",
         "npm:tailwindcss@^3.4.0",
         "npm:vite@^7.2.4"
       ]
