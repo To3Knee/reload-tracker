@@ -1,12 +1,12 @@
 //===============================================================
 //Script Name: Reload Tracker Purchases Function
 //Script Location: netlify/functions/purchases.js
-//Date: 11/28/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.1.0
+//Version: 1.2.0
 //About: Netlify Function HTTP handler for Reload Tracker LOTs.
-//       Updated to wire up Auth for Admin Role enforcement.
+//       - Fix: DELETE now returns 200 OK with JSON to prevent client parsing errors.
 //===============================================================
 
 import {
@@ -26,9 +26,8 @@ const baseHeaders = {
 };
 
 function jsonResponse(statusCode, payload) {
-  if (statusCode === 204) {
-    return { statusCode, headers: baseHeaders, body: '' };
-  }
+  // Even for 204, we must be careful with headers, but switching to 200 
+  // is the most robust fix for clients expecting JSON.
   return {
     statusCode,
     headers: baseHeaders,
@@ -67,7 +66,7 @@ export async function handler(event /*, context */) {
     const method = event.httpMethod || 'GET';
 
     if (method === 'OPTIONS') {
-      return jsonResponse(204, null);
+      return { statusCode: 204, headers: baseHeaders, body: '' };
     }
 
     const id = extractIdFromPath(event.path || '');
@@ -102,7 +101,8 @@ export async function handler(event /*, context */) {
     if (method === 'DELETE') {
       if (!id) return jsonResponse(400, { message: 'Missing id in path.' });
       await deletePurchase(id, currentUser);
-      return jsonResponse(204, null);
+      // FIX: Return 200 with JSON body instead of 204 Empty to satisfy client parsers
+      return jsonResponse(200, { success: true });
     }
 
     return jsonResponse(405, { message: `Method ${method} not allowed.` });
