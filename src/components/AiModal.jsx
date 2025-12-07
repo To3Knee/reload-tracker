@@ -3,12 +3,13 @@
 //Script Location: src/components/AiModal.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 1.2.0
-//About: Chat interface. Updated with iOS Safe Area support.
+//Version: 1.3.0
+//About: Chat interface. 
+//       Updated: Removed confirm() popup.
 //===============================================================
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Send, Bot, User, Trash2, Loader2 } from 'lucide-react'
+import { X, Send, Bot, User, Trash2, Loader2, Check } from 'lucide-react'
 import { sendAiMessage } from '../lib/ai'
 import { HAPTIC } from '../lib/haptics'
 
@@ -18,6 +19,7 @@ export default function AiModal({ open, onClose }) {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [verifyClear, setVerifyClear] = useState(false)
   const scrollRef = useRef(null)
 
   useEffect(() => { if (scrollRef.current) { scrollRef.current.scrollTop = scrollRef.current.scrollHeight } }, [messages])
@@ -27,14 +29,24 @@ export default function AiModal({ open, onClose }) {
   async function handleSend(e) {
     e.preventDefault(); if (!input.trim() || loading) return; HAPTIC.click();
     const userMsg = { role: 'user', content: input }; const newHistory = [...messages, userMsg];
-    setMessages(newHistory); setInput(''); setLoading(true);
+    setMessages(newHistory); setInput(''); setLoading(true); setVerifyClear(false);
     try { const response = await sendAiMessage(newHistory); setMessages(prev => [...prev, { role: 'assistant', content: response }]); HAPTIC.success(); } catch (err) { setMessages(prev => [...prev, { role: 'system', content: 'Error: ' + err.message }]); HAPTIC.error(); } finally { setLoading(false); }
   }
 
-  function clearChat() { if(confirm('Clear chat history?')) { setMessages([{ role: 'system', content: 'Chat cleared. How can I help?' }]); HAPTIC.error(); } }
+  function handleClearClick() {
+      if (verifyClear) {
+          setMessages([{ role: 'system', content: 'Chat cleared. How can I help?' }]);
+          HAPTIC.error();
+          setVerifyClear(false);
+      } else {
+          setVerifyClear(true);
+          HAPTIC.soft();
+          // Auto-reset verify state after 3s
+          setTimeout(() => setVerifyClear(false), 3000);
+      }
+  }
 
   return (
-    // MOBILE FIX: Added padding-top for Safe Area
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 md:p-4 pt-[env(safe-area-inset-top)]">
       <div className="bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden relative">
         
@@ -45,7 +57,12 @@ export default function AiModal({ open, onClose }) {
             <div><h3 className="text-sm font-bold text-slate-100">Ballistics Assistant</h3><p className="text-[10px] text-slate-500">Powered by Gemini 2.0 Flash</p></div>
           </div>
           <div className="flex gap-2">
-            <button onClick={clearChat} className="p-2 hover:bg-white/10 rounded-full text-slate-500 hover:text-red-400 transition"><Trash2 size={18} /></button>
+            <button 
+                onClick={handleClearClick} 
+                className={`p-2 rounded-full transition flex items-center gap-2 ${verifyClear ? 'bg-red-900/50 text-red-200 w-auto px-3' : 'hover:bg-white/10 text-slate-500 hover:text-red-400'}`}
+            >
+                {verifyClear ? <><Trash2 size={16} /><span className="text-[10px] font-bold">Clear?</span></> : <Trash2 size={18} />}
+            </button>
             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition"><X size={18} /></button>
           </div>
         </div>

@@ -1,18 +1,18 @@
 //===============================================================
 //Script Name: Batches.jsx
 //Script Location: src/components/Batches.jsx
-//Date: 12/02/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.0.0
+//Version: 2.1.0
 //About: Displays the history of loaded ammo batches.
-//       Updated: HUD Header + Attribution.
+//       Updated: Removed popups, fixed mobile date issues.
 //===============================================================
 
 import { useEffect, useState } from 'react'
 import { getBatches, deleteBatch, updateBatch } from '../lib/batches'
 import { printBatchLabel } from '../lib/labels'
 import { getCurrentUser, ROLE_ADMIN } from '../lib/auth'
-import { History, Printer, Edit, Trash2, User, Clock } from 'lucide-react'
+import { Printer, Edit, Trash2, User, Clock } from 'lucide-react'
 
 export function Batches({ highlightId }) {
   const [batches, setBatches] = useState([])
@@ -21,6 +21,9 @@ export function Batches({ highlightId }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editNotes, setEditNotes] = useState('')
+  
+  // Safe Delete State
+  const [verifyDeleteId, setVerifyDeleteId] = useState(null)
 
   useEffect(() => {
     checkAdmin()
@@ -59,6 +62,7 @@ export function Batches({ highlightId }) {
   function startEdit(batch) {
     setEditingId(batch.id)
     setEditNotes(batch.notes || '')
+    setVerifyDeleteId(null)
   }
 
   function cancelEdit() {
@@ -73,17 +77,17 @@ export function Batches({ highlightId }) {
         setEditingId(null)
         loadHistory() 
     } catch (err) {
-        alert(err.message)
+        console.error(err)
     }
   }
 
   async function handleRemove(id) {
-    if (!window.confirm('Remove this batch entry? (Inventory will NOT be refunded)')) return
+    setVerifyDeleteId(null)
     try {
         await deleteBatch(id)
         setBatches(prev => prev.filter(b => b.id !== id))
     } catch (err) {
-        alert(err.message)
+        console.error(err)
     }
   }
 
@@ -99,7 +103,6 @@ export function Batches({ highlightId }) {
 
   return (
     <div className="space-y-6">
-      {/* HUD HEADER */}
       <div className="flex items-start gap-4">
         <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
         <div>
@@ -175,7 +178,16 @@ export function Batches({ highlightId }) {
                         {isAdmin && (
                             <>
                                 <button onClick={() => startEdit(batch)} className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 text-slate-400 transition cursor-pointer text-[10px] flex items-center gap-1"><Edit size={10} /> Edit</button>
-                                <button onClick={() => handleRemove(batch.id)} className="px-2 py-[2px] rounded-full bg-black/60 border border-red-900/50 text-red-400 hover:bg-red-900/30 transition cursor-pointer text-[10px] flex items-center gap-1"><Trash2 size={10} /> Remove</button>
+                                
+                                {/* INLINE DELETE CONFIRMATION */}
+                                {verifyDeleteId === batch.id ? (
+                                    <div className="flex items-center gap-1 animate-in fade-in zoom-in duration-200">
+                                        <button onClick={() => handleRemove(batch.id)} className="px-2 py-[2px] rounded-full bg-red-600 text-white text-[10px] font-bold hover:bg-red-500 transition">Yes</button>
+                                        <button onClick={() => setVerifyDeleteId(null)} className="px-2 py-[2px] rounded-full bg-slate-800 text-slate-400 text-[10px] hover:bg-slate-700 transition">No</button>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => setVerifyDeleteId(batch.id)} className="px-2 py-[2px] rounded-full bg-black/60 border border-red-900/50 text-red-400 hover:bg-red-900/30 transition cursor-pointer text-[10px] flex items-center gap-1"><Trash2 size={10} /> Remove</button>
+                                )}
                             </>
                         )}
                     </div>

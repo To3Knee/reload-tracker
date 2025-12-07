@@ -1,24 +1,22 @@
 //===============================================================
 //Script Name: Dashboard.jsx
 //Script Location: src/components/Dashboard.jsx
-//Date: 12/02/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 3.0.0 (Lean & Mean)
+//Version: 3.1.0
 //About: Live Round Calculator.
-//       Updated: Removed Stability Check (moved to Recipes).
-//       Focus: Pure logistics and cost estimation.
+//       Updated: Added Error Boundaries for Network Fails (Offline Safety).
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
 import { formatCurrency, getAllRecipes, saveRecipe } from '../lib/db'
-import { getFirearms } from '../lib/armory' // Kept for future linking, effectively unused logic removed
 import { 
   calculateCostPerUnit, 
   calculatePowderCostPerRound, 
   calculateBrassCostPerRound,
   convertToGrains
 } from '../lib/math'
-import { Info } from 'lucide-react'
+import { Info, AlertTriangle, X } from 'lucide-react'
 
 const toMoney = (val) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(val || 0)
@@ -34,11 +32,20 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
   const [selectedRecipeId, setSelectedRecipeId] = useState('')
   const [scenarios, setScenarios] = useState([])
   const [savingRecipeId, setSavingRecipeId] = useState(null)
+  
+  // New Error State
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const load = async () => {
-      const rData = await getAllRecipes()
-      setRecipes(rData)
+      try {
+        const rData = await getAllRecipes()
+        setRecipes(rData)
+      } catch (err) {
+        console.error("Dashboard Load Error:", err)
+        // Non-blocking error (Calculator can still work manually)
+        setError("Could not load recipes. Check connection.")
+      }
     }
     load()
   }, [])
@@ -186,6 +193,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
 
   async function handleSaveScenarioAsRecipe(scenario) {
     setSavingRecipeId(scenario.id)
+    setError(null)
     try {
       await saveRecipe({
         name: scenario.name || `Saved config`,
@@ -198,6 +206,8 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
       })
       const data = await getAllRecipes()
       setRecipes(data)
+    } catch (err) {
+      setError(`Failed to save recipe: ${err.message}`)
     } finally { setSavingRecipeId(null) }
   }
 
@@ -220,7 +230,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
 
   return (
     <div className="space-y-6">
-      {/* MAIN HEADER - CLEAN */}
+      {/* MAIN HEADER */}
       <div className="flex items-start gap-4">
         <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
         <div>
@@ -228,6 +238,18 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
             <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">CALCULATOR</h2>
         </div>
       </div>
+
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+            <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
+            <div className="flex-1">
+                <p className="text-xs font-bold text-red-400">System Notification</p>
+                <p className="text-xs text-red-200/80">{error}</p>
+            </div>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-6 items-start">
         {/* LEFT COLUMN: INPUTS */}

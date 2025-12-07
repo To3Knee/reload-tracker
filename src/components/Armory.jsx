@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Armory.jsx
 //Script Location: src/components/Armory.jsx
-//Date: 12/01/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 1.8.0
+//Version: 1.9.0
 //About: The Digital Armory. 
-//       Updated: Side-by-Side "Dossier" Layout for Image + Specs.
+//       Updated: Removed browser popups (iOS/PWA Safe).
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -27,6 +27,9 @@ export function Armory({ canEdit }) {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [loading, setLoading] = useState(false)
+  
+  // No-Popup Delete State
+  const [verifyDeleteId, setVerifyDeleteId] = useState(null)
   
   const DEFAULT_FORM = {
     name: '', platform: 'bolt', caliber: '', manufacturer: '', model: '', roundCount: 0, imageUrl: '',
@@ -99,14 +102,16 @@ export function Armory({ canEdit }) {
           HAPTIC.success()
           loadData()
       } catch (err) {
-          alert(err.message)
+          // Fallback error display if needed, but avoiding alert()
+          console.error(err)
       } finally {
           setLoading(false)
       }
   }
 
   async function handleDelete(id) {
-      if(!confirm('Remove this firearm from the Armory? Logs will stay.')) return
+      // Inline Verification Logic
+      setVerifyDeleteId(null) // Reset
       HAPTIC.error()
       await deleteFirearm(id)
       loadData()
@@ -200,7 +205,6 @@ export function Armory({ canEdit }) {
                         {/* HEADER ROW */}
                         <div onClick={() => toggleExpand(gun.id)} className="p-4 flex flex-col md:flex-row md:items-center justify-between cursor-pointer select-none gap-4 md:gap-0">
                             <div className="flex items-center gap-4">
-                                {/* Always show Icon in collapsed state list */}
                                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isExpanded ? 'bg-red-900/20 text-red-500 border border-red-900/50' : 'bg-slate-800 text-slate-500'}`}>
                                     <Crosshair size={20} />
                                 </div>
@@ -227,12 +231,9 @@ export function Armory({ canEdit }) {
                             </div>
                         </div>
 
-                        {/* EXPANDED "DOSSIER" VIEW */}
                         {isExpanded && (
                             <div className="px-4 pb-4 pt-4 border-t border-slate-800/50 bg-black/20">
-                                
                                 <div className="flex flex-col md:flex-row gap-6">
-                                    {/* LEFT COLUMN: IMAGE (If exists) */}
                                     {gun.imageUrl && (
                                         <div className="w-full md:w-1/3 max-w-sm flex-shrink-0">
                                             <div className="rounded-lg overflow-hidden border border-slate-800 bg-black/50 shadow-lg h-48 md:h-full min-h-[160px] relative group">
@@ -245,7 +246,6 @@ export function Armory({ canEdit }) {
                                         </div>
                                     )}
 
-                                    {/* RIGHT COLUMN: DATA GRID */}
                                     <div className="flex-1 flex flex-col justify-between">
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-4 text-[11px] mb-4">
                                             <div><span className="text-slate-500 block uppercase tracking-wider text-[9px] mb-0.5">Platform</span><span className="text-slate-300 font-medium">{PLATFORMS.find(p=>p.value===gun.platform)?.label || gun.platform}</span></div>
@@ -259,12 +259,21 @@ export function Armory({ canEdit }) {
                                         {canEdit && (
                                             <div className="flex gap-3 pt-4 mt-auto border-t border-slate-800/50 md:border-none md:pt-0">
                                                 <button onClick={(e) => { e.stopPropagation(); handleEdit(gun); }} className="px-3 py-1.5 rounded-full bg-black/60 border border-slate-700 text-slate-300 text-[10px] hover:text-white hover:bg-slate-800 transition flex items-center gap-1"><Edit size={12}/> Edit Specs</button>
-                                                <button onClick={(e) => { e.stopPropagation(); handleDelete(gun.id); }} className="px-3 py-1.5 rounded-full bg-black/60 border border-red-900/40 text-red-400 text-[10px] hover:text-red-300 hover:bg-red-900/20 transition flex items-center gap-1"><Trash2 size={12}/> Decommission</button>
+                                                
+                                                {/* SAFE DELETE UI */}
+                                                {verifyDeleteId === gun.id ? (
+                                                    <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
+                                                        <span className="text-[10px] text-red-400 font-bold">Sure?</span>
+                                                        <button onClick={(e) => { e.stopPropagation(); handleDelete(gun.id); }} className="px-3 py-1.5 rounded-full bg-red-600 text-white text-[10px] font-bold hover:bg-red-500 transition">Yes</button>
+                                                        <button onClick={(e) => { e.stopPropagation(); setVerifyDeleteId(null); }} className="px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 text-[10px] hover:bg-slate-700 transition">No</button>
+                                                    </div>
+                                                ) : (
+                                                    <button onClick={(e) => { e.stopPropagation(); setVerifyDeleteId(gun.id); }} className="px-3 py-1.5 rounded-full bg-black/60 border border-red-900/40 text-red-400 text-[10px] hover:text-red-300 hover:bg-red-900/20 transition flex items-center gap-1"><Trash2 size={12}/> Decommission</button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
                                 </div>
-
                             </div>
                         )}
                     </div>

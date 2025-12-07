@@ -3,8 +3,9 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.31.0
-//About: Manage component LOT purchases. Fixed Modal Safe Area.
+//Version: 2.32.0
+//About: Manage component LOT purchases. 
+//       Updated: Local Date + Safe Area on Modals.
 //===============================================================
 
 import { useState, useEffect, useMemo } from 'react'
@@ -17,7 +18,16 @@ import UploadButton from './UploadButton'
 const COMPONENT_TYPES = [ { value: 'powder', label: 'Powder' }, { value: 'bullet', label: 'Bullet / Projectile' }, { value: 'primer', label: 'Primer' }, { value: 'case', label: 'Brass / Case' }, { value: 'other', label: 'Other' } ]
 const UNITS = [ { value: 'lb', label: 'Pounds (lb)' }, { value: 'kg', label: 'Kilograms (kg)' }, { value: 'gr', label: 'Grains (gr)' }, { value: 'each', label: 'Each / Pieces' }, { value: 'rounds', label: 'Rounds' } ]
 const CASE_CONDITIONS = [ { value: 'new', label: 'New' }, { value: 'once-fired', label: 'Once fired' }, { value: 'mixed', label: 'Mixed / Unknown' } ]
-const DEFAULT_FORM = { componentType: 'powder', caliber: '', brand: '', name: '', typeDetail: '', lotId: '', qty: '', unit: 'lb', price: '', shipping: '', tax: '', vendor: '', date: new Date().toISOString().slice(0, 10), notes: '', url: '', imageUrl: '', status: 'active', caseCondition: '' }
+
+// FIX: Local Date String to prevent "yesterday" bugs
+const getLocalDate = () => {
+    const now = new Date()
+    const offset = now.getTimezoneOffset()
+    const local = new Date(now.getTime() - (offset*60*1000))
+    return local.toISOString().split('T')[0]
+}
+
+const DEFAULT_FORM = { componentType: 'powder', caliber: '', brand: '', name: '', typeDetail: '', lotId: '', qty: '', unit: 'lb', price: '', shipping: '', tax: '', vendor: '', date: getLocalDate(), notes: '', url: '', imageUrl: '', status: 'active', caseCondition: '' }
 
 export function Purchases({ onChanged, canEdit = true, highlightId }) {
   const [purchases, setPurchases] = useState([])
@@ -36,7 +46,7 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
 
   async function loadData() { try { const data = await getAllPurchases(); setPurchases(data); if (onChanged) onChanged(); } catch (err) { console.error("Failed to load purchases", err); setError("Failed to sync inventory data."); } }
   function handleAddNew() { setEditingId(null); setForm(DEFAULT_FORM); setError(null); setIsFormOpen(true); HAPTIC.click(); }
-  function handleEdit(item) { setEditingId(item.id); setForm({ componentType: item.componentType || 'powder', date: item.purchaseDate ? item.purchaseDate.substring(0, 10) : '', vendor: item.vendor || '', brand: item.brand || '', name: item.name || '', typeDetail: item.typeDetail || '', lotId: item.lotId || '', qty: item.qty != null ? String(item.qty) : '', unit: item.unit || '', price: item.price != null ? String(item.price) : '', shipping: item.shipping != null ? String(item.shipping) : '', tax: item.tax != null ? String(item.tax) : '', notes: item.notes || '', status: item.status || 'active', url: item.url || '', imageUrl: item.imageUrl || '', caseCondition: item.caseCondition || '' }); setError(null); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); HAPTIC.click(); }
+  function handleEdit(item) { setEditingId(item.id); setForm({ componentType: item.componentType || 'powder', date: item.purchaseDate ? item.purchaseDate.substring(0, 10) : getLocalDate(), vendor: item.vendor || '', brand: item.brand || '', name: item.name || '', typeDetail: item.typeDetail || '', lotId: item.lotId || '', qty: item.qty != null ? String(item.qty) : '', unit: item.unit || '', price: item.price != null ? String(item.price) : '', shipping: item.shipping != null ? String(item.shipping) : '', tax: item.tax != null ? String(item.tax) : '', notes: item.notes || '', status: item.status || 'active', url: item.url || '', imageUrl: item.imageUrl || '', caseCondition: item.caseCondition || '' }); setError(null); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); HAPTIC.click(); }
   function promptDelete(item) { if (!canEdit) return; setItemToDelete(item); setDeleteModalOpen(true); HAPTIC.click(); }
   async function executeDelete() { if (!itemToDelete) return; setIsDeleting(true); try { await deletePurchase(itemToDelete.id); HAPTIC.success(); loadData(); setDeleteModalOpen(false); setItemToDelete(null); } catch (err) { setError(`Failed to delete: ${err.message}`); HAPTIC.error(); setDeleteModalOpen(false); } finally { setIsDeleting(false); } }
   async function handleSubmit(e) { e.preventDefault(); setLoading(true); setError(null); try { const payload = { ...form, id: editingId, qty: Number(form.qty), price: Number(form.price), shipping: Number(form.shipping), tax: Number(form.tax), purchaseDate: form.date }; await addPurchase(payload); HAPTIC.success(); setIsFormOpen(false); loadData(); } catch (err) { setError(`Failed to save: ${err.message}`); HAPTIC.error(); } finally { setLoading(false); } }
@@ -116,7 +126,6 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
          </div>
       </div>
 
-      {/* MOBILE FIX: Added padding-top for Safe Area on Modal */}
       {deleteModalOpen && itemToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
             <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
