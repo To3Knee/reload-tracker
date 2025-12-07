@@ -3,9 +3,9 @@
 //Script Location: src/App.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 3.0.0
+//Version: 3.1.0
 //About: Root shell. 
-//       Updated: Pro Layout - Hides Header on Desktop.
+//       Updated: Production "Front Door Lock" Logic.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -30,6 +30,9 @@ import {
   Gauge, ShoppingCart, Package, Beaker, ClipboardList, Activity, Target, Crosshair
 } from 'lucide-react'
 
+// CONFIG: Access Control
+const REQUIRE_LOGIN = import.meta.env.VITE_REQUIRE_LOGIN === 'true'
+
 const MENU_ITEMS = [
   { id: 'calculator', label: 'Calculator', icon: Gauge },
   { id: 'purchases', label: 'Purchases', icon: ShoppingCart },
@@ -47,7 +50,10 @@ export default function App() {
   const [recipes, setRecipes] = useState([]) 
   const [selectedRecipe, setSelectedRecipe] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
+  
+  // Auth State Logic
   const [isAuthOpen, setIsAuthOpen] = useState(false)
+  
   const [isAiOpen, setIsAiOpen] = useState(false)
   const [aiEnabled, setAiEnabled] = useState(false)
   const [scannedId, setScannedId] = useState(null)
@@ -64,11 +70,16 @@ export default function App() {
       setRecipes(recipesData)
       
       const user = await getCurrentUser()
-      if (user) setCurrentUser(user)
+      if (user) {
+          setCurrentUser(user)
+          setIsAuthOpen(false) // Close modal if logged in
+      } else if (REQUIRE_LOGIN) {
+          setIsAuthOpen(true) // Force open if Prod and no user
+      }
 
       try {
         const settings = await fetchSettings()
-        setAiEnabled(settings.ai_enabled === 'true' && settings.hasAiKey)
+        setAiEnabled(settings.ai_enabled === 'true' && (settings.hasAiKey || settings.ai_api_key))
       } catch (e) {}
 
       const params = new URLSearchParams(window.location.search)
@@ -88,6 +99,7 @@ export default function App() {
   const handleUseRecipe = recipe => { setSelectedRecipe(recipe); setActiveTab('calculator'); HAPTIC.soft(); }
   const isAdmin = currentUser && currentUser.role === ROLE_ADMIN
 
+  // GATEKEEPER: If Age not confirmed, show Gate
   if (!ageConfirmed) return (
       <div className="min-h-[100dvh] bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100 flex items-center justify-center px-4">
         <div className="glass max-w-lg w-full text-center">
@@ -112,13 +124,7 @@ export default function App() {
         menuItems={MENU_ITEMS}
       />
 
-      {/* LAYOUT UPDATE: 
-        - Mobile: pt-[calc...] allows room for floating pill + safe area.
-        - Desktop: md:pt-24 pushes content down below the 64px fixed header + 32px gap.
-      */}
       <main className="max-w-6xl mx-auto px-4 pt-[calc(6rem+env(safe-area-inset-top))] md:pt-24 pb-24">
-        
-        {/* HERO HEADER: Visible on Mobile, HIDDEN on Desktop (moved to Nav) */}
         <header className="flex flex-col md:flex-row md:items-center gap-6 mb-12 md:hidden">
           <div className="flex justify-center md:justify-start"><img src={logo} alt="Reload Tracker" className="inline-block w-32 md:w-40 drop-shadow-2xl opacity-90" /></div>
           <div className="flex items-start gap-4 flex-1">
@@ -141,7 +147,33 @@ export default function App() {
         {activeTab === 'analytics' && <Analytics />}
       </main>
 
-      {isAuthOpen && <AuthModal open={isAuthOpen} onClose={() => setIsAuthOpen(false)} currentUser={currentUser} onLogin={user => { setCurrentUser(user); setIsAuthOpen(false); HAPTIC.success(); }} onLogout={async () => { await logoutUser(); setCurrentUser(null); setIsAuthOpen(false); setIsAiOpen(false); HAPTIC.soft(); }} />}
+      {/* AUTH MODAL - Conditional Close Button */}
+      {isAuthOpen && (
+          <AuthModal 
+            open={isAuthOpen} 
+            // Only allow closing if Login is NOT required OR if user is already logged in
+            onClose={() => {
+                if (!REQUIRE_LOGIN || currentUser) setIsAuthOpen(false)
+            }} 
+            currentUser={currentUser} 
+            onLogin={user => { 
+                setCurrentUser(user)
+                setIsAuthOpen(false) 
+                HAPTIC.success()
+            }} 
+            onLogout={async () => { 
+                await logoutUser()
+                setCurrentUser(null)
+                // If login required, keep modal open
+                if (!REQUIRE_LOGIN) setIsAuthOpen(false)
+                setIsAiOpen(false)
+                HAPTIC.soft() 
+            }} 
+            // Pass flag to hide X button
+            canClose={!REQUIRE_LOGIN || !!currentUser}
+          />
+      )}
+      
       {isAiOpen && <AiModal open={isAiOpen} onClose={() => setIsAiOpen(false)} />}
 
       <div className="hidden md:block fixed bottom-2 right-3 z-50 text-[10px] text-slate-500"><span className="px-2 py-[2px] rounded-full border border-red-600/40 bg-black/70 backdrop-blur">Reload Tracker {APP_VERSION_LABEL}</span></div>

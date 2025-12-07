@@ -1,33 +1,13 @@
 -- ===============================================================
--- Script: prod_schema_sync.sql
--- Purpose: 
---   1. Wipes App Data (Batches, Logs, etc.) while SAVING Users.
---   2. Creates missing tables (Blueprints, Sources, etc.).
---   3. Patches existing tables with new columns.
--- Usage: Run safely against Production maintenance.
+-- Script: schema_gold_master.sql (v4.0)
+-- Purpose: The Single Source of Truth for the Database Structure.
+--          Includes Users, Inventory, Recipes, Batches, Logs,
+--          Firearms, Blueprints, Settings, and Sessions.
 -- ===============================================================
 
 BEGIN;
 
--- 1. DATA CLEANSE (Preserve Users)
-DO $$
-DECLARE
-    tables text[] := ARRAY[
-        'range_logs', 'batches', 'configs', 'blueprints', 
-        'recipes', 'purchases', 'firearms', 'sessions', 
-        'reference_components', 'settings', 'sources'
-    ];
-    t text;
-BEGIN
-    FOREACH t IN ARRAY tables LOOP
-        IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = t) THEN
-            EXECUTE 'TRUNCATE TABLE ' || quote_ident(t) || ' RESTART IDENTITY CASCADE;';
-            RAISE NOTICE 'Cleaned table: %', t;
-        END IF;
-    END LOOP;
-END $$;
-
--- 2. TABLE CREATION (Idempotent)
+-- 1. USERS
 CREATE TABLE IF NOT EXISTS users (
     id bigserial PRIMARY KEY,
     first_name text NOT NULL,
@@ -43,6 +23,14 @@ CREATE TABLE IF NOT EXISTS users (
     last_login_at timestamp with time zone
 );
 
+-- 2. SETTINGS
+CREATE TABLE IF NOT EXISTS settings (
+    key text PRIMARY KEY,
+    value text NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- 3. FIREARMS (The Armory)
 CREATE TABLE IF NOT EXISTS firearms (
     id serial PRIMARY KEY,
     user_id integer REFERENCES users(id) ON DELETE CASCADE,
@@ -59,6 +47,7 @@ CREATE TABLE IF NOT EXISTS firearms (
     updated_at timestamp with time zone DEFAULT now()
 );
 
+-- 4. PURCHASES (Inventory)
 CREATE TABLE IF NOT EXISTS purchases (
     id bigserial PRIMARY KEY,
     lot_id text NOT NULL UNIQUE,
@@ -85,6 +74,7 @@ CREATE TABLE IF NOT EXISTS purchases (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+-- 5. RECIPES
 CREATE TABLE IF NOT EXISTS recipes (
     id bigserial PRIMARY KEY,
     name text NOT NULL,
@@ -103,9 +93,11 @@ CREATE TABLE IF NOT EXISTS recipes (
     source text,
     status text DEFAULT 'active' NOT NULL,
     archived boolean DEFAULT false,
+    -- Geometry
     coal numeric(6, 4),
     case_capacity numeric(6, 2),
     bullet_length numeric(6, 4),
+    -- Links
     powder_lot_id bigint REFERENCES purchases(id) ON DELETE SET NULL,
     bullet_lot_id bigint REFERENCES purchases(id) ON DELETE SET NULL,
     primer_lot_id bigint REFERENCES purchases(id) ON DELETE SET NULL,
@@ -116,6 +108,7 @@ CREATE TABLE IF NOT EXISTS recipes (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+-- 6. BATCHES
 CREATE TABLE IF NOT EXISTS batches (
     id bigserial PRIMARY KEY,
     recipe_id bigint NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
@@ -132,6 +125,7 @@ CREATE TABLE IF NOT EXISTS batches (
     updated_at timestamp with time zone DEFAULT now()
 );
 
+-- 7. RANGE LOGS
 CREATE TABLE IF NOT EXISTS range_logs (
     id bigserial PRIMARY KEY,
     recipe_id bigint NOT NULL REFERENCES recipes(id) ON DELETE SET NULL,
@@ -156,6 +150,7 @@ CREATE TABLE IF NOT EXISTS range_logs (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+-- 8. BLUEPRINTS
 CREATE TABLE IF NOT EXISTS blueprints (
     id bigserial PRIMARY KEY,
     user_id bigint REFERENCES users(id) ON DELETE CASCADE,
@@ -182,6 +177,7 @@ CREATE TABLE IF NOT EXISTS blueprints (
     updated_at timestamp with time zone DEFAULT now()
 );
 
+-- 9. CONFIGS
 CREATE TABLE IF NOT EXISTS configs (
     id bigserial PRIMARY KEY,
     name text NOT NULL,
@@ -204,6 +200,7 @@ CREATE TABLE IF NOT EXISTS configs (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+-- 10. REFERENCE COMPONENTS
 CREATE TABLE IF NOT EXISTS reference_components (
     id text PRIMARY KEY,
     type text NOT NULL,
@@ -216,12 +213,7 @@ CREATE TABLE IF NOT EXISTS reference_components (
     created_at timestamp with time zone DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS settings (
-    key text PRIMARY KEY,
-    value text NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
+-- 11. SOURCES
 CREATE TABLE IF NOT EXISTS sources (
     id bigserial PRIMARY KEY,
     user_id bigint REFERENCES users(id) ON DELETE SET NULL,
@@ -235,6 +227,7 @@ CREATE TABLE IF NOT EXISTS sources (
     updated_at timestamp with time zone DEFAULT now()
 );
 
+-- 12. SESSIONS
 CREATE TABLE IF NOT EXISTS sessions (
     id bigserial PRIMARY KEY,
     user_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -244,36 +237,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     revoked_at timestamp with time zone
 );
 
--- 3. SCHEMA PATCHING (The Safety Net)
-DO $$ 
-BEGIN 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipes' AND column_name='coal') THEN
-        ALTER TABLE recipes ADD COLUMN coal NUMERIC(6,4);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipes' AND column_name='case_capacity') THEN
-        ALTER TABLE recipes ADD COLUMN case_capacity NUMERIC(6,2);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipes' AND column_name='bullet_length') THEN
-        ALTER TABLE recipes ADD COLUMN bullet_length NUMERIC(6,4);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipes' AND column_name='archived') THEN
-        ALTER TABLE recipes ADD COLUMN archived BOOLEAN DEFAULT FALSE;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='firearms' AND column_name='image_url') THEN
-        ALTER TABLE firearms ADD COLUMN image_url TEXT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='purchases' AND column_name='image_url') THEN
-        ALTER TABLE purchases ADD COLUMN image_url TEXT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='range_logs' AND column_name='image_url') THEN
-        ALTER TABLE range_logs ADD COLUMN image_url TEXT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='range_logs' AND column_name='shots') THEN
-        ALTER TABLE range_logs ADD COLUMN shots JSONB DEFAULT '[]'::jsonb;
-    END IF;
-END $$;
-
--- 4. INDEX REFRESH
+-- 13. INDEXES
 CREATE INDEX IF NOT EXISTS idx_batches_date ON batches (load_date);
 CREATE INDEX IF NOT EXISTS idx_purchases_status ON purchases (status);
 CREATE INDEX IF NOT EXISTS idx_range_logs_date ON range_logs (date);

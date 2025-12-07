@@ -3,9 +3,9 @@
 //Script Location: src/components/AuthModal.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.30.0
+//Version: 2.31.0
 //About: Login/Admin Modal.
-//       Updated: Added Gemini 2.5 Models (Stable 2025).
+//       Updated: 'canClose' prop to lock modal for Gatekeeping.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -50,6 +50,7 @@ export default function AuthModal({
   currentUser,
   onLogin,
   onLogout,
+  canClose = true // Default to true (Standard behavior)
 }) {
   // Login State
   const [loginForm, setLoginForm] = useState({ username: '', password: '' })
@@ -222,9 +223,12 @@ export default function AuthModal({
       
       <div className={`bg-[#0f0f10] border-zinc-800 md:border rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex ${isAdmin ? "w-full max-w-4xl flex-col md:flex-row" : "w-full max-w-md flex-col"} h-full md:h-auto md:max-h-[90vh] relative`}>
         
-        <button onClick={onClose} className="absolute top-2 right-2 md:top-4 md:right-4 z-50 p-2 bg-[#1a1a1a] rounded-full text-zinc-400 hover:text-white hover:bg-red-900/50 border border-transparent md:border-zinc-800 transition shadow-lg">
-            <X size={18} />
-        </button>
+        {/* CLOSE BUTTON (CONDITIONAL) */}
+        {canClose && (
+            <button onClick={onClose} className="absolute top-2 right-2 md:top-4 md:right-4 z-50 p-2 bg-[#1a1a1a] rounded-full text-zinc-400 hover:text-white hover:bg-red-900/50 border border-transparent md:border-zinc-800 transition shadow-lg">
+                <X size={18} />
+            </button>
+        )}
 
         {/* LEFT PANEL */}
         <div className={`bg-black/40 p-6 flex flex-col relative border-b border-zinc-800 md:border-b-0 md:border-r ${isAdmin ? "w-full md:w-[35%] shrink-0" : "w-full flex-1"} ${isAdmin ? "min-h-[auto]" : ""}`}>
@@ -342,31 +346,29 @@ export default function AuthModal({
                   </div>
               )}
               
-              {/* SYSTEM TAB - UPDATED WITH 2.5 MODELS */}
+              {/* SYSTEM TAB - UPDATED WITH MODEL SELECTOR */}
               {activeTab === 'system' && (
                   <div className="space-y-6">
                      <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
                         <h3 className="text-sm font-bold text-zinc-300 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
                         
-                        {/* TOGGLE ENABLED */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-zinc-800 rounded-lg mb-4">
                             <div className="flex items-start gap-3"><div className="p-2 rounded-lg bg-zinc-800 text-zinc-500 mt-1"><Bot size={18} /></div><div><p className="text-xs font-bold text-zinc-200">AI Ballistics Expert</p><p className="text-[10px] text-zinc-500 leading-relaxed mt-1">Enable the generative AI chat assistant.</p></div></div>
                             <div className="flex items-center justify-end">{systemSettings.hasAiKey || systemSettings.ai_api_key ? (<button onClick={() => toggleAi(systemSettings.ai_enabled === 'true' ? 'false' : 'true')} className={`px-4 py-2 rounded-full text-[10px] font-bold border transition w-full sm:w-auto ${systemSettings.ai_enabled === 'true' ? 'border-red-500/50 text-red-400 bg-red-900/20' : 'border-zinc-600 text-zinc-400 bg-black/40'}`}>{systemSettings.ai_enabled === 'true' ? 'Enabled' : 'Disabled'}</button>) : (<span className="px-3 py-1 rounded bg-amber-900/20 text-amber-500 text-[10px] border border-amber-900/50 flex items-center gap-1"><AlertTriangle size={10} /> Missing API Key</span>)}</div>
                         </div>
 
-                        {/* MODEL & KEY CONFIG - UPDATED FOR 2.5 */}
                         <div className="p-4 bg-black/20 border border-zinc-800 rounded-lg space-y-4">
                             <div>
                                 <label className={labelClass}>
                                     AI Model 
-                                    <span className={subLabelClass}>(Use 2.5 Series for best results)</span>
+                                    <span className={subLabelClass}>(Choose '001' versions for stability)</span>
                                 </label>
                                 <div className="relative">
                                     <select className={`${inputClass} appearance-none`} value={aiModel === 'custom' ? 'custom' : aiModel} onChange={e => setAiModel(e.target.value)}>
                                         <option value="gemini-2.5-flash">Gemini 2.5 Flash (New Standard)</option>
                                         <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (Fastest)</option>
                                         <option value="gemini-2.5-pro">Gemini 2.5 Pro (Most Intelligent)</option>
-                                        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Legacy/Workhorse)</option>
+                                        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Legacy)</option>
                                         <option value="custom">Custom Model ID...</option>
                                     </select>
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400"><ChevronDown size={14} /></div>
