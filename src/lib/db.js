@@ -3,9 +3,9 @@
 //Script Location: src/lib/db.js
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 0.3.1
+//Version: 1.0.0 (Production Ready)
 //About: Frontend data access layer.
-//       Updated: Removed Simulation Logic.
+//       Updated: REMOVED AUTO-SEEDING. No more zombie data.
 //===============================================================
 
 const API_BASE_URL =
@@ -47,6 +47,8 @@ export function formatCurrency(value) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 4 }).format(Number(value))
 }
 
+// --- CORE EXPORTS (Read/Write) ---
+
 export async function getAllPurchases() {
   const data = await apiRequest('/purchases')
   return Array.isArray(data) ? data : []
@@ -84,29 +86,9 @@ export async function setSetting(key, value) {
   try { window.localStorage.setItem(`rt_setting_${key}`, JSON.stringify(value)) } catch {}
 }
 
-const DEMO_PURCHASES = [
-  { componentType: 'powder', brand: 'Hodgdon', name: 'Titegroup', caliber: '9mm', qty: 1, unit: 'lb', price: 29.99, shipping: 12, tax: 3, vendor: 'Powder Valley', notes: 'Demo Data', status: 'active' },
-  { componentType: 'bullet', brand: 'Berrys', name: '115gr RN', caliber: '9mm', qty: 1000, unit: 'ea', price: 98.99, shipping: 10, tax: 8, vendor: 'Demo Shop', notes: 'Demo Data', status: 'active' },
-  { componentType: 'primer', brand: 'CCI', name: 'Small Pistol', caliber: '9mm', qty: 1000, unit: 'ea', price: 80.00, shipping: 0, tax: 5, vendor: 'Local', notes: 'Demo Data', status: 'active' },
-  { componentType: 'case', brand: 'Mixed', name: 'Range Brass', caliber: '9mm', qty: 2000, unit: 'ea', price: 0, shipping: 0, tax: 0, vendor: 'Floor', notes: 'Demo Data', status: 'active' },
-]
-
-const DEMO_RECIPES = [
-  { name: '9mm - Demo Load', caliber: '9mm', profileType: 'range', chargeGrains: 4.1, brassReuse: 10, lotSize: 100, bulletWeightGr: 115, muzzleVelocityFps: 1100, zeroDistanceYards: 15, groupSizeInches: 1.5, notes: 'Auto-generated demo recipe.' }
-]
-
+// --- SEED DATA ENGINE (DISABLED FOR PRODUCTION) ---
 export async function seedData() {
-  try {
-    const [purchases, recipes] = await Promise.all([getAllPurchases(), getAllRecipes()])
-    if (purchases.length === 0) {
-      console.log('Seeding Inventory...')
-      for (const p of DEMO_PURCHASES) await addPurchase(p)
-    }
-    if (recipes.length === 0) {
-       console.log('Seeding Recipes...')
-       for (const r of DEMO_RECIPES) await saveRecipe(r)
-    }
-  } catch (err) {
-    console.error('[Reload Tracker] seedData failed:', err)
-  }
+  // In Production/Demo, we do NOT want to auto-populate data when the user deletes items.
+  // This function is intentionally left empty to prevent "Zombie Data".
+  console.log('[Reload Tracker] Auto-Seeding Disabled.')
 }
