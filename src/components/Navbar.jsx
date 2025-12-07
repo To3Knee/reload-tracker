@@ -3,9 +3,9 @@
 //Script Location: src/components/Navbar.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 3.3.0
+//Version: 3.5.0
 //About: Unified Command Bar. 
-//       Updated: Large Logo, No Text, Pro AI Button.
+//       Updated: Mobile Logo REMOVED (Keeps nav sleek/compact).
 //===============================================================
 
 import { Settings, Bot } from 'lucide-react'
@@ -26,13 +26,17 @@ export default function Navbar({
 
   return (
     <nav className="fixed z-50 transition-all duration-300 
-      top-[max(0.75rem,env(safe-area-inset-top))] left-2 right-2 rounded-full border border-[#b33c3c44] bg-black/80 backdrop-blur-xl px-4 py-2 flex items-center justify-between shadow-2xl
+      top-[max(0.75rem,env(safe-area-inset-top))] left-2 right-2 rounded-full border border-[#b33c3c44] bg-black/80 backdrop-blur-xl px-3 py-2 flex items-center justify-between shadow-2xl
       md:top-0 md:left-0 md:right-0 md:rounded-none md:border-x-0 md:border-t-0 md:border-b md:border-zinc-800 md:bg-[#050505]/80 md:px-6 md:py-0 md:h-20
     ">
       
-      {/* LEFT: BRANDING (Logo Only - MAXIMIZED) */}
-      <div className="hidden md:flex items-center h-full py-2">
-        <img src={logo} alt="RT" className="h-16 w-auto opacity-100 hover:scale-105 transition-transform duration-300 object-contain" />
+      {/* BRANDING (Desktop Only) */}
+      <div className="hidden md:flex items-center gap-3 w-48 flex-shrink-0">
+        <img 
+            src={logo} 
+            alt="RT" 
+            className="h-16 w-auto opacity-100 hover:scale-105 transition-transform duration-300 object-contain" 
+        />
       </div>
 
       {/* CENTER: NAVIGATION ITEMS */}
@@ -64,7 +68,7 @@ export default function Navbar({
       {/* RIGHT: ACTIONS & SESSION */}
       <div className="flex-shrink-0 flex items-center gap-3 pl-2 md:pl-0 border-l border-red-500/30 md:border-none w-auto md:w-48 md:justify-end">
         
-        {/* AI Toggle - Matches Settings Style */}
+        {/* AI Toggle */}
         {isAdmin && isAiEnabled && (
           <button 
             onClick={() => onOpenAi && onOpenAi()} 

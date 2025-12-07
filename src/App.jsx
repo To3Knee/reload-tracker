@@ -3,9 +3,9 @@
 //Script Location: src/App.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 3.1.0
+//Version: 3.3.0
 //About: Root shell. 
-//       Updated: Production "Front Door Lock" Logic.
+//       Updated: Mobile Header restored (Logo Only, No Text).
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -51,9 +51,8 @@ export default function App() {
   const [selectedRecipe, setSelectedRecipe] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
   
-  // Auth State Logic
+  // Auth State
   const [isAuthOpen, setIsAuthOpen] = useState(false)
-  
   const [isAiOpen, setIsAiOpen] = useState(false)
   const [aiEnabled, setAiEnabled] = useState(false)
   const [scannedId, setScannedId] = useState(null)
@@ -72,9 +71,9 @@ export default function App() {
       const user = await getCurrentUser()
       if (user) {
           setCurrentUser(user)
-          setIsAuthOpen(false) // Close modal if logged in
+          setIsAuthOpen(false) 
       } else if (REQUIRE_LOGIN) {
-          setIsAuthOpen(true) // Force open if Prod and no user
+          setIsAuthOpen(true) 
       }
 
       try {
@@ -99,7 +98,6 @@ export default function App() {
   const handleUseRecipe = recipe => { setSelectedRecipe(recipe); setActiveTab('calculator'); HAPTIC.soft(); }
   const isAdmin = currentUser && currentUser.role === ROLE_ADMIN
 
-  // GATEKEEPER: If Age not confirmed, show Gate
   if (!ageConfirmed) return (
       <div className="min-h-[100dvh] bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100 flex items-center justify-center px-4">
         <div className="glass max-w-lg w-full text-center">
@@ -124,18 +122,12 @@ export default function App() {
         menuItems={MENU_ITEMS}
       />
 
-      <main className="max-w-6xl mx-auto px-4 pt-[calc(6rem+env(safe-area-inset-top))] md:pt-24 pb-24">
-        <header className="flex flex-col md:flex-row md:items-center gap-6 mb-12 md:hidden">
-          <div className="flex justify-center md:justify-start"><img src={logo} alt="Reload Tracker" className="inline-block w-32 md:w-40 drop-shadow-2xl opacity-90" /></div>
-          <div className="flex items-start gap-4 flex-1">
-             <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
-             <div>
-                <span className="block text-[10px] uppercase tracking-[0.25em] text-red-500 font-bold mb-1">Ballistic Data System</span>
-                <h1 className="text-3xl md:text-5xl font-black text-white leading-none tracking-wide mb-2">RELOAD <span className="text-zinc-600">TRACKER</span></h1>
-                <p className="text-sm md:text-base text-slate-400 font-medium">Precision Data for Reloaders. <span className="text-slate-600">Track inventory, recipes, and costs.</span></p>
-             </div>
-          </div>
-        </header>
+      <main className="max-w-6xl mx-auto px-4 pt-[calc(5rem+env(safe-area-inset-top))] md:pt-28 pb-24">
+        
+        {/* MOBILE HEADER: Logo Only (Text removed as requested) */}
+        <div className="flex justify-center mb-6 md:hidden">
+           <img src={logo} alt="Reload Tracker" className="w-40 opacity-90 drop-shadow-2xl" />
+        </div>
 
         {activeTab === 'calculator' && <Dashboard purchases={purchases} selectedRecipe={selectedRecipe} onSelectRecipe={handleUseRecipe} canEdit={!!isAdmin} />}
         {activeTab === 'armory' && <Armory canEdit={!!isAdmin} />}
@@ -147,29 +139,13 @@ export default function App() {
         {activeTab === 'analytics' && <Analytics />}
       </main>
 
-      {/* AUTH MODAL - Conditional Close Button */}
       {isAuthOpen && (
           <AuthModal 
             open={isAuthOpen} 
-            // Only allow closing if Login is NOT required OR if user is already logged in
-            onClose={() => {
-                if (!REQUIRE_LOGIN || currentUser) setIsAuthOpen(false)
-            }} 
+            onClose={() => { if (!REQUIRE_LOGIN || currentUser) setIsAuthOpen(false) }} 
             currentUser={currentUser} 
-            onLogin={user => { 
-                setCurrentUser(user)
-                setIsAuthOpen(false) 
-                HAPTIC.success()
-            }} 
-            onLogout={async () => { 
-                await logoutUser()
-                setCurrentUser(null)
-                // If login required, keep modal open
-                if (!REQUIRE_LOGIN) setIsAuthOpen(false)
-                setIsAiOpen(false)
-                HAPTIC.soft() 
-            }} 
-            // Pass flag to hide X button
+            onLogin={user => { setCurrentUser(user); setIsAuthOpen(false); HAPTIC.success(); }} 
+            onLogout={async () => { await logoutUser(); setCurrentUser(null); if (!REQUIRE_LOGIN) setIsAuthOpen(false); setIsAiOpen(false); HAPTIC.soft(); }} 
             canClose={!REQUIRE_LOGIN || !!currentUser}
           />
       )}
