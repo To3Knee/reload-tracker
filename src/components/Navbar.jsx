@@ -3,11 +3,13 @@
 //Script Location: src/components/Navbar.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.7.0
-//About: Navbar. Updated with iOS Safe Area collision protection.
+//Version: 3.3.0
+//About: Unified Command Bar. 
+//       Updated: Large Logo, No Text, Pro AI Button.
 //===============================================================
 
 import { Settings, Bot } from 'lucide-react'
+import logo from '../assets/logo.png' 
 
 export default function Navbar({ 
     activeTab, 
@@ -23,22 +25,66 @@ export default function Navbar({
   const sessionDetail = currentUser?.username || ''
 
   return (
-    // MOBILE FIX: Added env(safe-area-inset-top) logic to 'top' class
-    <nav className="fixed z-50 bg-black/80 backdrop-blur-xl border border-[#b33c3c44] rounded-full flex items-center left-2 right-2 px-3 py-2 gap-2 md:right-4 md:left-auto md:w-auto md:px-4 md:gap-3 transition-all duration-300 top-[max(0.75rem,env(safe-area-inset-top))] md:top-6">
-      <div className="flex-1 flex items-center gap-1 md:gap-3 overflow-x-auto no-scrollbar mask-gradient">
-        {menuItems.map(item => (
-          <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex items-center gap-2 rounded-full font-bold transition-all whitespace-nowrap px-3 py-2 text-xs md:px-4 md:py-3 md:text-base ${activeTab === item.id ? 'bg-red-900/70 text-red-400 shadow-lg' : 'hover:bg-white/10 hover:text-red-400 text-slate-400'}`}>
-            <item.icon size={18} className={activeTab === item.id ? "text-red-400" : ""} />
-            <span className="hidden md:inline">{item.label}</span>
-          </button>
-        ))}
+    <nav className="fixed z-50 transition-all duration-300 
+      top-[max(0.75rem,env(safe-area-inset-top))] left-2 right-2 rounded-full border border-[#b33c3c44] bg-black/80 backdrop-blur-xl px-4 py-2 flex items-center justify-between shadow-2xl
+      md:top-0 md:left-0 md:right-0 md:rounded-none md:border-x-0 md:border-t-0 md:border-b md:border-zinc-800 md:bg-[#050505]/80 md:px-6 md:py-0 md:h-20
+    ">
+      
+      {/* LEFT: BRANDING (Logo Only - MAXIMIZED) */}
+      <div className="hidden md:flex items-center h-full py-2">
+        <img src={logo} alt="RT" className="h-16 w-auto opacity-100 hover:scale-105 transition-transform duration-300 object-contain" />
       </div>
-      <div className="flex-shrink-0 flex items-center gap-2 pl-2 md:pl-3 border-l border-red-500/30">
+
+      {/* CENTER: NAVIGATION ITEMS */}
+      <div className="flex-1 flex items-center justify-start md:justify-center gap-1 md:gap-6 overflow-x-auto no-scrollbar mask-gradient md:mask-none h-full">
+        {menuItems.map(item => {
+           const isActive = activeTab === item.id
+           return (
+            <button 
+              key={item.id} 
+              onClick={() => setActiveTab(item.id)} 
+              className={`
+                flex items-center gap-2 font-bold transition-all whitespace-nowrap
+                /* Mobile Styles: Pill */
+                px-3 py-2 rounded-full text-xs
+                ${isActive ? 'bg-red-900/70 text-red-400 shadow-lg md:bg-transparent md:shadow-none' : 'text-slate-400 hover:text-zinc-200'}
+                
+                /* Desktop Styles: Underline / Pro Link */
+                md:rounded-none md:px-1 md:py-0 md:h-full md:border-b-4 md:text-sm
+                ${isActive ? 'md:border-red-500 md:text-white' : 'md:border-transparent md:hover:border-zinc-700'}
+              `}
+            >
+              <item.icon size={18} className={isActive ? "text-red-400 md:text-red-500" : ""} />
+              <span className="hidden md:inline">{item.label}</span>
+            </button>
+           )
+        })}
+      </div>
+
+      {/* RIGHT: ACTIONS & SESSION */}
+      <div className="flex-shrink-0 flex items-center gap-3 pl-2 md:pl-0 border-l border-red-500/30 md:border-none w-auto md:w-48 md:justify-end">
+        
+        {/* AI Toggle - Matches Settings Style */}
         {isAdmin && isAiEnabled && (
-          <button onClick={() => onOpenAi && onOpenAi()} className="p-2 rounded-full border border-emerald-500/30 bg-emerald-900/10 text-emerald-400 hover:bg-emerald-900/30 transition flex items-center justify-center mr-1"><Bot size={16} /></button>
+          <button 
+            onClick={() => onOpenAi && onOpenAi()} 
+            className="p-2 rounded-full border border-emerald-500/20 bg-emerald-900/10 text-emerald-500 hover:text-emerald-300 hover:bg-emerald-900/30 hover:border-emerald-500/50 transition flex items-center justify-center"
+            title="Ballistics AI"
+          >
+            <Bot size={20} />
+          </button>
         )}
-        <span className="hidden lg:inline text-[10px] text-slate-500">{sessionLabel} <span className="text-slate-300">{sessionDetail ? `• ${sessionDetail}` : '(read-only)'}</span></span>
-        <button onClick={() => onOpenSettings && onOpenSettings()} className="p-2 rounded-full border border-slate-700/80 bg-black/60 hover:bg-white/10 text-slate-400 hover:text-red-400 hover:border-red-500/70 transition flex items-center justify-center"><Settings size={16} /></button>
+
+        {/* User Info */}
+        <div className="hidden lg:flex flex-col items-end leading-tight">
+             <span className="text-[10px] font-bold text-zinc-300">{sessionDetail || 'Guest'}</span>
+             <span className="text-[9px] text-zinc-500 uppercase tracking-wider">{sessionLabel}</span>
+        </div>
+
+        {/* Settings / Profile */}
+        <button onClick={() => onOpenSettings && onOpenSettings()} className="p-2 rounded-full border border-slate-700/80 bg-black/60 hover:bg-zinc-800 text-slate-400 hover:text-white hover:border-zinc-500 transition flex items-center justify-center">
+            <Settings size={20} />
+        </button>
       </div>
     </nav>
   )

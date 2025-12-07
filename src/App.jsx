@@ -3,8 +3,9 @@
 //Script Location: src/App.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.14.0
-//About: Root shell. Updated padding for Safe Area Navbar.
+//Version: 3.0.0
+//About: Root shell. 
+//       Updated: Pro Layout - Hides Header on Desktop.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -111,9 +112,14 @@ export default function App() {
         menuItems={MENU_ITEMS}
       />
 
-      {/* MOBILE FIX: Dynamic Top Padding for Safe Area Navbar */}
-      <main className="max-w-6xl mx-auto px-4 pt-[calc(6rem+env(safe-area-inset-top))] pb-24">
-        <header className="flex flex-col md:flex-row md:items-center gap-6 mb-12">
+      {/* LAYOUT UPDATE: 
+        - Mobile: pt-[calc...] allows room for floating pill + safe area.
+        - Desktop: md:pt-24 pushes content down below the 64px fixed header + 32px gap.
+      */}
+      <main className="max-w-6xl mx-auto px-4 pt-[calc(6rem+env(safe-area-inset-top))] md:pt-24 pb-24">
+        
+        {/* HERO HEADER: Visible on Mobile, HIDDEN on Desktop (moved to Nav) */}
+        <header className="flex flex-col md:flex-row md:items-center gap-6 mb-12 md:hidden">
           <div className="flex justify-center md:justify-start"><img src={logo} alt="Reload Tracker" className="inline-block w-32 md:w-40 drop-shadow-2xl opacity-90" /></div>
           <div className="flex items-start gap-4 flex-1">
              <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>

@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: ai.js
 //Script Location: netlify/functions/ai.js
-//Date: 11/30/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 1.2.0
+//Version: 1.3.0
 //About: Backend handler for AI Chat. 
-//       Updated: Tuned system prompt for conciseness (Mobile).
+//       Updated: Supports DB-stored API Keys and Model switching.
 //===============================================================
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
@@ -33,13 +33,13 @@ export async function handler(event) {
   }
 
   try {
-    // 2. Auth Check (Must be logged in to use AI tokens)
+    // 2. Auth Check
     const user = await getCurrentUser(event)
     if (!user) {
       return { statusCode: 401, headers: baseHeaders, body: JSON.stringify({ message: 'Unauthorized' }) }
     }
 
-    // 3. Feature Flag Check
+    // 3. Load Settings (Feature Flag, Model, API Key)
     const settings = await getSettings()
     
     if (settings.ai_enabled !== 'true') {
@@ -53,8 +53,9 @@ export async function handler(event) {
       return { statusCode: 400, headers: baseHeaders, body: JSON.stringify({ message: 'Invalid history format.' }) }
     }
 
-    // 5. Initialize Gemini
-    const apiKey = process.env.GEMINI_API_KEY
+    // 5. Initialize Gemini (Prioritize DB Key over Env Var)
+    const apiKey = settings.ai_api_key || process.env.GEMINI_API_KEY
+    
     if (!apiKey) {
       console.error('Missing GEMINI_API_KEY')
       return { statusCode: 500, headers: baseHeaders, body: JSON.stringify({ message: 'Server configuration error: Missing API Key.' }) }
@@ -75,17 +76,17 @@ export async function handler(event) {
         parts: [{ text: msg.content }]
       }))
 
-    // 7. Inject System Context (TUNED FOR MOBILE/CONCISENESS)
+    // 7. Inject System Context
     const systemPrompt = `You are an expert Ballistics and Reloading Assistant. 
     1. Be extremely concise. Keep answers short and optimized for mobile screens.
     2. Do not provide bulleted lists of "things you can do" unless explicitly asked.
     3. Do not add generic safety disclaimers to every message. Only warn if a specific load exceeds SAAMI specs or looks dangerous.
-    4. Speak directly to the user (no "Hello! I am ready...").`
+    4. Speak directly to the user.`
     
     const chat = model.startChat({
       history: [
         { role: 'user', parts: [{ text: systemPrompt }] },
-        { role: 'model', parts: [{ text: "Understood. I will be concise, direct, and only warn when necessary." }] },
+        { role: 'model', parts: [{ text: "Understood. I will be concise and direct." }] },
         ...chatHistory
       ]
     })

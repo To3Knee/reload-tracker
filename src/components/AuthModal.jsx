@@ -3,13 +3,13 @@
 //Script Location: src/components/AuthModal.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.24.0
+//Version: 2.30.0
 //About: Login/Admin Modal.
-//       Updated: Removed browser alerts, added Hard Delete & Deactivated badge.
+//       Updated: Added Gemini 2.5 Models (Stable 2025).
 //===============================================================
 
 import { useEffect, useState } from 'react'
-import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, ChevronDown, Eye, EyeOff, Ban } from 'lucide-react'
+import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, ChevronDown, Eye, EyeOff, Ban, Trash2, Power, Save, Key } from 'lucide-react'
 import {
   ROLE_ADMIN,
   ROLE_SHOOTER,
@@ -67,10 +67,17 @@ export default function AuthModal({
   const [editingUserId, setEditingUserId] = useState(null)
   const [adminUsers, setAdminUsers] = useState([])
   
-  // Delete/Deactivate Confirmation State (No Popups!)
+  // Delete/Deactivate Confirmation State
   const [verifyActionId, setVerifyActionId] = useState(null)
+  const [verifyType, setVerifyType] = useState(null) // 'soft' or 'hard'
   
-  const [systemSettings, setSystemSettings] = useState({ ai_enabled: 'false', ai_model: 'gemini-2.0-flash', hasAiKey: false })
+  // System Settings State
+  const [systemSettings, setSystemSettings] = useState({ ai_enabled: 'false', ai_model: 'gemini-2.5-flash', hasAiKey: false })
+  const [aiModel, setAiModel] = useState('gemini-2.5-flash')
+  const [customModel, setCustomModel] = useState('') 
+  const [apiKeyOverride, setApiKeyOverride] = useState('')
+  const [showApiKey, setShowApiKey] = useState(false)
+  
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [busy, setBusy] = useState(false)
@@ -90,6 +97,7 @@ export default function AuthModal({
     setShowLoginPass(false)
     setShowRegPass(false)
     setShowResetPass(false)
+    setShowApiKey(false)
   }, [open, currentUser, isAdmin])
 
   async function loadUsers() {
@@ -103,6 +111,16 @@ export default function AuthModal({
     try {
       const data = await fetchSettings()
       setSystemSettings(data)
+      const presets = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+      if (data.ai_model && !presets.includes(data.ai_model)) {
+          setAiModel('custom')
+          setCustomModel(data.ai_model)
+      } else {
+          setAiModel(data.ai_model || 'gemini-2.5-flash')
+          setCustomModel('')
+      }
+      
+      if (data.ai_api_key) setApiKeyOverride(data.ai_api_key)
     } catch (err) { console.log(err) }
   }
 
@@ -156,54 +174,51 @@ export default function AuthModal({
     } catch (err) { setErrorMessage(err?.message || 'Failed.') } finally { setBusy(false) }
   }
 
-  // --- DELETE HANDLING WITHOUT POPUPS ---
-  
-  function initiateDelete(id) {
-      setVerifyActionId(id)
-  }
+  // --- DELETE HANDLING ---
+  function initiateDelete(id, type) { setVerifyActionId(id); setVerifyType(type); }
+  function cancelDelete() { setVerifyActionId(null); setVerifyType(null); }
 
-  function cancelDelete() {
-      setVerifyActionId(null)
-  }
-
-  async function confirmDeactivate(id) {
+  async function confirmAction(id) {
     setBusy(true); setVerifyActionId(null)
     try {
-      await removeUser(id) // Soft delete
-      await loadUsers()
-      if (currentUser && currentUser.id === id && onLogout) onLogout()
-    } catch (err) { setErrorMessage('Failed to deactivate.') } finally { setBusy(false) }
-  }
-
-  async function confirmHardDelete(id) {
-    setBusy(true); setVerifyActionId(null)
-    try {
-        await permanentlyDeleteUser(id) // Hard delete
+        if (verifyType === 'hard') { await permanentlyDeleteUser(id) } 
+        else { await removeUser(id); if (currentUser && currentUser.id === id && onLogout) onLogout() }
         await loadUsers()
-    } catch (err) { setErrorMessage('Failed to delete permanently.') } finally { setBusy(false) }
+    } catch (err) { setErrorMessage('Action failed.') } finally { setBusy(false) }
   }
 
+  // --- SYSTEM SETTINGS HANDLERS ---
   async function toggleAi(enabled) {
     setBusy(true)
     try {
         await saveSetting('ai_enabled', enabled)
         setSystemSettings(prev => ({ ...prev, ai_enabled: String(enabled) }))
-        setTimeout(() => window.location.reload(), 500)
     } catch (err) { setErrorMessage(err.message) } 
     finally { setBusy(false) }
+  }
+
+  async function saveAiConfig() {
+      setBusy(true); clearMessages();
+      try {
+          const finalModel = aiModel === 'custom' ? customModel.trim() : aiModel
+          if (!finalModel) throw new Error("Model name is required.")
+          await saveSetting('ai_model', finalModel)
+          if (apiKeyOverride) await saveSetting('ai_api_key', apiKeyOverride)
+          setStatusMessage('AI Configuration Saved.')
+          setTimeout(() => window.location.reload(), 1000)
+      } catch (err) { setErrorMessage(err.message) }
+      finally { setBusy(false) }
   }
   
   if (!open) return null
 
   const inputClass = "w-full bg-[#1a1a1a] border border-zinc-800 rounded-lg px-3 py-2 text-[11px] text-zinc-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-zinc-600"
   const labelClass = "block text-xs font-semibold text-zinc-400 mb-1"
+  const subLabelClass = "text-[10px] text-zinc-600 font-normal ml-2 italic tracking-normal"
   const tabClass = (active) => `flex-1 md:flex-none text-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-zinc-800 text-zinc-500'}`
-
-  const autofillStyles = `input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active { -webkit-box-shadow: 0 0 0 30px #1a1a1a inset !important; -webkit-text-fill-color: #e5e5e5 !important; transition: background-color 5000s ease-in-out 0s; caret-color: white !important; }`
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-4 pt-[env(safe-area-inset-top)]">
-      <style>{autofillStyles}</style>
       
       <div className={`bg-[#0f0f10] border-zinc-800 md:border rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex ${isAdmin ? "w-full max-w-4xl flex-col md:flex-row" : "w-full max-w-md flex-col"} h-full md:h-auto md:max-h-[90vh] relative`}>
         
@@ -279,43 +294,31 @@ export default function AuthModal({
                   <div><p className={labelClass + " mb-2"}>User Directory</p>
                     <div className="grid gap-2">
                         {adminUsers.map(u => (
-                            <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-zinc-800/50">
+                            <div key={u.id} className={`flex items-center justify-between p-3 rounded-lg border transition-all ${u.isActive ? 'bg-black/20 border-zinc-800/50' : 'bg-red-900/10 border-red-900/30 opacity-70 grayscale-[0.5]'}`}>
                                 <div className="flex items-center gap-3">
                                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-zinc-600'}`} />
                                     <div className="min-w-0">
-                                        <p className="text-xs font-bold text-zinc-200 truncate">{u.username}</p>
                                         <div className="flex items-center gap-2">
-                                            <p className="text-[10px] text-zinc-500 truncate">{u.email}</p>
-                                            {/* DEACTIVATED BADGE */}
-                                            {!u.isActive && (
-                                                <span className="flex items-center gap-1 text-[9px] bg-red-900/30 text-red-400 px-1.5 py-0.5 rounded border border-red-900/50">
-                                                    <Ban size={8} /> Deactivated
-                                                </span>
-                                            )}
+                                            <p className={`text-xs font-bold truncate ${u.isActive ? 'text-zinc-200' : 'text-zinc-500 line-through'}`}>{u.username}</p>
+                                            {!u.isActive && (<span className="flex items-center gap-1 text-[9px] bg-red-900/60 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"><Ban size={8} /> Deactivated</span>)}
                                         </div>
+                                        <p className="text-[10px] text-zinc-500 truncate">{u.email}</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
                                     {verifyActionId === u.id ? (
-                                        // CONFIRMATION STATE
                                         <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
                                             <span className="text-[10px] text-zinc-400 font-bold hidden sm:inline">Sure?</span>
-                                            <button 
-                                                onClick={() => u.isActive ? confirmDeactivate(u.id) : confirmHardDelete(u.id)} 
-                                                className="px-3 py-1.5 rounded bg-red-600 text-[10px] text-white font-bold shadow-lg hover:bg-red-500 transition"
-                                            >
-                                                Yes
-                                            </button>
+                                            <button onClick={() => confirmAction(u.id)} className="px-3 py-1.5 rounded bg-red-600 text-[10px] text-white font-bold shadow-lg hover:bg-red-500 transition">Yes</button>
                                             <button onClick={cancelDelete} className="px-3 py-1.5 rounded bg-zinc-800 text-[10px] text-zinc-400 font-medium hover:bg-zinc-700 transition">No</button>
                                         </div>
                                     ) : (
-                                        // NORMAL STATE
                                         <>
                                             <button onClick={() => handleEditUser(u)} className="px-3 py-1.5 rounded bg-zinc-800 text-[10px] text-zinc-300 font-medium border border-zinc-700/50 hover:border-zinc-600 transition">Edit</button>
                                             {u.isActive ? (
-                                                <button onClick={() => initiateDelete(u.id)} className="px-3 py-1.5 rounded bg-amber-900/20 text-[10px] text-amber-500 font-medium border border-amber-900/30 hover:bg-amber-900/30 transition">Deactivate</button>
+                                                <button onClick={() => initiateDelete(u.id, 'soft')} className="px-3 py-1.5 rounded bg-amber-900/20 text-[10px] text-amber-500 font-medium border border-amber-900/30 hover:bg-amber-900/30 transition flex items-center gap-1"><Power size={10} /> Disable</button>
                                             ) : (
-                                                <button onClick={() => initiateDelete(u.id)} className="px-3 py-1.5 rounded bg-red-900/20 text-[10px] text-red-400 font-medium border border-red-900/30 hover:bg-red-900/30 transition">Hard Delete</button>
+                                                <button onClick={() => initiateDelete(u.id, 'hard')} className="px-3 py-1.5 rounded bg-red-900/20 text-[10px] text-red-400 font-medium border border-red-900/30 hover:bg-red-900/30 transition flex items-center gap-1"><Trash2 size={10} /> Delete</button>
                                             )}
                                         </>
                                     )}
@@ -338,13 +341,73 @@ export default function AuthModal({
                      </div>
                   </div>
               )}
+              
+              {/* SYSTEM TAB - UPDATED WITH 2.5 MODELS */}
               {activeTab === 'system' && (
                   <div className="space-y-6">
                      <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
                         <h3 className="text-sm font-bold text-zinc-300 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-zinc-800 rounded-lg">
+                        
+                        {/* TOGGLE ENABLED */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-zinc-800 rounded-lg mb-4">
                             <div className="flex items-start gap-3"><div className="p-2 rounded-lg bg-zinc-800 text-zinc-500 mt-1"><Bot size={18} /></div><div><p className="text-xs font-bold text-zinc-200">AI Ballistics Expert</p><p className="text-[10px] text-zinc-500 leading-relaxed mt-1">Enable the generative AI chat assistant.</p></div></div>
-                            <div className="flex items-center justify-end">{systemSettings.hasAiKey ? (<button onClick={() => toggleAi(systemSettings.ai_enabled === 'true' ? 'false' : 'true')} className={`px-4 py-2 rounded-full text-[10px] font-bold border transition w-full sm:w-auto ${systemSettings.ai_enabled === 'true' ? 'border-red-500/50 text-red-400 bg-red-900/20' : 'border-zinc-600 text-zinc-400 bg-black/40'}`}>{systemSettings.ai_enabled === 'true' ? 'Enabled' : 'Disabled'}</button>) : (<span className="px-3 py-1 rounded bg-amber-900/20 text-amber-500 text-[10px] border border-amber-900/50 flex items-center gap-1"><AlertTriangle size={10} /> Missing API Key</span>)}</div>
+                            <div className="flex items-center justify-end">{systemSettings.hasAiKey || systemSettings.ai_api_key ? (<button onClick={() => toggleAi(systemSettings.ai_enabled === 'true' ? 'false' : 'true')} className={`px-4 py-2 rounded-full text-[10px] font-bold border transition w-full sm:w-auto ${systemSettings.ai_enabled === 'true' ? 'border-red-500/50 text-red-400 bg-red-900/20' : 'border-zinc-600 text-zinc-400 bg-black/40'}`}>{systemSettings.ai_enabled === 'true' ? 'Enabled' : 'Disabled'}</button>) : (<span className="px-3 py-1 rounded bg-amber-900/20 text-amber-500 text-[10px] border border-amber-900/50 flex items-center gap-1"><AlertTriangle size={10} /> Missing API Key</span>)}</div>
+                        </div>
+
+                        {/* MODEL & KEY CONFIG - UPDATED FOR 2.5 */}
+                        <div className="p-4 bg-black/20 border border-zinc-800 rounded-lg space-y-4">
+                            <div>
+                                <label className={labelClass}>
+                                    AI Model 
+                                    <span className={subLabelClass}>(Use 2.5 Series for best results)</span>
+                                </label>
+                                <div className="relative">
+                                    <select className={`${inputClass} appearance-none`} value={aiModel === 'custom' ? 'custom' : aiModel} onChange={e => setAiModel(e.target.value)}>
+                                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (New Standard)</option>
+                                        <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (Fastest)</option>
+                                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Most Intelligent)</option>
+                                        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Legacy/Workhorse)</option>
+                                        <option value="custom">Custom Model ID...</option>
+                                    </select>
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400"><ChevronDown size={14} /></div>
+                                </div>
+                                {aiModel === 'custom' && (
+                                    <input 
+                                        className={`${inputClass} mt-2`} 
+                                        placeholder="e.g. gemini-3.0-future" 
+                                        value={customModel} 
+                                        onChange={e => setCustomModel(e.target.value)} 
+                                    />
+                                )}
+                            </div>
+                            
+                            <div>
+                                <label className={labelClass}>
+                                    API Key Override
+                                    <span className={subLabelClass}>(Optional)</span>
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        type={showApiKey ? "text" : "password"} 
+                                        className={`${inputClass} pr-10`} 
+                                        placeholder="Use System Env Var" 
+                                        value={apiKeyOverride} 
+                                        onChange={e => setApiKeyOverride(e.target.value)} 
+                                    />
+                                     <button 
+                                        type="button" 
+                                        onClick={() => setShowApiKey(!showApiKey)} 
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition z-10"
+                                    >
+                                        {showApiKey ? <EyeOff size={14} /> : <Key size={14} />}
+                                    </button>
+                                </div>
+                                <p className="text-[9px] text-zinc-600 mt-1 italic">Leave blank to use the server's environment variable.</p>
+                            </div>
+
+                            <div className="flex justify-end pt-2">
+                                <button onClick={saveAiConfig} disabled={busy} className="px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 text-[10px] font-bold border border-zinc-700 transition flex items-center gap-2"><Save size={12}/> Save Config</button>
+                            </div>
                         </div>
                      </div>
                   </div>

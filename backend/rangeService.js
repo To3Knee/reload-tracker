@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Reload Tracker Range Service
 //Script Location: backend/rangeService.js
-//Date: 12/01/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.6.0
+//Version: 2.3.0
 //About: Business logic for Range Logs.
-//       Updated: Added User Attribution.
+//       Updated: SQL JOINs reinforced.
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -20,7 +20,9 @@ function normalizeNumber(val) {
 export async function listRangeLogs(filters = {}) {
   const sql = `
     SELECT 
-      rl.*,
+      rl.id, rl.date, rl.rounds_fired, rl.distance_yards, rl.group_size_inches,
+      rl.velocity_fps, rl.sd, rl.es, rl.shots, rl.weather, rl.temp_f, rl.notes, rl.image_url,
+      rl.recipe_id, rl.batch_id, rl.firearm_id, rl.created_at, rl.updated_at,
       r.name as recipe_name, r.caliber as recipe_caliber,
       f.name as firearm_name, f.platform as firearm_platform,
       b.load_date as batch_date,

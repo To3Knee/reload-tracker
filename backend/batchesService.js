@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Reload Tracker Batches Service
 //Script Location: backend/batchesService.js
-//Date: 12/01/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 1.3.0
+//Version: 1.5.0
 //About: Business logic for logging loaded batches.
-//       Updated: Added User Attribution (Created/Updated By).
+//       Updated: SQL JOINs reinforced to prevent data loss.
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -31,11 +31,17 @@ function convertGrainsToUnit(grains, unit) {
 }
 
 export async function listBatches(currentUser) {
+  // CRITICAL FIX: Explicitly select columns to prevent ambiguity
   const sql = `
     SELECT 
-      b.id, b.load_date, b.rounds_loaded, b.notes,
-      b.created_at, b.updated_at,
-      r.name as recipe_name, r.caliber,
+      b.id, 
+      b.load_date, 
+      b.rounds_loaded, 
+      b.notes,
+      b.created_at, 
+      b.updated_at,
+      r.name as recipe_name, 
+      r.caliber,
       p.brand as powder_brand,
       bu.brand as bullet_brand,
       pr.brand as primer_brand,
@@ -56,7 +62,7 @@ export async function listBatches(currentUser) {
   const res = await query(sql)
   return res.rows.map(row => ({
     id: row.id,
-    date: row.load_date.toISOString().slice(0,10),
+    date: row.load_date ? new Date(row.load_date).toISOString().slice(0,10) : 'Unknown',
     rounds: row.rounds_loaded,
     recipe: `${row.recipe_name} (${row.caliber})`,
     components: [row.powder_brand, row.bullet_brand, row.primer_brand, row.case_brand].filter(Boolean).join(', '),

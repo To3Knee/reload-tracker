@@ -1,16 +1,14 @@
 //===============================================================
 //Script Name: Reload Tracker Analytics Service
 //Script Location: backend/analyticsService.js
-//Date: 11/29/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 1.1.0
+//Version: 1.3.0
 //About: Business logic for aggregating cost and trend data.
-//       Updated: Added distribution, velocity, and cost history.
 //===============================================================
 
 import { query } from './dbClient.js'
 
-// --- HELPER: Standard Math Constants ---
 const GRAINS_PER_LB = 7000
 const GRAINS_PER_KG = 15432.3584
 
@@ -50,7 +48,6 @@ export async function getComponentPriceTrends(currentUser) {
   }).filter(Boolean)
 }
 
-// 1. COMPONENT DISTRIBUTION ("Where's my Money?")
 export async function getInventoryDistribution(currentUser) {
   const sql = `
     SELECT component_type, SUM(price + shipping + tax) as total_value
@@ -65,7 +62,6 @@ export async function getInventoryDistribution(currentUser) {
   }))
 }
 
-// 2. USAGE VELOCITY ("The Burn Rate")
 export async function getLoadVelocity(currentUser) {
   const sql = `
     SELECT TO_CHAR(load_date, 'YYYY-MM') as month, SUM(rounds_loaded) as rounds
@@ -79,10 +75,7 @@ export async function getLoadVelocity(currentUser) {
   }))
 }
 
-// 3. BATCH COST HISTORY ("Inflation Buster")
-// Calculates the actual cost-per-round of every batch logged
 export async function getBatchCostHistory(currentUser) {
-  // We need to fetch batches and join their components to calculate cost
   const sql = `
     SELECT 
       b.load_date, 
@@ -103,25 +96,22 @@ export async function getBatchCostHistory(currentUser) {
 
   return res.rows.map(row => {
     let cost = 0
-    
-    // Powder Cost
     if (row.p_price && row.charge_grains) {
       const pTotal = Number(row.p_price)
       const pQty = Number(row.p_qty)
       let grainsInLot = 0
       if (row.p_unit === 'lb') grainsInLot = pQty * GRAINS_PER_LB
       else if (row.p_unit === 'kg') grainsInLot = pQty * GRAINS_PER_KG
-      else grainsInLot = pQty // assume grains
+      else grainsInLot = pQty
       
       if (grainsInLot > 0) {
         cost += (pTotal / grainsInLot) * Number(row.charge_grains)
       }
     }
 
-    // Discrete Items (Bullet/Primer/Case)
     if (row.bu_price && row.bu_qty) cost += Number(row.bu_price) / Number(row.bu_qty)
     if (row.pr_price && row.pr_qty) cost += Number(row.pr_price) / Number(row.pr_qty)
-    if (row.ca_price && row.ca_qty) cost += (Number(row.ca_price) / Number(row.ca_qty)) / 5 // Assumed reuse factor of 5
+    if (row.ca_price && row.ca_qty) cost += (Number(row.ca_price) / Number(row.ca_qty)) / 5
 
     return {
       date: row.load_date.toISOString().slice(0,10),
