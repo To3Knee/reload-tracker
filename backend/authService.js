@@ -1,13 +1,12 @@
 //===============================================================
 //Script Name: Reload Tracker Auth Service
 //Script Location: backend/authService.js
-//Date: 11/28/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.1.0
+//Version: 1.3.0
 //About: User accounts and session management logic.
-//       Handles password hashing (PBKDF2) and DB operations.
-//       Added: updateUser() support.
+//       Updated: Added Hard Delete & Reverted List Filter.
 //===============================================================
 
 import crypto from 'node:crypto'
@@ -67,6 +66,7 @@ export function verifyPassword(password, stored) {
 // --- User Operations ---
 
 export async function listUsers() {
+  // REVERT: Return ALL users so we can see Deactivated ones in the list
   const res = await query(`SELECT * FROM users ORDER BY id ASC`)
   return res.rows.map(normalizeUserRow)
 }
@@ -78,7 +78,6 @@ export async function createUser(payload) {
   const role = payload.role === 'admin' ? 'admin' : 'shooter'
   const hash = hashPassword(payload.password)
 
-  // Check duplicates
   const existing = await query(
     `SELECT id FROM users WHERE username = $1 OR email = $2`,
     [payload.username, payload.email]
@@ -94,18 +93,12 @@ export async function createUser(payload) {
   return normalizeUserRow(res.rows[0])
 }
 
-/**
- * Update an existing user.
- * Supports partial updates (only fields present in payload are changed).
- */
 export async function updateUser(id, payload) {
   if (!id) throw new ValidationError('User ID is required.')
 
-  // 1. Check if user exists
   const check = await query(`SELECT id FROM users WHERE id = $1`, [id])
   if (check.rows.length === 0) throw new NotFoundError('User not found.')
 
-  // 2. Check uniqueness if identifiers are changing
   if (payload.username || payload.email) {
     const existing = await query(
       `SELECT id FROM users WHERE (username = $1 OR email = $2) AND id != $3`,
@@ -114,7 +107,6 @@ export async function updateUser(id, payload) {
     if (existing.rows.length > 0) throw new ValidationError('Username or Email is already in use by another user.')
   }
 
-  // 3. Build dynamic update query
   const updates = []
   const values = []
   let idx = 1
@@ -135,7 +127,6 @@ export async function updateUser(id, payload) {
     }
   }
 
-  // Handle password separately if present
   if (payload.password) {
     const hash = hashPassword(payload.password)
     updates.push(`password_hash = $${idx++}`)
@@ -143,7 +134,6 @@ export async function updateUser(id, payload) {
   }
 
   if (updates.length === 0) {
-    // No fields provided? Just return the user as-is.
     const res = await query(`SELECT * FROM users WHERE id = $1`, [id])
     return normalizeUserRow(res.rows[0])
   }
@@ -167,7 +157,6 @@ export async function authenticateUser(identifier, password) {
     throw new ValidationError('Invalid credentials.')
   }
   
-  // Update last login (fire and forget)
   query(`UPDATE users SET last_login_at = NOW() WHERE id = $1`, [user.id]).catch(() => {})
   
   return normalizeUserRow(user)
@@ -184,12 +173,20 @@ export async function setUserPassword(username, newPassword) {
   return normalizeUserRow(res.rows[0])
 }
 
+// Soft Delete (Deactivate)
 export async function deactivateUser(userId) {
   const res = await query(
     `UPDATE users SET is_active = FALSE, updated_at = NOW() WHERE id = $1 RETURNING *`,
     [userId]
   )
   return normalizeUserRow(res.rows[0])
+}
+
+// Hard Delete (Permanent)
+export async function permanentlyDeleteUser(userId) {
+  const res = await query(`DELETE FROM users WHERE id = $1`, [userId])
+  if (res.rowCount === 0) throw new NotFoundError('User not found.')
+  return { success: true }
 }
 
 // --- Session Operations ---

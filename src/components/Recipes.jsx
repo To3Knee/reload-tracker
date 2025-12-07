@@ -3,9 +3,9 @@
 //Script Location: src/components/Recipes.jsx
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 4.7.0
+//Version: 4.8.0
 //About: Manage recipes. 
-//       Updated: Fixed mobile blowout (overflow) & Modal Safe Areas.
+//       Updated: Fixed "TestTestTest" string blowout on mobile.
 //===============================================================
 
 import { useEffect, useState, useMemo } from 'react'
@@ -279,25 +279,37 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
               const updatedStr = r.updatedByUsername ? `Mod by ${r.updatedByUsername}` : null
 
               return (
-                <div key={r.id} className={`group bg-black/40 border rounded-xl p-4 flex flex-col gap-3 transition-all hover:bg-black/60 ${isEditing ? 'border-red-500 ring-1 ring-red-500/50 shadow-red-900/20 shadow-lg' : 'border-slate-800 hover:border-slate-700'}`}>
-                  <div className="flex justify-between items-start">
-                    <div>
+                /* MOBILE FIX: Added min-w-0 to prevent flex blowout */
+                <div key={r.id} className={`group bg-black/40 border rounded-xl p-4 flex flex-col gap-3 transition-all hover:bg-black/60 min-w-0 ${isEditing ? 'border-red-500 ring-1 ring-red-500/50 shadow-red-900/20 shadow-lg' : 'border-slate-800 hover:border-slate-700'}`}>
+                  <div className="flex justify-between items-start min-w-0">
+                    <div className="min-w-0">
                         <div className="text-sm font-bold text-slate-100 flex flex-wrap items-center gap-2">
-                            <span>{r.name}</span>
-                            {r.caliber && <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-medium">{r.caliber}</span>}
+                            <span className="truncate">{r.name}</span>
+                            {r.caliber && <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-medium whitespace-nowrap">{r.caliber}</span>}
                             {isArchived && <span className="px-1.5 py-0.5 rounded bg-amber-900/30 border border-amber-700/50 text-[9px] uppercase tracking-wider text-amber-500">Archived</span>}
                         </div>
                         <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap gap-2 items-center"><span className="text-slate-500">{profileLabel}</span><span className="w-1 h-1 rounded-full bg-slate-700"></span><span className="text-slate-300 font-medium">{r.chargeGrains} gr Charge</span></div>
                     </div>
-                    {r.source && <div className="text-[9px] text-slate-600 uppercase tracking-wide border border-slate-800 px-2 py-0.5 rounded-full">{r.source}</div>}
+                    {r.source && <div className="text-[9px] text-slate-600 uppercase tracking-wide border border-slate-800 px-2 py-0.5 rounded-full whitespace-nowrap ml-2">{r.source}</div>}
                   </div>
 
                   {(powder || bullet) && (<div className="text-[10px] text-slate-500 bg-black/20 rounded-lg px-2 py-1.5 border border-slate-800/50">{powder && <span>{powder}</span>}{powder && bullet && <span className="mx-1.5 text-slate-700">•</span>}{bullet && <span>{bullet}</span>}</div>)}
 
                   {(r.notes || r.rangeNotes) && (
-                      <div className="bg-black/20 rounded-lg p-2 border border-slate-800/50 text-[10px] text-slate-400">
-                          {r.notes && (<div className="flex items-start gap-1.5 mb-1 last:mb-0"><AlignLeft size={10} className="mt-0.5 text-slate-600 flex-shrink-0" /><span className="line-clamp-2">{r.notes}</span></div>)}
-                          {r.rangeNotes && (<div className="flex items-start gap-1.5 border-t border-slate-800/50 pt-1 mt-1"><Crosshair size={10} className="mt-0.5 text-emerald-600 flex-shrink-0" /><span className="line-clamp-2 text-emerald-500/80">{r.rangeNotes}</span></div>)}
+                      <div className="bg-black/20 rounded-lg p-2 border border-slate-800/50 text-[10px] text-slate-400 min-w-0">
+                          {r.notes && (
+                              <div className="flex items-start gap-1.5 mb-1 last:mb-0">
+                                  <AlignLeft size={10} className="mt-0.5 text-slate-600 flex-shrink-0" />
+                                  {/* MOBILE FIX: Added break-all to prevent long string blowout */}
+                                  <span className="line-clamp-2 break-all">{r.notes}</span>
+                              </div>
+                          )}
+                          {r.rangeNotes && (
+                              <div className="flex items-start gap-1.5 border-t border-slate-800/50 pt-1 mt-1">
+                                  <Crosshair size={10} className="mt-0.5 text-emerald-600 flex-shrink-0" />
+                                  <span className="line-clamp-2 text-emerald-500/80 break-all">{r.rangeNotes}</span>
+                              </div>
+                          )}
                       </div>
                   )}
 
@@ -310,7 +322,6 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
                         {canEdit && (<><span onClick={() => handleEdit(r)} className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 transition cursor-pointer text-[10px]">Edit</span><span onClick={() => { if (!isArchiving) handleArchiveToggle(r) }} className={'px-2 py-[2px] rounded-full bg-black/60 border border-amber-400 text-amber-300 hover:bg-amber-500/10 transition cursor-pointer text-[10px] ' + (isArchiving ? 'opacity-50 pointer-events-none' : '')}>{isArchiving ? (isArchived ? 'Unarchiving…' : 'Archiving…') : (isArchived ? 'Unarchive' : 'Archive')}</span><span onClick={() => promptDelete(r)} className="px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition cursor-pointer text-[10px]">Delete</span></>)}
                     </div>
                     
-                    {/* MOBILE FIX: Truncation for Attribution to prevent blowout */}
                     <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity min-w-0">
                         {createdStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded-full border border-slate-800 text-slate-500 bg-black/40 text-[9px] truncate max-w-[150px]"><User size={9} /> {createdStr}</span>)}
                         {updatedStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded-full border border-slate-800 text-slate-500 bg-black/40 text-[9px] truncate max-w-[150px]"><Clock size={9} /> {updatedStr}</span>)}
@@ -323,7 +334,6 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
         )}
       </div>
 
-      {/* MOBILE FIX: Added P-4 padding and env(safe-area) top padding to Fixed Modals */}
       {deleteModalOpen && recipeToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
             <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">

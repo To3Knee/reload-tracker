@@ -1,12 +1,12 @@
 //===============================================================
 //Script Name: Reload Tracker Auth Function
 //Script Location: netlify/functions/auth.js
-//Date: 11/28/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.1.0
+//Version: 1.2.0
 //About: Netlify Function HTTP handler for Reload Tracker auth.
-//       Updated to include User Update endpoint.
+//       Updated: Added Hard Delete endpoint.
 //===============================================================
 
 import {
@@ -19,6 +19,7 @@ import {
   updateUser,
   setUserPassword,
   deactivateUser,
+  permanentlyDeleteUser,
   SESSION_COOKIE_NAME,
 } from '../../backend/authService.js'
 import { ValidationError, NotFoundError } from '../../backend/errors.js'
@@ -136,7 +137,6 @@ async function handleListUsers(event) {
 }
 
 async function handleCreateUser(event) {
-  // BOOTSTRAP LOGIC: If 0 users exist, allow creation without auth.
   const existingUsers = await listUsers()
   if (existingUsers.length > 0) {
     await requireAdmin(event)
@@ -159,21 +159,24 @@ async function handleUpdateUser(event) {
   await requireAdmin(event)
   const body = parseJsonBody(event)
   const id = body.id || body.userId
-  
   if (!id) throw new ValidationError('User ID is required for update.')
-
-  // Remove ID from payload passed to service so we don't try to update it
   const { id: _id, userId: _uid, ...updates } = body
-  
   const user = await updateUser(id, updates)
   return jsonResponse(200, { user })
 }
 
-async function handleRemoveUser(event) {
+async function handleDeactivateUser(event) {
   await requireAdmin(event)
   const body = parseJsonBody(event)
   const user = await deactivateUser(Number(body.userId || body.id))
   return jsonResponse(200, { user })
+}
+
+async function handlePermanentDelete(event) {
+  await requireAdmin(event)
+  const body = parseJsonBody(event)
+  const result = await permanentlyDeleteUser(Number(body.userId || body.id))
+  return jsonResponse(200, result)
 }
 
 async function handleResetPassword(event) {
@@ -199,7 +202,8 @@ export async function handler(event, context) {
     }
     
     if (method === 'POST' && subPath === '/users/update') return await handleUpdateUser(event)
-    if (method === 'POST' && subPath === '/users/remove') return await handleRemoveUser(event)
+    if (method === 'POST' && subPath === '/users/remove') return await handleDeactivateUser(event)
+    if (method === 'POST' && subPath === '/users/delete') return await handlePermanentDelete(event)
     if (method === 'POST' && subPath === '/users/reset-password') return await handleResetPassword(event)
     
     if (method === 'POST' && subPath === '/recover') {
@@ -209,7 +213,6 @@ export async function handler(event, context) {
     return jsonResponse(404, { message: `Route not found.` })
   } catch (err) {
     const status = err instanceof ValidationError ? 400 : 500
-    // Special handling for auth errors
     const msg = (err.message || '').toLowerCase()
     if (msg.includes('authentication') || msg.includes('privileges')) {
       return jsonResponse(401, { message: err.message })
