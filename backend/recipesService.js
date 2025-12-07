@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Reload Tracker Recipes Service
 //Script Location: backend/recipesService.js
-//Date: 12/02/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 1.7.0
+//Version: 2.0.0
 //About: Business logic for managing load recipes.
-//       Updated: Joins with Inventory to fetch Ingredient Names.
+//       Updated: Added Geometry fields (COAL, Case Cap, Bullet Len).
 //===============================================================
 
 import { query } from './dbClient.js';
@@ -29,23 +29,30 @@ function mapRecipeRowToJson(row) {
     lotSize: row.lot_size !== null ? Number(row.lot_size) : null,
     notes: row.notes,
     
-    // Ballistics (Results)
+    // Ballistics
     bulletWeightGr: row.bullet_weight_gr !== null ? Number(row.bullet_weight_gr) : null,
     muzzleVelocityFps: row.muzzle_velocity_fps !== null ? Number(row.muzzle_velocity_fps) : null,
     powerFactor: row.power_factor !== null ? Number(row.power_factor) : null,
     zeroDistanceYards: row.zero_distance_yards !== null ? Number(row.zero_distance_yards) : null,
     groupSizeInches: row.group_size_inches !== null ? Number(row.group_size_inches) : null,
     rangeNotes: row.range_notes,
+    
+    // Geometry (New v3.2)
+    coal: row.coal !== null ? Number(row.coal) : null,
+    caseCapacity: row.case_capacity !== null ? Number(row.case_capacity) : null,
+    bulletLength: row.bullet_length !== null ? Number(row.bullet_length) : null,
+
     source: row.source,
     status: row.status,
+    archived: row.archived || false,
     
-    // Ingredients (IDs)
+    // Ingredients
     powderLotId: row.powder_lot_id || '',
     bulletLotId: row.bullet_lot_id || '',
     primerLotId: row.primer_lot_id || '',
     caseLotId: row.case_lot_id || '',
 
-    // Ingredient Names (For Display/PDF)
+    // Joined Names
     powderName: row.powder_brand ? `${row.powder_brand} ${row.powder_name}` : null,
     bulletName: row.bullet_brand ? `${row.bullet_brand} ${row.bullet_name}` : null,
     primerName: row.primer_brand ? `${row.primer_brand} ${row.primer_name}` : null,
@@ -75,7 +82,6 @@ function normalizeId(value) {
 
 export async function listRecipes(filters = {}) {
   const values = [];
-  // JOINs to get component details
   const sql = `
     SELECT
       r.*,
@@ -92,7 +98,7 @@ export async function listRecipes(filters = {}) {
     LEFT JOIN purchases b ON r.bullet_lot_id = b.id
     LEFT JOIN purchases pr ON r.primer_lot_id = pr.id
     LEFT JOIN purchases c ON r.case_lot_id = c.id
-    ORDER BY r.caliber ASC, r.name ASC
+    ORDER BY r.archived ASC, r.caliber ASC, r.name ASC
   `;
   const result = await query(sql, values);
   return result.rows.map(mapRecipeRowToJson);
@@ -105,10 +111,10 @@ export async function createRecipe(payload, currentUser) {
     INSERT INTO recipes (
       name, caliber, profile_type, charge_grains, brass_reuse, lot_size, notes,
       bullet_weight_gr, muzzle_velocity_fps, power_factor, zero_distance_yards,
-      group_size_inches, range_notes, source, status, 
+      group_size_inches, range_notes, coal, case_capacity, bullet_length, source, status, archived,
       powder_lot_id, bullet_lot_id, primer_lot_id, case_lot_id,
       created_by_user_id
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
     RETURNING *
   `;
 
@@ -117,13 +123,13 @@ export async function createRecipe(payload, currentUser) {
     normalizeNumber(payload.chargeGrains), normalizeNumber(payload.brassReuse), normalizeNumber(payload.lotSize),
     payload.notes, normalizeNumber(payload.bulletWeightGr), normalizeNumber(payload.muzzleVelocityFps),
     normalizeNumber(payload.powerFactor), normalizeNumber(payload.zeroDistanceYards), normalizeNumber(payload.groupSizeInches),
-    payload.rangeNotes, payload.source, 'active',
+    payload.rangeNotes, normalizeNumber(payload.coal), normalizeNumber(payload.caseCapacity), normalizeNumber(payload.bulletLength),
+    payload.source, 'active', payload.archived || false,
     normalizeId(payload.powderLotId), normalizeId(payload.bulletLotId), normalizeId(payload.primerLotId), normalizeId(payload.caseLotId),
     currentUser.id
   ];
 
   const result = await query(sql, params);
-  // Re-fetch to populate joined names immediately
   const fullList = await listRecipes(); 
   return fullList.find(r => r.id === result.rows[0].id);
 }
@@ -139,7 +145,9 @@ export async function updateRecipe(id, updates, currentUser) {
     chargeGrains: 'charge_grains', brassReuse: 'brass_reuse', lotSize: 'lot_size',
     notes: 'notes', bulletWeightGr: 'bullet_weight_gr', muzzleVelocityFps: 'muzzle_velocity_fps',
     powerFactor: 'power_factor', zeroDistanceYards: 'zero_distance_yards',
-    groupSizeInches: 'group_size_inches', rangeNotes: 'range_notes', source: 'source',
+    groupSizeInches: 'group_size_inches', rangeNotes: 'range_notes',
+    coal: 'coal', caseCapacity: 'case_capacity', bulletLength: 'bullet_length',
+    source: 'source', archived: 'archived',
     powderLotId: 'powder_lot_id', bulletLotId: 'bullet_lot_id',
     primerLotId: 'primer_lot_id', caseLotId: 'case_lot_id', status: 'status'
   };
@@ -149,7 +157,7 @@ export async function updateRecipe(id, updates, currentUser) {
     if (dbCol) {
       setParts.push(`${dbCol} = $${idx++}`);
       if (key.endsWith('LotId')) values.push(normalizeId(val));
-      else if (['chargeGrains','brassReuse','lotSize','bulletWeightGr','muzzleVelocityFps','powerFactor','zeroDistanceYards','groupSizeInches'].includes(key)) values.push(normalizeNumber(val));
+      else if (['chargeGrains','brassReuse','lotSize','bulletWeightGr','muzzleVelocityFps','powerFactor','zeroDistanceYards','groupSizeInches','coal','caseCapacity','bulletLength'].includes(key)) values.push(normalizeNumber(val));
       else values.push(val);
     }
   }

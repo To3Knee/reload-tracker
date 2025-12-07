@@ -1,140 +1,132 @@
 //===============================================================
 //Script Name: math.js
 //Script Location: src/lib/math.js
-//Date: 12/01/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.1.0
-//About: Centralized precision math for Reload Tracker.
-//       Updated: Added Miller Stability & Twist Rate parsers.
+//Version: 3.0.0
+//About: Precision Math Engine.
+//       - Financials: Integer-based (Cents) to prevent float drift.
+//       - Stats: High-precision standard deviation (no pre-rounding).
+//       - Conversions: Exact scientific constants.
 //===============================================================
 
+// --- CONSTANTS ---
 export const GRAINS_PER_LB = 7000
 export const GRAINS_PER_KG = 15432.3584
+export const GRAMS_PER_GRAIN = 0.06479891
 
-// --- CONVERSIONS ---
+// --- PRECISE CONVERSIONS ---
 
 export function convertToGrains(qty, unit) {
   const amount = Number(qty) || 0
-  const u = (unit || '').toLowerCase()
+  const u = (unit || '').toLowerCase().trim()
+  
   if (u === 'lb' || u === 'lbs' || u === 'pound') return amount * GRAINS_PER_LB
   if (u === 'kg' || u === 'kilogram') return amount * GRAINS_PER_KG
   if (u === 'gr' || u === 'grain' || u === 'grains') return amount
+  if (u === 'g' || u === 'gram') return amount / GRAMS_PER_GRAIN
+  
   return amount 
 }
 
-// --- FINANCIAL MATH ---
+// --- FINANCIAL ENGINE (INTEGER MATH) ---
+// We operate in CENTS to avoid IEEE 754 floating point errors.
+// e.g. $29.99 -> 2999 cents.
+
+const toCents = (val) => Math.round((Number(val) || 0) * 100)
+const fromCents = (val) => val / 100
 
 export function calculateLotTotalCost(lot) {
   if (!lot) return 0
-  const price = Number(lot.price) || 0
-  const shipping = Number(lot.shipping) || 0
-  const tax = Number(lot.tax) || 0
-  return price + shipping + tax
+  const price = toCents(lot.price)
+  const shipping = toCents(lot.shipping)
+  const tax = toCents(lot.tax)
+  
+  // Sum integers, then convert back to float for display
+  return fromCents(price + shipping + tax)
 }
 
 export function calculateCostPerUnit(price, shipping, tax, qty) {
-  const totalCost = (Number(price) || 0) + (Number(shipping) || 0) + (Number(tax) || 0)
+  const totalCents = toCents(price) + toCents(shipping) + toCents(tax)
   const quantity = Number(qty) || 0
+  
   if (quantity <= 0) return 0
-  return totalCost / quantity
+  
+  // Result is in Dollars (float) with high precision
+  // We do NOT round here; rounding happens at UI rendering.
+  return fromCents(totalCents) / quantity
 }
 
 export function calculatePowderCostPerRound(powderLot, chargeGrains) {
   if (!powderLot || !chargeGrains) return 0
-  const totalCost = calculateLotTotalCost(powderLot)
+  
+  // 1. Get total cost in cents
+  const totalCents = toCents(powderLot.price) + toCents(powderLot.shipping) + toCents(powderLot.tax)
+  
+  // 2. Get total grains available
   const totalGrains = convertToGrains(powderLot.qty, powderLot.unit)
+  
   if (totalGrains <= 0) return 0
-  const costPerGrain = totalCost / totalGrains
-  return costPerGrain * chargeGrains
+  
+  // 3. Cost per single grain (High precision float)
+  const centsPerGrain = totalCents / totalGrains
+  
+  // 4. Cost for the charge
+  const costInCents = centsPerGrain * Number(chargeGrains)
+  
+  return fromCents(costInCents)
 }
 
 export function calculateBrassCostPerRound(brassLot, reuseCount) {
   if (!brassLot) return 0
+  
   const reloads = Math.max(1, Number(reuseCount) || 1)
-  const costPerCase = calculateCostPerUnit(brassLot.price, brassLot.shipping, brassLot.tax, brassLot.qty)
-  return costPerCase / reloads
+  const totalCents = toCents(brassLot.price) + toCents(brassLot.shipping) + toCents(brassLot.tax)
+  const qty = Number(brassLot.qty) || 0
+  
+  if (qty <= 0) return 0
+  
+  const centsPerCase = totalCents / qty
+  
+  return fromCents(centsPerCase / reloads)
 }
 
-// --- BALLISTICS STATISTICS (Shot Strings) ---
+// --- STATISTICAL ENGINE (HIGH PRECISION) ---
 
 export function calculateStatistics(shots) {
+  // Filter invalid inputs
   const data = shots.map(Number).filter(n => !isNaN(n) && n > 0)
   const n = data.length
 
   if (n === 0) return { count: 0, avg: 0, sd: 0, es: 0, min: 0, max: 0, mad: 0 }
 
+  // 1. Average (Mean) - High Precision
   const sum = data.reduce((a, b) => a + b, 0)
   const avg = sum / n
+
+  // 2. Min / Max / ES
   const min = Math.min(...data)
   const max = Math.max(...data)
   const es = max - min
 
+  // 3. Standard Deviation (Sample)
   let sd = 0
   if (n > 1) {
     const variance = data.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / (n - 1)
     sd = Math.sqrt(variance)
   }
 
+  // 4. Median Absolute Deviation (MAD) - Robust outlier detection
   const mad = data.reduce((acc, val) => acc + Math.abs(val - avg), 0) / n
 
+  // Return full precision floats. UI decides how to round (usually to 1 or 2 decimals).
   return {
     count: n,
-    avg: Math.round(avg),
-    sd: parseFloat(sd.toFixed(2)),
-    es: Math.round(es),
-    min,
-    max,
-    mad: parseFloat(mad.toFixed(2))
+    avg: avg, 
+    sd: sd,
+    es: es,
+    min: min,
+    max: max,
+    mad: mad
   }
-}
-
-// --- STABILITY ENGINE (The Miller Formula) ---
-
-/**
- * Parses a twist rate string (e.g. "1:8", "1/8", "8") into a number.
- */
-export function parseTwistRate(input) {
-    if (!input) return null
-    const s = String(input).replace(/\s/g, '')
-    
-    // Handle "1:8" or "1/8" format
-    if (s.includes(':')) return Number(s.split(':')[1])
-    if (s.includes('/')) return Number(s.split('/')[1])
-    
-    return Number(s)
-}
-
-/**
- * Calculates Gyroscopic Stability Factor (Sg) using Miller Formula.
- * Sg < 1.0 = Unstable
- * Sg 1.0 - 1.4 = Marginal
- * Sg > 1.4 = Stable
- * * @param {number} weightGr - Bullet weight in grains
- * @param {number} lengthIn - Bullet length in inches
- * @param {number} diameterIn - Bullet diameter (caliber) in inches
- * @param {number} twistIn - Twist rate in inches per turn (e.g. 8)
- * @param {number} velocityFps - Muzzle velocity (optional, defaults to 2800 for estimation)
- */
-export function calculateStability(weightGr, lengthIn, diameterIn, twistIn, velocityFps = 2800) {
-    if (!weightGr || !lengthIn || !diameterIn || !twistIn) return null
-
-    const m = weightGr
-    const t = twistIn
-    const d = diameterIn
-    const l = lengthIn / d // Length in calibers
-
-    // Miller Formula (Simplified for standard conditions)
-    // Sg = (30 * m) / (t^2 * d^3 * l * (1 + l^2))
-    // Note: This is the base formula. Temperature/Pressure affect it, but this is the "Base Sg".
-    
-    let sg = (30 * m) / (Math.pow(t, 2) * Math.pow(d, 3) * l * (1 + Math.pow(l, 2)))
-    
-    // Velocity Correction (Miller approximation)
-    // Stability increases slightly with velocity
-    // Correction = (v / 2800)^(1/3)
-    if (velocityFps) {
-        sg = sg * Math.pow(velocityFps / 2800, 1/3)
-    }
-
-    return parseFloat(sg.toFixed(2))
 }
