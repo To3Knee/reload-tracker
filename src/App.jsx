@@ -1,11 +1,10 @@
 //===============================================================
 //Script Name: App.jsx
 //Script Location: src/App.jsx
-//Date: 12/01/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.13.0
-//About: Root shell. 
-//       Updated: Reordered Menu Items (Armory moved to end).
+//Version: 2.14.0
+//About: Root shell. Updated padding for Safe Area Navbar.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -30,7 +29,6 @@ import {
   Gauge, ShoppingCart, Package, Beaker, ClipboardList, Activity, Target, Crosshair
 } from 'lucide-react'
 
-// UPDATED MENU ORDER
 const MENU_ITEMS = [
   { id: 'calculator', label: 'Calculator', icon: Gauge },
   { id: 'purchases', label: 'Purchases', icon: ShoppingCart },
@@ -39,7 +37,7 @@ const MENU_ITEMS = [
   { id: 'batches', label: 'Batches', icon: ClipboardList },
   { id: 'range', label: 'Range', icon: Target },
   { id: 'analytics', label: 'Analytics', icon: Activity },
-  { id: 'armory', label: 'Armory', icon: Crosshair }, // Moved to end
+  { id: 'armory', label: 'Armory', icon: Crosshair },
 ]
 
 export default function App() {
@@ -90,7 +88,7 @@ export default function App() {
   const isAdmin = currentUser && currentUser.role === ROLE_ADMIN
 
   if (!ageConfirmed) return (
-      <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100 flex items-center justify-center px-4">
+      <div className="min-h-[100dvh] bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100 flex items-center justify-center px-4">
         <div className="glass max-w-lg w-full text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-4">Reload Tracker</p>
           <h1 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-[0.1em] text-white">For Responsible <span className="text-red-600">Adult Reloaders</span> Only.</h1>
@@ -102,7 +100,7 @@ export default function App() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100">
+    <div className="min-h-[100dvh] bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100">
       <Navbar
         activeTab={activeTab}
         setActiveTab={(t) => { setActiveTab(t); HAPTIC.soft(); }}
@@ -113,7 +111,8 @@ export default function App() {
         menuItems={MENU_ITEMS}
       />
 
-      <main className="max-w-6xl mx-auto px-4 pt-24 pb-24">
+      {/* MOBILE FIX: Dynamic Top Padding for Safe Area Navbar */}
+      <main className="max-w-6xl mx-auto px-4 pt-[calc(6rem+env(safe-area-inset-top))] pb-24">
         <header className="flex flex-col md:flex-row md:items-center gap-6 mb-12">
           <div className="flex justify-center md:justify-start"><img src={logo} alt="Reload Tracker" className="inline-block w-32 md:w-40 drop-shadow-2xl opacity-90" /></div>
           <div className="flex items-start gap-4 flex-1">

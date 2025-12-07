@@ -1,3 +1,12 @@
+/*===============================================================
+Script Name: index.css
+Script Location: src/index.css
+Date: 12/07/2025
+Created By: T03KNEE
+Version: 2.14.1
+About: Global styles. Updated for PWA/iOS Safe Areas.
+===============================================================*/
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,15 +20,15 @@ body {
   background: #000;
   color: #e8e1d4;
   line-height: 1.6;
+  /* MOBILE FIX: Use dynamic viewport height to account for URL bars */
+  min-height: 100dvh;
+  /* MOBILE FIX: Ensure content doesn't bleed into the home bar area */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* UPDATED: Removed forced sizing so React components can control their own size.
-   This fixes the "Huge Text" issue in dropdowns.
-*/
+/* Fix input sizes on mobile to prevent zooming */
 input, select, button {
-  /* font-size: 1rem !important; */
-  /* font-weight: 500 !important; */
-  /* letter-spacing: 0.5px !important; */
+  /* font-size: 16px !important; Prevent iOS zoom on focus */
 }
 
 label {
@@ -50,4 +59,20 @@ h1 {
 .glow-red {
   text-shadow: 0 0 20px #b33c3c, 0 0 40px #b33c3c;
   filter: drop-shadow(0 0 8px #b33c3c44);
+}
+
+/* Custom Scrollbar for inner containers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

@@ -1,10 +1,10 @@
 //===============================================================
 //Script Name: Navbar.jsx
 //Script Location: src/components/Navbar.jsx
-//Date: 12/01/2025
+//Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 2.6.0
-//About: Navbar. Accepts menuItems prop for dynamic ordering.
+//Version: 2.7.0
+//About: Navbar. Updated with iOS Safe Area collision protection.
 //===============================================================
 
 import { Settings, Bot } from 'lucide-react'
@@ -16,14 +16,15 @@ export default function Navbar({
     onOpenSettings, 
     onOpenAi, 
     isAiEnabled,
-    menuItems // NEW PROP
+    menuItems 
 }) {
   const isAdmin = currentUser?.role === 'admin'
   const sessionLabel = currentUser ? isAdmin ? 'Reloader' : 'Shooter' : 'Shooter'
   const sessionDetail = currentUser?.username || ''
 
   return (
-    <nav className="fixed z-50 bg-black/80 backdrop-blur-xl border border-[#b33c3c44] rounded-full flex items-center top-3 left-2 right-2 px-3 py-2 gap-2 md:top-6 md:right-4 md:left-auto md:w-auto md:px-4 md:gap-3">
+    // MOBILE FIX: Added env(safe-area-inset-top) logic to 'top' class
+    <nav className="fixed z-50 bg-black/80 backdrop-blur-xl border border-[#b33c3c44] rounded-full flex items-center left-2 right-2 px-3 py-2 gap-2 md:right-4 md:left-auto md:w-auto md:px-4 md:gap-3 transition-all duration-300 top-[max(0.75rem,env(safe-area-inset-top))] md:top-6">
       <div className="flex-1 flex items-center gap-1 md:gap-3 overflow-x-auto no-scrollbar mask-gradient">
         {menuItems.map(item => (
           <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex items-center gap-2 rounded-full font-bold transition-all whitespace-nowrap px-3 py-2 text-xs md:px-4 md:py-3 md:text-base ${activeTab === item.id ? 'bg-red-900/70 text-red-400 shadow-lg' : 'hover:bg-white/10 hover:text-red-400 text-slate-400'}`}>
