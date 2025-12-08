@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: App.jsx
 //Script Location: src/App.jsx
-//Date: 12/07/2025
+//Date: 12/08/2025
 //Created By: T03KNEE
-//Version: 3.3.0
+//Version: 3.5.0
 //About: Root shell. 
-//       Updated: Mobile Header restored (Logo Only, No Text).
+//       Updated: Removed top-level Supply Chain tab (Moved to Purchases).
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -19,13 +19,13 @@ import { Analytics } from './components/Analytics'
 import { RangeLogs } from './components/RangeLogs'
 import { Armory } from './components/Armory' 
 import { getAllPurchases, getAllRecipes, seedData } from './lib/db'
-import logo from './assets/logo.png'
 import { APP_VERSION_LABEL } from './version'
 import AuthModal from './components/AuthModal'
 import AiModal from './components/AiModal'
 import { fetchSettings } from './lib/settings'
 import { getCurrentUser, logoutUser, ROLE_ADMIN } from './lib/auth'
 import { HAPTIC } from './lib/haptics'
+import logo from './assets/logo.png'
 import {
   Gauge, ShoppingCart, Package, Beaker, ClipboardList, Activity, Target, Crosshair
 } from 'lucide-react'
@@ -35,13 +35,13 @@ const REQUIRE_LOGIN = import.meta.env.VITE_REQUIRE_LOGIN === 'true'
 
 const MENU_ITEMS = [
   { id: 'calculator', label: 'Calculator', icon: Gauge },
-  { id: 'purchases', label: 'Purchases', icon: ShoppingCart },
+  { id: 'purchases', label: 'Purchases', icon: ShoppingCart }, // Now includes Supply Chain
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'recipes', label: 'Recipes', icon: Beaker },
   { id: 'batches', label: 'Batches', icon: ClipboardList },
   { id: 'range', label: 'Range', icon: Target },
-  { id: 'analytics', label: 'Analytics', icon: Activity },
   { id: 'armory', label: 'Armory', icon: Crosshair },
+  { id: 'analytics', label: 'Analytics', icon: Activity },
 ]
 
 export default function App() {
@@ -123,8 +123,6 @@ export default function App() {
       />
 
       <main className="max-w-6xl mx-auto px-4 pt-[calc(5rem+env(safe-area-inset-top))] md:pt-28 pb-24">
-        
-        {/* MOBILE HEADER: Logo Only (Text removed as requested) */}
         <div className="flex justify-center mb-6 md:hidden">
            <img src={logo} alt="Reload Tracker" className="w-40 opacity-90 drop-shadow-2xl" />
         </div>

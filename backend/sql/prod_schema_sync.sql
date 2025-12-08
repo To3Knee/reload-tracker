@@ -2,8 +2,8 @@
 -- Script: prod_schema_sync.sql
 -- Purpose: 
 --   1. Wipes App Data (Batches, Logs, etc.) while SAVING Users.
---   2. Creates missing tables (Gear, Blueprints, Sources, etc.).
---   3. Patches existing tables with new columns (Visualizer support).
+--   2. Creates missing tables (Gear, Blueprints, Sources, Market).
+--   3. Patches existing tables with new columns (Visualizer/Images).
 -- Usage: Run safely against Production.
 -- ===============================================================
 
@@ -21,7 +21,7 @@ DECLARE
         'range_logs', 'batches', 'configs', 'blueprints', 
         'recipes', 'purchases', 'firearms', 'sessions', 
         'reference_components', 'settings', 'sources',
-        'gear', 'firearm_gear' -- Include new tables in the wipe list
+        'gear', 'firearm_gear', 'market_listings' -- Include all app tables
     ];
     t text;
 BEGIN
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS "firearms" (
     "updated_at" timestamp with time zone DEFAULT now()
 );
 
--- GEAR LOCKER (New)
+-- GEAR LOCKER
 CREATE TABLE IF NOT EXISTS "gear" (
     "id" bigserial PRIMARY KEY,
     "user_id" bigint REFERENCES "users"("id") ON DELETE CASCADE,
@@ -90,11 +90,29 @@ CREATE TABLE IF NOT EXISTS "gear" (
     "updated_at" timestamp with time zone DEFAULT now()
 );
 
--- FIREARM GEAR LINKS (New - Many-to-Many)
+-- FIREARM GEAR LINKS
 CREATE TABLE IF NOT EXISTS "firearm_gear" (
     "firearm_id" integer REFERENCES "firearms"("id") ON DELETE CASCADE,
     "gear_id" bigint REFERENCES "gear"("id") ON DELETE CASCADE,
     PRIMARY KEY ("firearm_id", "gear_id")
+);
+
+-- MARKET LISTINGS (Supply Chain)
+CREATE TABLE IF NOT EXISTS "market_listings" (
+    "id" bigserial PRIMARY KEY,
+    "user_id" bigint REFERENCES "users"("id") ON DELETE SET NULL,
+    "url" text NOT NULL UNIQUE,
+    "name" text,
+    "category" text,
+    "vendor" text,
+    "qty_per_unit" numeric(10, 2) DEFAULT 1,
+    "unit_type" text DEFAULT 'ea',
+    "price" numeric(10, 2) DEFAULT 0,
+    "currency" text DEFAULT 'USD',
+    "in_stock" boolean DEFAULT false,
+    "image_url" text,
+    "last_scraped_at" timestamp with time zone DEFAULT now(),
+    "created_at" timestamp with time zone DEFAULT now()
 );
 
 -- PURCHASES (Inventory)
@@ -343,5 +361,6 @@ CREATE INDEX IF NOT EXISTS "idx_range_logs_date" ON "range_logs" ("date");
 CREATE INDEX IF NOT EXISTS "idx_recipes_caliber" ON "recipes" ("caliber");
 CREATE INDEX IF NOT EXISTS "idx_firearms_user" ON "firearms" ("user_id");
 CREATE INDEX IF NOT EXISTS "idx_firearm_gear_fid" ON "firearm_gear" ("firearm_id");
+CREATE INDEX IF NOT EXISTS "idx_market_category" ON "market_listings" ("category");
 
 COMMIT;

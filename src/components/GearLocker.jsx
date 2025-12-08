@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: GearLocker.jsx
 //Script Location: src/components/GearLocker.jsx
-//Date: 12/07/2025
+//Date: 12/08/2025
 //Created By: T03KNEE
-//Version: 1.5.0
+//Version: 1.6.0
 //About: Manage accessories.
-//       - Updated: "Created By" Pill + Shared Management.
+//       - FIX: Removed browser alerts (Added Error Banner).
 //===============================================================
 
 import { useState, useEffect } from 'react'
@@ -34,6 +34,8 @@ export function GearLocker() {
   const [loading, setLoading] = useState(false)
   const [scraping, setScraping] = useState(false)
   const [verifyDeleteId, setVerifyDeleteId] = useState(null)
+  
+  // NEW: Error State
   const [error, setError] = useState(null)
 
   useEffect(() => { loadData() }, [])
@@ -60,13 +62,23 @@ export function GearLocker() {
 
   // --- AUTO-FILL ENGINE ---
   async function handleAutoFill() {
-      if (!form.url) { setError("Please enter a Product URL first."); HAPTIC.error(); return; }
-      setScraping(true); setError(null); HAPTIC.click();
+      if (!form.url) {
+          setError("Please enter a Product URL first.")
+          HAPTIC.error()
+          return
+      }
+      setScraping(true)
+      setError(null)
+      HAPTIC.click()
+      
       try {
           const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
           const res = await fetch(`${API_BASE}/scrape?url=${encodeURIComponent(form.url)}`)
           const data = await res.json()
+          
           if (!res.ok) throw new Error(data.message || "Failed to scrape")
+          
+          // Merge found data
           setForm(prev => ({
               ...prev,
               name: data.title || prev.name,
@@ -76,19 +88,29 @@ export function GearLocker() {
               price: data.price ? data.price : prev.price,
               notes: data.description ? data.description.slice(0, 200) + '...' : prev.notes
           }))
+          
           HAPTIC.success()
-      } catch (err) { setError(err.message); HAPTIC.error(); } 
-      finally { setScraping(false) }
+      } catch (err) {
+          setError(err.message)
+          HAPTIC.error()
+      } finally {
+          setScraping(false)
+      }
   }
 
   async function handleSubmit(e) {
-      e.preventDefault(); setLoading(true); setError(null);
+      e.preventDefault()
+      setLoading(true)
+      setError(null)
       try {
           await saveGear({ ...form, id: editingId })
           setIsFormOpen(false)
           HAPTIC.success()
           loadData()
-      } catch (err) { setError(err.message); HAPTIC.error(); }
+      } catch (err) { 
+          setError(err.message)
+          HAPTIC.error()
+      }
       finally { setLoading(false) }
   }
 
@@ -103,6 +125,7 @@ export function GearLocker() {
   return (
     <div className="space-y-6">
         
+        {/* ADD BUTTON (Only visible when form closed) */}
         {!isFormOpen && (
             <button onClick={handleAddNew} className="w-full py-3 rounded-xl border border-dashed border-zinc-700 text-zinc-500 hover:text-red-400 hover:border-red-500/50 hover:bg-red-900/10 transition flex items-center justify-center gap-2 text-xs font-bold">
                 <Plus size={16} /> Add New Gear
@@ -114,6 +137,8 @@ export function GearLocker() {
                 <h3 className="text-sm font-bold text-zinc-200 mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2">
                     {editingId ? 'Edit Gear' : 'New Gear'}
                 </h3>
+                
+                {/* ERROR BANNER */}
                 {error && (
                     <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 mb-4 animate-in fade-in slide-in-from-top-2">
                         <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
@@ -121,16 +146,31 @@ export function GearLocker() {
                         <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button>
                     </div>
                 )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    
+                    {/* URL INPUT */}
                     <div>
                         <label className={labelClass}>Product Link (Auto-Fill Source)</label>
                         <div className="flex gap-2">
-                            <input className={inputClass} value={form.url} onChange={e => setForm({...form, url: e.target.value})} placeholder="https://..." />
-                            <button type="button" onClick={handleAutoFill} disabled={scraping || !form.url} className="px-3 rounded-xl bg-purple-900/30 border border-purple-500/50 text-purple-300 hover:bg-purple-900/50 hover:text-white transition flex items-center gap-2 disabled:opacity-50">
-                                {scraping ? <Loader2 size={16} className="animate-spin"/> : <Wand2 size={16} />}<span className="text-[10px] font-bold hidden sm:inline">Auto-Fill</span>
+                            <input 
+                                className={inputClass} 
+                                value={form.url} 
+                                onChange={e => setForm({...form, url: e.target.value})} 
+                                placeholder="https://www.midwayusa.com/product/..." 
+                            />
+                            <button 
+                                type="button" 
+                                onClick={handleAutoFill} 
+                                disabled={scraping || !form.url}
+                                className="px-3 rounded-xl bg-purple-900/30 border border-purple-500/50 text-purple-300 hover:bg-purple-900/50 hover:text-white transition flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {scraping ? <Loader2 size={16} className="animate-spin"/> : <Wand2 size={16} />}
+                                <span className="text-[10px] font-bold hidden sm:inline">Auto-Fill</span>
                             </button>
                         </div>
                     </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label className={labelClass}>Name</label><input className={inputClass} value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Omega 300" required /></div>
                         <div><label className={labelClass}>Type</label><select className={inputClass} value={form.type} onChange={e => setForm({...form, type: e.target.value})}>{TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
@@ -139,8 +179,14 @@ export function GearLocker() {
                         <div><label className={labelClass}>Brand</label><input className={inputClass} value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} placeholder="e.g. SilencerCo" /></div>
                         <div><label className={labelClass}>Price</label><input type="number" className={inputClass} value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="0.00" /></div>
                     </div>
-                    <div className="bg-black/20 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between"><label className={labelClass}>Photo</label><UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} /></div>
+                    
+                    <div className="bg-black/20 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between">
+                        <label className={labelClass}>Photo</label>
+                        <UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} />
+                    </div>
+
                     <div><label className={labelClass}>Notes</label><textarea className={inputClass + ' h-20 resize-none'} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
+
                     <div className="flex justify-end gap-3 pt-2">
                         <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-full border border-zinc-600 text-zinc-300 hover:bg-zinc-800/60 text-xs font-bold transition">Cancel</button>
                         <button type="submit" disabled={loading} className="px-6 py-2 rounded-full bg-red-700 hover:bg-red-600 text-white text-xs font-bold transition shadow-lg shadow-red-900/20">{loading ? 'Saving...' : 'Save Gear'}</button>
@@ -154,7 +200,11 @@ export function GearLocker() {
                 <div key={item.id} className="bg-black/40 border border-zinc-800 rounded-xl overflow-hidden flex flex-col hover:border-zinc-600 transition group min-h-[96px]">
                     <div className="flex h-full">
                         <div className="w-24 bg-black flex-shrink-0 border-r border-zinc-800 relative">
-                            {item.imageUrl ? (<img src={item.imageUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />) : (<div className="w-full h-full flex items-center justify-center text-zinc-700"><Box size={24}/></div>)}
+                            {item.imageUrl ? (
+                                <img src={item.imageUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-700"><Box size={24}/></div>
+                            )}
                             {item.price > 0 && <div className="absolute bottom-1 right-1 bg-black/80 text-[9px] text-emerald-400 px-1.5 rounded border border-emerald-900/50">{formatCurrency(item.price)}</div>}
                         </div>
                         <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
@@ -172,13 +222,18 @@ export function GearLocker() {
                                     )}
                                 </div>
                             </div>
+                            
                             <div className="flex justify-between items-end mt-2">
                                 <div className="flex gap-2">
                                     {item.url && <a href={item.url} target="_blank" className="text-zinc-500 hover:text-red-400 transition"><ExternalLink size={12}/></a>}
                                 </div>
                                 <div className="flex gap-2 flex-shrink-0">
                                     <button onClick={() => handleEdit(item)} className="p-1.5 rounded bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition"><Edit size={12}/></button>
-                                    {verifyDeleteId === item.id ? (<button onClick={() => handleDelete(item.id)} className="px-2 py-1 rounded bg-red-600 text-[9px] text-white font-bold animate-in fade-in zoom-in">Confirm</button>) : (<button onClick={() => setVerifyDeleteId(item.id)} className="p-1.5 rounded bg-zinc-800 text-zinc-500 hover:text-red-400 hover:bg-zinc-700 transition"><Trash2 size={12}/></button>)}
+                                    {verifyDeleteId === item.id ? (
+                                        <button onClick={() => handleDelete(item.id)} className="px-2 py-1 rounded bg-red-600 text-[9px] text-white font-bold animate-in fade-in zoom-in">Confirm</button>
+                                    ) : (
+                                        <button onClick={() => setVerifyDeleteId(item.id)} className="p-1.5 rounded bg-zinc-800 text-zinc-500 hover:text-red-400 hover:bg-zinc-700 transition"><Trash2 size={12}/></button>
+                                    )}
                                 </div>
                             </div>
                         </div>

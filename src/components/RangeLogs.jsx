@@ -1,11 +1,12 @@
 //===============================================================
 //Script Name: RangeLogs.jsx
 //Script Location: src/components/RangeLogs.jsx
-//Date: 12/07/2025
+//Date: 12/08/2025
 //Created By: T03KNEE
-//Version: 3.11.0
+//Version: 4.1.0
 //About: Range Logs. 
-//       Updated: No popups, Async Print Fix, Local Date.
+//       - FIX: Restored "New Session" button visibility.
+//       - FIX: Aligned UI with Purchases/Armory Action Bar style.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -32,7 +33,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
   const [shotInput, setShotInput] = useState('')
   const [shotString, setShotString] = useState([])
 
-  // FIX: Use local date for default (Canada format YYYY-MM-DD works well for inputs)
   const getLocalDate = () => {
       const now = new Date()
       const offset = now.getTimezoneOffset()
@@ -202,14 +202,8 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
 
   const handlePrintLog = async (log) => {
     HAPTIC.click()
-    
-    // FIX: Open window immediately to satisfy pop-up blocker logic
     const win = window.open('', '_blank')
-    if (!win) {
-        alert('Popup blocked. Please allow popups for this site.')
-        return
-    }
-    
+    if (!win) { alert('Popup blocked. Please allow popups.'); return }
     win.document.write('<html><body><p>Generating PDF...</p></body></html>')
 
     const title = getRecipeDisplay(log)
@@ -221,19 +215,11 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     const appUrl = window.location.origin
     const qrUrl = `${appUrl}/?rangeLogId=${log.id}`
     let qrDataUri = ''
-    
-    try { 
-        qrDataUri = await QRCode.toDataURL(qrUrl, { width: 150, margin: 0, color: { dark: '#000000', light: '#ffffff' } }) 
-    } catch (e) {}
+    try { qrDataUri = await QRCode.toDataURL(qrUrl, { width: 150, margin: 0, color: { dark: '#000000', light: '#ffffff' } }) } catch (e) {}
 
     const firearmLine = log.firearmName ? `<p style="margin-top:4px;"><strong>RIFLE:</strong> ${log.firearmName}</p>` : ''
     const batchLine = log.batchId ? `<p style="margin-top:2px;"><strong>BATCH:</strong> #${log.batchId}</p>` : ''
-    const shotsDisplay = (log.shots && log.shots.length > 0) 
-        ? `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;">
-             <span class="stat-label">Shot Data (${log.shots.length})</span>
-             <div style="font-size:9px; color:#444; margin-top:4px; font-family:monospace;">${log.shots.join(', ')}</div>
-           </div>`
-        : ''
+    const shotsDisplay = (log.shots && log.shots.length > 0) ? `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;"><span class="stat-label">Shot Data (${log.shots.length})</span><div style="font-size:9px; color:#444; margin-top:4px; font-family:monospace;">${log.shots.join(', ')}</div></div>` : ''
 
     const html = `<!DOCTYPE html><html><head><title>Range Log</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');@page { margin: 0; size: 4in 6in; }*{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }body{ margin:0; padding:0; font-family:'Inter', sans-serif; background:#000; color:#111; }.card{ width:4in; height:6in; display:flex; flex-direction:column; overflow:hidden; position:relative; background:#fff; }.header{ background-color:#0f0f0f !important; color:white !important; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:5px solid #b33c3c !important; }.header-left h1{ font-size:16px; font-weight:900; text-transform:uppercase; margin:0; }.header-left h2{ font-size:11px; font-weight:600; color:#b33c3c !important; margin:2px 0 0 0; text-transform:uppercase; }.header-left p{ font-size:9px; color:#aaa !important; margin:4px 0 0 0; }.header-right{ display:flex; align-items:center; gap:12px; }.logo{ height:40px; width:auto; }.header-qr{ background:white !important; padding:3px; border-radius:3px; display:flex; flex-direction:column; align-items:center; }.qr-img{ width:38px; height:38px; }.qr-label{ font-size:4px; color:black; font-weight:900; text-transform:uppercase; margin-top:1px; }.content{ padding:15px 20px; flex:1; display:flex; flex-direction:column; }.target-container{ width:100%; height:2.2in; background:#fff !important; border-radius:6px; overflow:hidden; margin-bottom:15px; border:1px solid #ddd; }.main-img{ width:100%; height:100%; object-fit:contain; }.no-img{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:10px; font-weight:600; text-transform:uppercase; }.grid-row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px; }.stat-box{ background-color:#f4f4f4 !important; padding:6px 8px; border-radius:4px; border-left:3px solid #ddd !important; }.stat-box.highlight{ border-left-color:#b33c3c !important; background-color:#fff0f0 !important; }.stat-label{ font-size:7px; text-transform:uppercase; color:#666; font-weight:700; display:block; }.stat-val{ font-size:12px; font-weight:800; color:#111; display:block; }.stat-unit{ font-size:8px; font-weight:500; color:#888; margin-left:1px; }.notes-section{ margin-top:8px; background:#fff; border:1px dashed #ccc; padding:10px; border-radius:4px; flex:1; }.notes-label{ font-size:8px; font-weight:900; text-transform:uppercase; color:#b33c3c; margin-bottom:4px; display:block; }.notes-text{ font-size:9px; line-height:1.4; color:#333; }.footer{ padding:10px 20px; background:#f4f4f4 !important; border-top:1px solid #e0e0e0; font-size:8px; color:#888; text-transform:uppercase; letter-spacing:0.1em; display:flex; justify-content:space-between; }/* CLOSE BUTTON */.close-btn{ position:fixed; top:20px; right:20px; z-index:9999; background:rgba(0,0,0,0.8); color:#fff; padding:12px 24px; border-radius:50px; font-family:sans-serif; font-weight:bold; font-size:14px; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); cursor:pointer; backdrop-filter:blur(10px); }@media print{ .close-btn, .print-warning{ display:none !important; } }</style></head><body><button onclick="window.close()" class="close-btn">Done / Close</button><div class="card"><div class="header"><div class="header-left"><h1>${recipeName}</h1><h2>${cleanCaliber}</h2><p>${dateStr} • ${log.location || 'Range'}</p>${firearmLine}${batchLine}</div><div class="header-right"><div class="header-qr"><img src="${qrDataUri}" class="qr-img" /><span class="qr-label">Scan</span></div><img src="${logoUrl}" class="logo" /></div></div><div class="content"><div class="target-container">${log.imageUrl ? `<img src="${log.imageUrl}" class="main-img" />` : '<div class="no-img">No Image</div>'}</div><div class="grid-row"><div class="stat-box highlight"><span class="stat-label">Group Size</span><span class="stat-val">${log.groupSize || '--'}<span class="stat-unit">IN</span></span></div><div class="stat-box"><span class="stat-label">MOA</span><span class="stat-val">${moa}</span></div><div class="stat-box"><span class="stat-label">Distance</span><span class="stat-val">${log.distance || '--'}<span class="stat-unit">YDS</span></span></div></div><div class="grid-row"><div class="stat-box"><span class="stat-label">Avg Velocity</span><span class="stat-val">${log.velocity || '--'}<span class="stat-unit">FPS</span></span></div><div class="stat-box"><span class="stat-label">SD</span><span class="stat-val">${log.sd || '--'}</span></div><div class="stat-box"><span class="stat-label">ES</span><span class="stat-val">${log.es || '--'}</span></div></div><div class="notes-section"><span class="notes-label">Session Notes</span><div class="notes-text">${log.notes || 'No notes recorded.'}${log.weather ? `<br/><br/><strong>Conditions:</strong> ${log.weather} ${log.temp ? `(${log.temp}°F)` : ''}` : ''}</div>${shotsDisplay}</div></div><div class="footer"><span>Log ID: ${log.id}</span><span>Reload Tracker</span></div></div><script>window.onload = () => { setTimeout(() => window.print(), 500); };</script></body></html>`
     
@@ -253,6 +239,15 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
             <span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Performance</span>
             <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">RANGE LOGS</h2>
         </div>
+      </div>
+      
+      {/* UI FIX: Moved "New Session" button here, separated from the Title Block to match Purchases.jsx */}
+      <div className="flex justify-end border-b border-zinc-800 pb-2 mb-6">
+            {canEdit && !isFormOpen && (
+                <button onClick={handleNewLog} className="px-4 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-700 hover:border-red-500/50 hover:text-white transition flex items-center gap-2">
+                    <Plus size={12} /> New Session
+                </button>
+            )}
       </div>
 
       {isFormOpen && (

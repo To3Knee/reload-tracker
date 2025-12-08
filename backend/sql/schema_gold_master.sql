@@ -1,8 +1,7 @@
 -- ===============================================================
--- Script: schema_gold_master.sql (v4.0)
+-- Script: schema_gold_master.sql (v6.0)
 -- Purpose: The Single Source of Truth for the Database Structure.
---          Includes Users, Inventory, Recipes, Batches, Logs,
---          Firearms, Blueprints, Settings, and Sessions.
+--          Complete System Schema.
 -- ===============================================================
 
 BEGIN;
@@ -30,7 +29,7 @@ CREATE TABLE IF NOT EXISTS settings (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 3. FIREARMS (The Armory)
+-- 3. FIREARMS
 CREATE TABLE IF NOT EXISTS firearms (
     id serial PRIMARY KEY,
     user_id integer REFERENCES users(id) ON DELETE CASCADE,
@@ -47,7 +46,33 @@ CREATE TABLE IF NOT EXISTS firearms (
     updated_at timestamp with time zone DEFAULT now()
 );
 
--- 4. PURCHASES (Inventory)
+-- 4. GEAR
+CREATE TABLE IF NOT EXISTS gear (
+    id bigserial PRIMARY KEY,
+    user_id bigint REFERENCES users(id) ON DELETE CASCADE,
+    name text NOT NULL,
+    type text NOT NULL,
+    brand text,
+    model text,
+    serial_number text,
+    price numeric(18, 4) DEFAULT 0,
+    purchase_date date,
+    product_url text,
+    image_url text,
+    notes text,
+    status text DEFAULT 'active',
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+-- 5. FIREARM_GEAR
+CREATE TABLE IF NOT EXISTS firearm_gear (
+    firearm_id integer REFERENCES firearms(id) ON DELETE CASCADE,
+    gear_id bigint REFERENCES gear(id) ON DELETE CASCADE,
+    PRIMARY KEY (firearm_id, gear_id)
+);
+
+-- 6. PURCHASES
 CREATE TABLE IF NOT EXISTS purchases (
     id bigserial PRIMARY KEY,
     lot_id text NOT NULL UNIQUE,
@@ -74,7 +99,25 @@ CREATE TABLE IF NOT EXISTS purchases (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 5. RECIPES
+-- 7. MARKET LISTINGS (Supply Chain)
+CREATE TABLE IF NOT EXISTS market_listings (
+    id bigserial PRIMARY KEY,
+    user_id bigint REFERENCES users(id) ON DELETE SET NULL,
+    url text NOT NULL UNIQUE,
+    name text,
+    category text,
+    vendor text,
+    qty_per_unit numeric(10, 2) DEFAULT 1,
+    unit_type text DEFAULT 'ea',
+    price numeric(10, 2) DEFAULT 0,
+    currency text DEFAULT 'USD',
+    in_stock boolean DEFAULT false,
+    image_url text,
+    last_scraped_at timestamp with time zone DEFAULT now(),
+    created_at timestamp with time zone DEFAULT now()
+);
+
+-- 8. RECIPES
 CREATE TABLE IF NOT EXISTS recipes (
     id bigserial PRIMARY KEY,
     name text NOT NULL,
@@ -93,11 +136,9 @@ CREATE TABLE IF NOT EXISTS recipes (
     source text,
     status text DEFAULT 'active' NOT NULL,
     archived boolean DEFAULT false,
-    -- Geometry
     coal numeric(6, 4),
     case_capacity numeric(6, 2),
     bullet_length numeric(6, 4),
-    -- Links
     powder_lot_id bigint REFERENCES purchases(id) ON DELETE SET NULL,
     bullet_lot_id bigint REFERENCES purchases(id) ON DELETE SET NULL,
     primer_lot_id bigint REFERENCES purchases(id) ON DELETE SET NULL,
@@ -108,7 +149,7 @@ CREATE TABLE IF NOT EXISTS recipes (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 6. BATCHES
+-- 9. BATCHES
 CREATE TABLE IF NOT EXISTS batches (
     id bigserial PRIMARY KEY,
     recipe_id bigint NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
@@ -125,7 +166,7 @@ CREATE TABLE IF NOT EXISTS batches (
     updated_at timestamp with time zone DEFAULT now()
 );
 
--- 7. RANGE LOGS
+-- 10. RANGE LOGS
 CREATE TABLE IF NOT EXISTS range_logs (
     id bigserial PRIMARY KEY,
     recipe_id bigint NOT NULL REFERENCES recipes(id) ON DELETE SET NULL,
@@ -150,7 +191,7 @@ CREATE TABLE IF NOT EXISTS range_logs (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 8. BLUEPRINTS
+-- 11. BLUEPRINTS
 CREATE TABLE IF NOT EXISTS blueprints (
     id bigserial PRIMARY KEY,
     user_id bigint REFERENCES users(id) ON DELETE CASCADE,
@@ -177,7 +218,7 @@ CREATE TABLE IF NOT EXISTS blueprints (
     updated_at timestamp with time zone DEFAULT now()
 );
 
--- 9. CONFIGS
+-- 12. CONFIGS
 CREATE TABLE IF NOT EXISTS configs (
     id bigserial PRIMARY KEY,
     name text NOT NULL,
@@ -200,7 +241,7 @@ CREATE TABLE IF NOT EXISTS configs (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 10. REFERENCE COMPONENTS
+-- 13. REFERENCE COMPONENTS
 CREATE TABLE IF NOT EXISTS reference_components (
     id text PRIMARY KEY,
     type text NOT NULL,
@@ -213,7 +254,7 @@ CREATE TABLE IF NOT EXISTS reference_components (
     created_at timestamp with time zone DEFAULT now()
 );
 
--- 11. SOURCES
+-- 14. SOURCES
 CREATE TABLE IF NOT EXISTS sources (
     id bigserial PRIMARY KEY,
     user_id bigint REFERENCES users(id) ON DELETE SET NULL,
@@ -227,7 +268,7 @@ CREATE TABLE IF NOT EXISTS sources (
     updated_at timestamp with time zone DEFAULT now()
 );
 
--- 12. SESSIONS
+-- 15. SESSIONS
 CREATE TABLE IF NOT EXISTS sessions (
     id bigserial PRIMARY KEY,
     user_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -237,12 +278,13 @@ CREATE TABLE IF NOT EXISTS sessions (
     revoked_at timestamp with time zone
 );
 
--- 13. INDEXES
+-- 16. INDEXES
 CREATE INDEX IF NOT EXISTS idx_batches_date ON batches (load_date);
 CREATE INDEX IF NOT EXISTS idx_purchases_status ON purchases (status);
 CREATE INDEX IF NOT EXISTS idx_range_logs_date ON range_logs (date);
 CREATE INDEX IF NOT EXISTS idx_recipes_caliber ON recipes (caliber);
 CREATE INDEX IF NOT EXISTS idx_firearms_user ON firearms (user_id);
-CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token);
+CREATE INDEX IF NOT EXISTS idx_firearm_gear_fid ON firearm_gear (firearm_id);
+CREATE INDEX IF NOT EXISTS idx_market_category ON market_listings (category);
 
 COMMIT;

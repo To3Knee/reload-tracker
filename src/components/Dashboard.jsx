@@ -1,49 +1,59 @@
 //===============================================================
 //Script Name: Dashboard.jsx
 //Script Location: src/components/Dashboard.jsx
-//Date: 12/07/2025
+//Date: 12/08/2025
 //Created By: T03KNEE
-//Version: 3.1.0
-//About: Live Round Calculator.
-//       Updated: Added Error Boundaries for Network Fails (Offline Safety).
+//Version: 4.5.0
+//About: Live Round Calculator + ROI Engine.
+//       - FIX: Removed 'Brass Reuse' UI.
+//       - FIX: Clarified ROI Multiplier label.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
 import { formatCurrency, getAllRecipes, saveRecipe } from '../lib/db'
+import { getMarketListings } from '../lib/market'
 import { 
   calculateCostPerUnit, 
   calculatePowderCostPerRound, 
   calculateBrassCostPerRound,
   convertToGrains
 } from '../lib/math'
-import { Info, AlertTriangle, X } from 'lucide-react'
+import { Info, AlertTriangle, X, TrendingUp, DollarSign, TrendingDown } from 'lucide-react'
 
-const toMoney = (val) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(val || 0)
+// FORMATTER: 4 Decimals (For single primers, powder grains, per-round cost)
+const toPrecisionMoney = (val) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(val || 0)
+}
+
+// FORMATTER: 2 Decimals (For totals, boxes, human reading)
+const toStandardMoney = (val) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0)
 }
 
 export default function Dashboard({ purchases = [], selectedRecipe, onSelectRecipe }) {
   const [chargeGrains, setChargeGrains] = useState('')
   const [lotSize, setLotSize] = useState(1000)
-  const [caseReuse, setCaseReuse] = useState(5)
+  const [caseReuse, setCaseReuse] = useState(5) // Default kept for math, but UI hidden
   const [caliber, setCaliber] = useState('9mm')
   
   const [recipes, setRecipes] = useState([])
+  const [marketItems, setMarketItems] = useState([]) 
+  const [selectedFactoryId, setSelectedFactoryId] = useState('')
+
   const [selectedRecipeId, setSelectedRecipeId] = useState('')
   const [scenarios, setScenarios] = useState([])
   const [savingRecipeId, setSavingRecipeId] = useState(null)
   
-  // New Error State
   const [error, setError] = useState(null)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const rData = await getAllRecipes()
+        const [rData, mData] = await Promise.all([getAllRecipes(), getMarketListings().catch(()=>[])])
         setRecipes(rData)
+        setMarketItems(mData)
       } catch (err) {
         console.error("Dashboard Load Error:", err)
-        // Non-blocking error (Calculator can still work manually)
         setError("Could not load recipes. Check connection.")
       }
     }
@@ -90,6 +100,10 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
 
   const activeRecipe = selectedRecipe || recipes.find(r => String(r.id) === String(selectedRecipeId)) || null
   const activeRecipeLabel = activeRecipe ? `${activeRecipe.name}${activeRecipe.caliber ? ` • ${activeRecipe.caliber}` : ''}` : ''
+
+  const factoryOptions = useMemo(() => {
+      return marketItems.filter(m => (m.category === 'ammo' || m.category === 'other') && m.price > 0)
+  }, [marketItems])
 
   useEffect(() => {
     if (!caliber && recipes.length > 0 && !selectedRecipeId) {
@@ -144,6 +158,38 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
       },
     }
   }, [purchases.length, powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, lotSize, caseReuse])
+
+  // --- ROI CALCULATION ---
+  const roiStats = useMemo(() => {
+      if (!breakdown || !selectedFactoryId) return null
+      const factoryItem = marketItems.find(m => String(m.id) === selectedFactoryId)
+      if (!factoryItem) return null
+
+      const factoryCostPerRound = factoryItem.qty_per_unit > 0 ? (factoryItem.price / factoryItem.qty_per_unit) : 0
+      const handloadCost = breakdown.total.perRound
+      
+      const diff = factoryCostPerRound - handloadCost
+      const isSavings = diff >= 0
+      
+      let label = ''
+      
+      if (isSavings) {
+          const percent = factoryCostPerRound > 0 ? (Math.abs(diff) / factoryCostPerRound) * 100 : 0
+          label = `${percent.toFixed(0)}%`
+      } else {
+          // Changed "x" to "x Cost" for clarity
+          const multiplier = factoryCostPerRound > 0 ? (handloadCost / factoryCostPerRound) : 0
+          label = `${multiplier.toFixed(1)}x Cost`
+      }
+      
+      return {
+          factoryCost: factoryCostPerRound,
+          diff: Math.abs(diff),
+          label: label,
+          isSavings,
+          name: factoryItem.name
+      }
+  }, [breakdown, selectedFactoryId, marketItems])
 
   const capacity = useMemo(() => {
     if (!activeRecipe || !purchases.length) return null
@@ -212,7 +258,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
   }
 
   const inputClass = 'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60'
-  const renderOptionLabel = p => `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'}${p.name ? ` • ${p.name}` : ''} (${p.qty} ${p.unit}, ${formatCurrency(calculateCostPerUnit(p.price, p.shipping, p.tax, p.qty))}/unit)`
+  const renderOptionLabel = p => `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'}${p.name ? ` • ${p.name}` : ''} (${p.qty} ${p.unit}, ${toPrecisionMoney(calculateCostPerUnit(p.price, p.shipping, p.tax, p.qty))}/unit)`
   const calibers = Array.from(new Set(recipes.map(r => r.caliber).filter(c => c && c.trim().length > 0))).sort()
   const recipesForCaliber = recipes.filter(r => { if (!caliber) return true; if (!r.caliber) return true; return r.caliber === caliber })
   const hasBallistics = !!activeRecipe && (activeRecipe.bulletWeightGr || activeRecipe.muzzleVelocityFps || activeRecipe.zeroDistanceYards || activeRecipe.groupSizeInches)
@@ -239,7 +285,6 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
         </div>
       </div>
 
-      {/* ERROR BANNER */}
       {error && (
         <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
             <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
@@ -324,23 +369,28 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
             </div>
           </div>
 
-          {/* Group 4 */}
           <div className="pt-4 border-t border-slate-800/80">
-            <div className="max-w-xs">
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Brass reuse factor</label>
-              <input type="number" className={inputClass} value={caseReuse} onChange={e => setCaseReuse(e.target.value)} min="1" />
-            </div>
+             <label className="block text-xs font-semibold text-emerald-400 mb-1 flex items-center gap-1"><DollarSign size={12}/> Compare vs Factory Ammo</label>
+             <select 
+                className={inputClass + " border-emerald-500/30 focus:border-emerald-500 focus:ring-emerald-500/50"} 
+                value={selectedFactoryId} 
+                onChange={e => setSelectedFactoryId(e.target.value)}
+                disabled={factoryOptions.length === 0}
+             >
+                <option value="">{factoryOptions.length === 0 ? "No ammo in Supply Chain" : "Select Factory Load..."}</option>
+                {factoryOptions.map(m => (
+                    <option key={m.id} value={m.id}>{m.name} - {toStandardMoney(m.price / m.qty_per_unit)}/rd</option>
+                ))}
+             </select>
           </div>
 
-          {/* Save Config */}
-          <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 mt-2">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 mt-4">
             <p className="text-[11px] text-slate-500 min-w-0 mr-2">Save this setup to compare later.</p>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span onClick={handleSaveScenario} className={saveConfigButtonClass}>+ Save config</span>
             </div>
           </div>
 
-          {/* Saved Scenarios */}
           {scenarios.length > 0 && (
             <div className="border-t border-red-500/20 pt-4 space-y-2">
               <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-2">SAVED CONFIGURATIONS</p>
@@ -349,7 +399,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
                   <div key={s.id} className="flex items-center justify-between bg-black/40 rounded-xl px-3 py-2 text-[11px] text-slate-300">
                     <div>
                       <div className="font-semibold text-slate-100">{s.name}</div>
-                      <div className="text-slate-400">{formatCurrency(s.cost.perRound)} /rnd</div>
+                      <div className="text-slate-400">{toStandardMoney(s.cost.perRound)} /rnd</div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span onClick={() => handleDeleteScenario(s.id)} className={removeButtonClass}>Remove</span>
@@ -365,7 +415,6 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
         {/* RIGHT COLUMN: BREAKDOWN & STATS */}
         <div className="space-y-6">
           
-          {/* 1. LOADOUT PROFILE CARD */}
           {activeRecipe && (
               <div className="bg-black/40 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 blur-3xl rounded-full"></div>
@@ -412,7 +461,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
                    <div className="group relative">
                        <Info size={14} className="text-slate-600 hover:text-slate-400 cursor-help"/>
                        <div className="absolute right-0 bottom-6 w-48 bg-black border border-slate-700 p-2 rounded text-[10px] text-slate-300 opacity-0 group-hover:opacity-100 transition pointer-events-none z-50">
-                           Exact: {formatCurrency(breakdown?.total.perRound || 0)} / round
+                           Exact: {toPrecisionMoney(breakdown?.total.perRound || 0)} / round
                        </div>
                    </div>
               </div>
@@ -421,33 +470,62 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
                 <div>
                   <p className="text-sm text-slate-400">Per round</p>
                   <p className="text-5xl font-black text-emerald-400 tracking-tight">
-                      {toMoney(breakdown?.total.perRound)}
+                      {toStandardMoney(breakdown?.total.perRound)}
                   </p>
                 </div>
               </div>
+              
+              {/* ROI GAUGE */}
+              {roiStats && (
+                  <div className={`mb-6 p-4 rounded-xl border relative overflow-hidden ${roiStats.isSavings ? 'bg-emerald-900/10 border-emerald-500/30' : 'bg-red-900/10 border-red-500/30'}`}>
+                      <div className={`absolute -right-4 -top-4 w-20 h-20 blur-2xl rounded-full ${roiStats.isSavings ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}></div>
+                      <div className="flex justify-between items-start mb-2 relative z-10">
+                          <div className="flex-1 min-w-0 pr-4">
+                              <p className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${roiStats.isSavings ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {roiStats.isSavings ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}
+                                  {roiStats.isSavings ? ' Value Created' : ' Cost Increase'}
+                              </p>
+                              <p className="text-xs text-slate-400 mt-0.5 line-clamp-2 leading-tight" title={roiStats.name}>{roiStats.name}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                              <p className="text-2xl font-black text-white leading-none">{roiStats.label}</p>
+                              <p className={`text-[9px] ${roiStats.isSavings ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {roiStats.isSavings ? 'Savings' : 'Multiplier'}
+                              </p>
+                          </div>
+                      </div>
+                      <div className={`text-sm border-t pt-2 mt-2 ${roiStats.isSavings ? 'text-emerald-200/80 border-emerald-500/20' : 'text-red-200/80 border-red-500/20'}`}>
+                          {roiStats.isSavings ? 'Save ' : 'Spend '} 
+                          {/* FIX: Use 2-decimal formatter */}
+                          <span className="font-bold text-white">{toStandardMoney(roiStats.diff)}</span> 
+                          {roiStats.isSavings ? ' every time you pull the trigger.' : ' more per shot than factory.'}
+                      </div>
+                  </div>
+              )}
 
+              {/* COST TABLE (2 Decimals for Clean Look) */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-slate-400">
                     <span>Per 50</span>
-                    <span className="font-semibold text-slate-200" title={formatCurrency(breakdown?.total.per50)}>{toMoney(breakdown?.total.per50)}</span>
+                    <span className="font-semibold text-slate-200">{toStandardMoney(breakdown?.total.per50)}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                     <span>Per 100</span>
-                    <span className="font-semibold text-slate-200" title={formatCurrency(breakdown?.total.per100)}>{toMoney(breakdown?.total.per100)}</span>
+                    <span className="font-semibold text-slate-200">{toStandardMoney(breakdown?.total.per100)}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                     <span>Per 1,000</span>
-                    <span className="font-semibold text-slate-200" title={formatCurrency(breakdown?.total.per1000)}>{toMoney(breakdown?.total.per1000)}</span>
+                    <span className="font-semibold text-slate-200">{toStandardMoney(breakdown?.total.per1000)}</span>
                 </div>
                 <div className="flex justify-between text-slate-400 border-t border-slate-800 pt-2 mt-2">
                     <span>Cost for {lotSize.toLocaleString()} rounds</span>
-                    <span className="font-bold text-emerald-500" title={formatCurrency(breakdown?.total.lot)}>{toMoney(breakdown?.total.lot)}</span>
+                    <span className="font-bold text-emerald-500">{toStandardMoney(breakdown?.total.lot)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 3. COMPONENT BREAKDOWN */}
+          {/* 3. COMPONENT BREAKDOWN (3-4 Decimals for Precision) */}
           <div className="glass rounded-2xl p-6">
             <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-3">Components (Unit Cost)</p>
             <div className="grid grid-cols-2 gap-3">
@@ -467,7 +545,8 @@ function BreakdownRow({ label, value }) {
   return (
     <div className="flex items-center justify-between bg-black/40 rounded-xl px-3 py-2">
       <span className="text-slate-400 text-xs">{label}</span>
-      <span className="font-semibold text-slate-100 text-xs" title={formatCurrency(value)}>{toMoney(value)}</span>
+      {/* Use Precision Money here (3-4 decimals) because $0.035 matters for primers */}
+      <span className="font-semibold text-slate-100 text-xs" title={toPrecisionMoney(value)}>{toPrecisionMoney(value)}</span>
     </div>
   )
 }
