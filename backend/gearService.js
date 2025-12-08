@@ -3,8 +3,10 @@
 //Script Location: backend/gearService.js
 //Date: 12/07/2025
 //Created By: T03KNEE
-//Version: 1.0.0
+//Version: 1.1.0
 //About: Business logic for the Gear Locker.
+//       - Updated: GLOBAL ACCESS (Shared Gear).
+//       - Updated: Added User Attribution (Owner Name).
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -15,6 +17,7 @@ function mapGearRow(row) {
   return {
     id: row.id,
     userId: row.user_id,
+    ownerName: row.owner_name, // NEW
     name: row.name,
     type: row.type,
     brand: row.brand,
@@ -32,12 +35,15 @@ function mapGearRow(row) {
 }
 
 export async function listGear(currentUser) {
+  // GLOBAL READ: Show gear from ALL users
   const sql = `
-    SELECT * FROM gear 
-    WHERE user_id = $1 AND status != 'deleted'
-    ORDER BY type ASC, name ASC
+    SELECT g.*, u.username as owner_name 
+    FROM gear g
+    LEFT JOIN users u ON g.user_id = u.id
+    WHERE g.status != 'deleted'
+    ORDER BY g.type ASC, g.name ASC
   `
-  const res = await query(sql, [currentUser.id])
+  const res = await query(sql)
   return res.rows.map(mapGearRow)
 }
 
@@ -51,7 +57,7 @@ export async function createGear(payload, currentUser) {
       user_id, name, type, brand, model, serial_number, 
       price, purchase_date, product_url, image_url, notes
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING *
+    RETURNING *, (SELECT username FROM users WHERE id = $1) as owner_name
   `
   const params = [
     currentUser.id,
@@ -72,7 +78,8 @@ export async function createGear(payload, currentUser) {
 }
 
 export async function updateGear(id, updates, currentUser) {
-  const check = await query('SELECT id FROM gear WHERE id = $1 AND user_id = $2', [id, currentUser.id])
+  // SHARED WRITE: Any Admin can edit any gear
+  const check = await query('SELECT id FROM gear WHERE id = $1 AND status != \'deleted\'', [id])
   if (check.rows.length === 0) throw new NotFoundError('Gear not found.')
 
   const fields = ['name', 'type', 'brand', 'model', 'serial', 'price', 'purchaseDate', 'url', 'imageUrl', 'notes', 'status']
@@ -102,16 +109,17 @@ export async function updateGear(id, updates, currentUser) {
     UPDATE gear 
     SET ${setParts.join(', ')}
     WHERE id = $${idx}
-    RETURNING *
+    RETURNING *, (SELECT username FROM users WHERE id = gear.user_id) as owner_name
   `
   const res = await query(sql, values)
   return mapGearRow(res.rows[0])
 }
 
 export async function deleteGear(id, currentUser) {
+  // SHARED DELETE: Any Admin can delete
   const res = await query(
-    `DELETE FROM gear WHERE id = $1 AND user_id = $2`,
-    [id, currentUser.id]
+    `DELETE FROM gear WHERE id = $1`,
+    [id]
   )
   if (res.rowCount === 0) throw new NotFoundError('Gear not found.')
   return { success: true }
