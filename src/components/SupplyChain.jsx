@@ -1,16 +1,16 @@
 //===============================================================
 //Script Name: SupplyChain.jsx
 //Script Location: src/components/SupplyChain.jsx
-//Date: 12/08/2025
+//Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 2.5.0
+//Version: 2.6.0
 //About: Market Intelligence.
-//       - FIX: Removed browser alerts (Added Error Banner).
-//       - FIX: Preserved Icon-Only layout.
+//       - FIX: Added missing ShoppingCart icon import.
 //===============================================================
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, RefreshCw, Edit, ExternalLink, Loader2, AlertTriangle, X } from 'lucide-react'
+// FIX: Added ShoppingCart to imports below
+import { Plus, Trash2, RefreshCw, Edit, ExternalLink, Loader2, AlertTriangle, X, ShoppingCart } from 'lucide-react'
 import { HAPTIC } from '../lib/haptics'
 import { formatCurrency } from '../lib/db'
 
@@ -21,11 +21,7 @@ export function SupplyChain() {
     const [url, setUrl] = useState('')
     const [loading, setLoading] = useState(false)
     const [refreshingId, setRefreshingId] = useState(null)
-    
-    // NEW: Error State
     const [error, setError] = useState(null)
-    
-    // Modal States
     const [editItem, setEditItem] = useState(null)
     const [deleteId, setDeleteId] = useState(null)
 
@@ -102,7 +98,6 @@ export function SupplyChain() {
     return (
         <div className="space-y-8 relative">
             
-            {/* ERROR BANNER */}
             {error && (
                 <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
                     <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
@@ -111,7 +106,6 @@ export function SupplyChain() {
                 </div>
             )}
             
-            {/* Input */}
             <div className="glass p-6 rounded-2xl flex gap-2 border border-red-500/30">
                 <input 
                     className="flex-1 bg-black/50 border border-zinc-700 rounded-xl px-4 text-sm text-white focus:border-red-500 focus:outline-none" 
@@ -129,7 +123,6 @@ export function SupplyChain() {
                 </button>
             </div>
 
-            {/* Categorized Lists */}
             {CATEGORIES.map(cat => {
                 if (!grouped[cat]?.length) return null
                 return (
@@ -141,7 +134,6 @@ export function SupplyChain() {
                                 return (
                                     <div key={item.id} className="bg-black/40 border border-zinc-800 rounded-xl overflow-hidden flex flex-col justify-between hover:border-red-500/30 transition group">
                                         <div className="flex h-28 relative">
-                                            {/* Image */}
                                             <div className="w-28 bg-white/5 flex-shrink-0 relative border-r border-zinc-800">
                                                 {item.image_url ? (
                                                     <img src={item.image_url} className={`w-full h-full object-cover transition ${isRefreshing ? 'opacity-50 blur-sm' : ''}`} />
@@ -152,7 +144,6 @@ export function SupplyChain() {
                                                 <div className={`absolute top-0 left-0 w-full h-1 ${item.in_stock ? 'bg-emerald-500' : 'bg-red-500'}`} />
                                             </div>
                                             
-                                            {/* Details */}
                                             <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
                                                 <div>
                                                     <div className="flex justify-between items-start gap-3">
@@ -174,7 +165,6 @@ export function SupplyChain() {
                                             </div>
                                         </div>
 
-                                        {/* Actions */}
                                         <div className="flex border-t border-zinc-800 divide-x divide-zinc-800 bg-black/60">
                                             <a href={item.url} target="_blank" className="flex-1 py-2 flex items-center justify-center text-zinc-500 hover:text-blue-400 hover:bg-blue-900/10 transition" title="Visit Link"><ExternalLink size={14}/></a>
                                             <button onClick={() => handleRefresh(item.id)} disabled={isRefreshing} className="flex-1 py-2 flex items-center justify-center text-zinc-500 hover:text-emerald-400 hover:bg-emerald-900/10 transition" title="Refresh Price"><RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""}/></button>
@@ -189,7 +179,6 @@ export function SupplyChain() {
                 )
             })}
 
-            {/* EDIT MODAL */}
             {editItem && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
                     <div className="bg-[#0f0f10] border border-zinc-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
@@ -229,7 +218,6 @@ export function SupplyChain() {
                 </div>
             )}
 
-            {/* DELETE MODAL */}
             {deleteId && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
                     <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl w-full max-w-sm p-6 text-center space-y-4 shadow-xl">
