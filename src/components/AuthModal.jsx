@@ -3,10 +3,8 @@
 //Script Location: src/components/AuthModal.jsx
 //Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 5.1.0 (Fixed & Verified)
+//Version: 6.0.0 (Corrected Admin)
 //About: Login/Admin Modal.
-//       - FIX: Full Admin Tabs (Users, Security, Console).
-//       - UPDATE: Added Llama 3.3 70B (Verified Working).
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -94,11 +92,10 @@ export default function AuthModal({
       try { 
           const data = await fetchSettings(); 
           setSystemSettings(data); 
-          // UPDATED PRESETS (Verified Working)
           const presets = [
-              'google/gemini-2.0-flash-exp:free',
+              'google/gemini-2.0-flash-exp:free', 
               'meta-llama/llama-3.3-70b-instruct:free',
-              'meta-llama/llama-3-8b-instruct:free',
+              'meta-llama/llama-3.2-3b-instruct:free',
               'mistralai/mistral-7b-instruct:free',
               'microsoft/phi-3-medium-128k-instruct:free'
           ]; 
@@ -155,7 +152,7 @@ export default function AuthModal({
           if(!res.ok) {
               const errData = await res.json();
               if(errData.error && errData.error.includes("429")) {
-                  throw new Error(`Connected! Model Busy (Rate Limit). Try switching models.`);
+                  throw new Error(`Connected! But Model is Busy (Rate Limit). Try switching models.`);
               }
               if(errData.error && errData.error.includes("404")) {
                   throw new Error(`Model Not Found (404). Please select a different one.`);
@@ -248,7 +245,7 @@ export default function AuthModal({
             
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar pb-20 md:pb-4">
               
-              {/* 1. MANAGE USERS (Restored) */}
+              {/* 1. MANAGE USERS */}
               {activeTab === 'manage' && (
                 <div className="space-y-6">
                   <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
@@ -265,7 +262,7 @@ export default function AuthModal({
                 </div>
               )}
 
-              {/* 2. PASSWORD RESET (Restored) */}
+              {/* 2. PASSWORD RESET */}
               {activeTab === 'reset' && (
                   <div className="space-y-6">
                      <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
@@ -279,7 +276,7 @@ export default function AuthModal({
                   </div>
               )}
 
-              {/* 3. CONFIG TAB (Restored & Updated) */}
+              {/* 3. CONFIG TAB */}
               {activeTab === 'config' && (
                   <div className="space-y-6">
                      <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
@@ -296,8 +293,8 @@ export default function AuthModal({
                                 <div className="relative">
                                     <select className={`${inputClass} appearance-none`} value={aiModel === 'custom' ? 'custom' : aiModel} onChange={e => setAiModel(e.target.value)}>
                                         <option value="google/gemini-2.0-flash-exp:free">Google Gemini 2.0 Flash (Recommended)</option>
-                                        <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (Verified Working)</option>
-                                        <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B (Old Reliable)</option>
+                                        <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (Powerful/New)</option>
+                                        <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B (Fast)</option>
                                         <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (Uncensored)</option>
                                         <option value="microsoft/phi-3-medium-128k-instruct:free">Microsoft Phi-3 Medium</option>
                                         <option value="custom">Custom Model ID...</option>
@@ -325,7 +322,7 @@ export default function AuthModal({
                   </div>
               )}
 
-              {/* 4. SQL CONSOLE (Restored) */}
+              {/* 4. SQL CONSOLE */}
               {activeTab === 'console' && (
                   <div className="space-y-4 h-full flex flex-col">
                       <div className="bg-amber-900/10 border border-amber-900/30 p-3 rounded-lg flex items-start gap-3">

@@ -1,16 +1,15 @@
 //===============================================================
 //Script Name: Dashboard.jsx
 //Script Location: src/components/Dashboard.jsx
-//Date: 12/08/2025
+//Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 4.5.0
+//Version: 4.9.0
 //About: Live Round Calculator + ROI Engine.
-//       - FIX: Removed 'Brass Reuse' UI.
-//       - FIX: Clarified ROI Multiplier label.
+//       - FIX: Moved renderOptionLabel & inputClass to global scope.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
-import { formatCurrency, getAllRecipes, saveRecipe } from '../lib/db'
+import { getAllRecipes, saveRecipe } from '../lib/db'
 import { getMarketListings } from '../lib/market'
 import { 
   calculateCostPerUnit, 
@@ -20,31 +19,53 @@ import {
 } from '../lib/math'
 import { Info, AlertTriangle, X, TrendingUp, DollarSign, TrendingDown } from 'lucide-react'
 
-// FORMATTER: 4 Decimals (For single primers, powder grains, per-round cost)
+// --- GLOBAL STYLES & HELPERS ---
+
+const inputClass = 'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60'
+
 const toPrecisionMoney = (val) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(val || 0)
 }
 
-// FORMATTER: 2 Decimals (For totals, boxes, human reading)
 const toStandardMoney = (val) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0)
+}
+
+const renderOptionLabel = p => `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'}${p.name ? ` • ${p.name}` : ''} (${p.qty} ${p.unit}, ${toPrecisionMoney(calculateCostPerUnit(p.price, p.shipping, p.tax, p.qty))}/unit)`
+
+function BreakdownRow({ label, value }) {
+  return (
+    <div className="flex items-center justify-between bg-black/40 rounded-xl px-3 py-2">
+      <span className="text-slate-400 text-xs">{label}</span>
+      <span className="font-semibold text-slate-100 text-xs" title={toPrecisionMoney(value)}>{toPrecisionMoney(value)}</span>
+    </div>
+  )
 }
 
 export default function Dashboard({ purchases = [], selectedRecipe, onSelectRecipe }) {
   const [chargeGrains, setChargeGrains] = useState('')
   const [lotSize, setLotSize] = useState(1000)
-  const [caseReuse, setCaseReuse] = useState(5) // Default kept for math, but UI hidden
+  const [caseReuse, setCaseReuse] = useState(5)
   const [caliber, setCaliber] = useState('9mm')
   
   const [recipes, setRecipes] = useState([])
   const [marketItems, setMarketItems] = useState([]) 
+  
+  // FACTORY COMPARE STATES
   const [selectedFactoryId, setSelectedFactoryId] = useState('')
+  const [manualFactoryCost, setManualFactoryCost] = useState('')
 
   const [selectedRecipeId, setSelectedRecipeId] = useState('')
   const [scenarios, setScenarios] = useState([])
   const [savingRecipeId, setSavingRecipeId] = useState(null)
   
   const [error, setError] = useState(null)
+
+  // COMPONENT SELECTIONS
+  const [powderId, setPowderId] = useState('')
+  const [bulletId, setBulletId] = useState('')
+  const [primerId, setPrimerId] = useState('')
+  const [caseId, setCaseId] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -60,73 +81,80 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
     load()
   }, [])
 
+  // Filter Inventory based on Caliber
+  const filterByCaliber = (p) => !caliber || !p.caliber || p.caliber === caliber
+  const activeOnly = (p) => p.status !== 'depleted'
+
+  const powderLots = useMemo(() => purchases.filter(p => p.componentType === 'powder' && activeOnly(p) && filterByCaliber(p)), [purchases, caliber])
+  const bulletLots = useMemo(() => purchases.filter(p => p.componentType === 'bullet' && activeOnly(p) && filterByCaliber(p)), [purchases, caliber])
+  const primerLots = useMemo(() => purchases.filter(p => p.componentType === 'primer' && activeOnly(p) && filterByCaliber(p)), [purchases, caliber])
+  const caseLots = useMemo(() => purchases.filter(p => p.componentType === 'case' && activeOnly(p) && filterByCaliber(p)), [purchases, caliber])
+
+  const findById = (id, lots) => lots.find(l => String(l.id) === String(id)) || null
+
+  // 1. Handle Recipe Prop
   useEffect(() => {
     if (selectedRecipe) {
       setSelectedRecipeId(String(selectedRecipe.id || ''))
       if (selectedRecipe.caliber) setCaliber(selectedRecipe.caliber)
-      if (selectedRecipe.chargeGrains) setChargeGrains(String(selectedRecipe.chargeGrains))
-      if (selectedRecipe.brassReuse) setCaseReuse(Number(selectedRecipe.brassReuse) || 1)
-      if (selectedRecipe.lotSize) setLotSize(Number(selectedRecipe.lotSize) || 0)
     }
   }, [selectedRecipe])
 
-  const filterByCaliber = (p) => !caliber || !p.caliber || p.caliber === caliber
-  const activeOnly = (p) => p.status !== 'depleted'
+  // 2. Determine Active Recipe Object
+  const activeRecipe = useMemo(() => {
+      return selectedRecipe || recipes.find(r => String(r.id) === String(selectedRecipeId)) || null
+  }, [selectedRecipe, selectedRecipeId, recipes])
 
-  const powderLots = purchases.filter(p => p.componentType === 'powder' && activeOnly(p) && filterByCaliber(p))
-  const bulletLots = purchases.filter(p => p.componentType === 'bullet' && activeOnly(p) && filterByCaliber(p))
-  const primerLots = purchases.filter(p => p.componentType === 'primer' && activeOnly(p) && filterByCaliber(p))
-  const caseLots = purchases.filter(p => p.componentType === 'case' && activeOnly(p) && filterByCaliber(p))
-
-  const [powderId, setPowderId] = useState('')
-  const [bulletId, setBulletId] = useState('')
-  const [primerId, setPrimerId] = useState('')
-  const [caseId, setCaseId] = useState('')
-
-  const findById = (id, lots) => lots.find(l => String(l.id) === String(id)) || null
-
-  useEffect(() => {
-    if (!caliber || recipes.length === 0) return
-    const current = recipes.find(r => String(r.id) === selectedRecipeId)
-    if (current && current.caliber && current.caliber !== caliber) setSelectedRecipeId('')
-    if (!selectedRecipeId) {
-      const firstForCaliber = recipes.find(r => r.caliber === caliber)
-      if (firstForCaliber) {
-        setSelectedRecipeId(String(firstForCaliber.id))
-        if (onSelectRecipe) onSelectRecipe(firstForCaliber)
-      }
-    }
-  }, [caliber, recipes, selectedRecipeId, onSelectRecipe])
-
-  const activeRecipe = selectedRecipe || recipes.find(r => String(r.id) === String(selectedRecipeId)) || null
   const activeRecipeLabel = activeRecipe ? `${activeRecipe.name}${activeRecipe.caliber ? ` • ${activeRecipe.caliber}` : ''}` : ''
+
+  // 3. MASTER EFFECT: Sync Form with Recipe or Defaults
+  useEffect(() => {
+      if (activeRecipe) {
+          if (activeRecipe.chargeGrains) setChargeGrains(String(activeRecipe.chargeGrains))
+          if (activeRecipe.lotSize) setLotSize(Number(activeRecipe.lotSize))
+          if (activeRecipe.brassReuse) setCaseReuse(Number(activeRecipe.brassReuse))
+
+          if (activeRecipe.powderLotId && powderLots.some(p => String(p.id) === String(activeRecipe.powderLotId))) {
+              setPowderId(String(activeRecipe.powderLotId))
+          }
+          if (activeRecipe.bulletLotId && bulletLots.some(b => String(b.id) === String(activeRecipe.bulletLotId))) {
+              setBulletId(String(activeRecipe.bulletLotId))
+          }
+          if (activeRecipe.primerLotId && primerLots.some(p => String(p.id) === String(activeRecipe.primerLotId))) {
+              setPrimerId(String(activeRecipe.primerLotId))
+          }
+          if (activeRecipe.caseLotId && caseLots.some(c => String(c.id) === String(activeRecipe.caseLotId))) {
+              setCaseId(String(activeRecipe.caseLotId))
+          }
+      }
+      
+      const ensureValid = (currentId, lots, setter) => {
+          const isValid = currentId && lots.some(l => String(l.id) === String(currentId))
+          if (!isValid) {
+              if (lots.length > 0) setter(String(lots[0].id))
+              else setter('')
+          }
+      }
+
+      ensureValid(powderId, powderLots, setPowderId)
+      ensureValid(bulletId, bulletLots, setBulletId)
+      ensureValid(primerId, primerLots, setPrimerId)
+      ensureValid(caseId, caseLots, setCaseId)
+
+  }, [activeRecipe, caliber, powderLots, bulletLots, primerLots, caseLots]) 
 
   const factoryOptions = useMemo(() => {
       return marketItems.filter(m => (m.category === 'ammo' || m.category === 'other') && m.price > 0)
   }, [marketItems])
 
   useEffect(() => {
-    if (!caliber && recipes.length > 0 && !selectedRecipeId) {
-      const firstWithCaliber = recipes.find(r => r.caliber)
-      if (firstWithCaliber) setCaliber(firstWithCaliber.caliber)
-    }
-    const ensureSelection = (currentId, lots, setter) => {
-      if (currentId && lots.some(l => String(l.id) === String(currentId))) return
-      if (!lots.length) { setter(''); return }
-      if (activeRecipe) {
-        const match = lots.find(l => 
-          (activeRecipe.powderBrand && l.brand && l.brand.toLowerCase() === activeRecipe.powderBrand.toLowerCase()) ||
-          (activeRecipe.bulletBrand && l.brand && l.brand.toLowerCase() === activeRecipe.bulletBrand.toLowerCase())
-        )
-        if (match) { setter(String(match.id)); return }
+      if (!selectedFactoryId) return
+      const item = marketItems.find(m => String(m.id) === selectedFactoryId)
+      if (item && item.qty_per_unit > 0) {
+          const cost = item.price / item.qty_per_unit
+          setManualFactoryCost(cost.toFixed(2))
       }
-      setter(String(lots[0].id))
-    }
-    ensureSelection(powderId, powderLots, setPowderId)
-    ensureSelection(bulletId, bulletLots, setBulletId)
-    ensureSelection(primerId, primerLots, setPrimerId)
-    ensureSelection(caseId, caseLots, setCaseId)
-  }, [caliber, activeRecipe, powderLots, bulletLots, primerLots, caseLots])
+  }, [selectedFactoryId, marketItems])
 
   const breakdown = useMemo(() => {
     if (!purchases.length) return null
@@ -159,37 +187,31 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
     }
   }, [purchases.length, powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, lotSize, caseReuse])
 
-  // --- ROI CALCULATION ---
   const roiStats = useMemo(() => {
-      if (!breakdown || !selectedFactoryId) return null
-      const factoryItem = marketItems.find(m => String(m.id) === selectedFactoryId)
-      if (!factoryItem) return null
+      const factoryCost = Number(manualFactoryCost) || 0
+      if (!breakdown || factoryCost <= 0) return null
 
-      const factoryCostPerRound = factoryItem.qty_per_unit > 0 ? (factoryItem.price / factoryItem.qty_per_unit) : 0
       const handloadCost = breakdown.total.perRound
-      
-      const diff = factoryCostPerRound - handloadCost
+      const diff = factoryCost - handloadCost
       const isSavings = diff >= 0
       
       let label = ''
-      
       if (isSavings) {
-          const percent = factoryCostPerRound > 0 ? (Math.abs(diff) / factoryCostPerRound) * 100 : 0
+          const percent = factoryCost > 0 ? (Math.abs(diff) / factoryCost) * 100 : 0
           label = `${percent.toFixed(0)}%`
       } else {
-          // Changed "x" to "x Cost" for clarity
-          const multiplier = factoryCostPerRound > 0 ? (handloadCost / factoryCostPerRound) : 0
+          const multiplier = factoryCost > 0 ? (handloadCost / factoryCost) : 0
           label = `${multiplier.toFixed(1)}x Cost`
       }
       
       return {
-          factoryCost: factoryCostPerRound,
+          factoryCost,
           diff: Math.abs(diff),
-          label: label,
+          label,
           isSavings,
-          name: factoryItem.name
+          name: selectedFactoryId ? (marketItems.find(m=>String(m.id)===selectedFactoryId)?.name || 'Custom Price') : 'Manual Price'
       }
-  }, [breakdown, selectedFactoryId, marketItems])
+  }, [breakdown, manualFactoryCost, selectedFactoryId, marketItems])
 
   const capacity = useMemo(() => {
     if (!activeRecipe || !purchases.length) return null
@@ -227,7 +249,19 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
   }, [activeRecipe, purchases.length, powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, caseReuse])
 
   const headerRounds = activeRecipe && capacity && !capacity.needsCharge ? (typeof capacity.roundsPossible === 'number' ? capacity.roundsPossible : 0) : null
-  
+  const recipesForCaliber = recipes.filter(r => { if (!caliber) return true; if (!r.caliber) return true; return r.caliber === caliber })
+  const hasBallistics = !!activeRecipe && (activeRecipe.bulletWeightGr || activeRecipe.muzzleVelocityFps || activeRecipe.zeroDistanceYards || activeRecipe.groupSizeInches)
+  const calibers = Array.from(new Set(recipes.map(r => r.caliber).filter(c => c && c.trim().length > 0))).sort()
+
+  function handleRecipeSelect(e) {
+    const id = e.target.value
+    setSelectedRecipeId(id)
+    if (onSelectRecipe) {
+        const r = recipes.find(x => String(x.id) === String(id))
+        if(r) onSelectRecipe(r)
+    }
+  }
+
   function handleSaveScenario() {
     if (!breakdown || !breakdown.total || !breakdown.total.perRound) return
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -257,19 +291,6 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
     } finally { setSavingRecipeId(null) }
   }
 
-  const inputClass = 'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60'
-  const renderOptionLabel = p => `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'}${p.name ? ` • ${p.name}` : ''} (${p.qty} ${p.unit}, ${toPrecisionMoney(calculateCostPerUnit(p.price, p.shipping, p.tax, p.qty))}/unit)`
-  const calibers = Array.from(new Set(recipes.map(r => r.caliber).filter(c => c && c.trim().length > 0))).sort()
-  const recipesForCaliber = recipes.filter(r => { if (!caliber) return true; if (!r.caliber) return true; return r.caliber === caliber })
-  const hasBallistics = !!activeRecipe && (activeRecipe.bulletWeightGr || activeRecipe.muzzleVelocityFps || activeRecipe.zeroDistanceYards || activeRecipe.groupSizeInches)
-  
-  function handleRecipeSelect(e) {
-    const id = e.target.value
-    setSelectedRecipeId(id)
-    const recipe = recipes.find(r => String(r.id) === id)
-    if (recipe && onSelectRecipe) onSelectRecipe(recipe)
-  }
-  
   const saveConfigButtonClass = 'px-2 py-[2px] rounded-full bg-black/60 border border-emerald-400/70 text-emerald-300 hover:bg-emerald-900/40 transition text-[11px] cursor-pointer'
   const removeButtonClass = 'px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition text-[11px] cursor-pointer'
   const saveRecipeButtonClass = 'px-2 py-[2px] rounded-full bg-black/60 border border-emerald-400/70 text-emerald-300 hover:bg-emerald-900/40 transition text-[11px] cursor-pointer disabled:opacity-50'
@@ -371,17 +392,29 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
 
           <div className="pt-4 border-t border-slate-800/80">
              <label className="block text-xs font-semibold text-emerald-400 mb-1 flex items-center gap-1"><DollarSign size={12}/> Compare vs Factory Ammo</label>
-             <select 
-                className={inputClass + " border-emerald-500/30 focus:border-emerald-500 focus:ring-emerald-500/50"} 
-                value={selectedFactoryId} 
-                onChange={e => setSelectedFactoryId(e.target.value)}
-                disabled={factoryOptions.length === 0}
-             >
-                <option value="">{factoryOptions.length === 0 ? "No ammo in Supply Chain" : "Select Factory Load..."}</option>
-                {factoryOptions.map(m => (
-                    <option key={m.id} value={m.id}>{m.name} - {toStandardMoney(m.price / m.qty_per_unit)}/rd</option>
-                ))}
-             </select>
+             <div className="grid grid-cols-2 gap-3">
+                 <select 
+                    className={inputClass + " border-emerald-500/30 focus:border-emerald-500 focus:ring-emerald-500/50"} 
+                    value={selectedFactoryId} 
+                    onChange={e => setSelectedFactoryId(e.target.value)}
+                    disabled={factoryOptions.length === 0}
+                 >
+                    <option value="">{factoryOptions.length === 0 ? "No tracked prices" : "Quick Fill from Market"}</option>
+                    {factoryOptions.map(m => (
+                        <option key={m.id} value={m.id}>{m.name} (${(m.price / m.qty_per_unit).toFixed(2)})</option>
+                    ))}
+                 </select>
+
+                 <input 
+                    type="number"
+                    step="0.01"
+                    className={inputClass + " border-emerald-500/30 focus:border-emerald-500 focus:ring-emerald-500/50"}
+                    placeholder="Or enter $ per round..."
+                    value={manualFactoryCost}
+                    onChange={e => { setManualFactoryCost(e.target.value); setSelectedFactoryId(''); }}
+                 />
+             </div>
+             <p className="text-[9px] text-slate-500 mt-1">Select a tracked item OR type a price manually to calculate ROI.</p>
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 mt-4">
@@ -422,27 +455,6 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
                   
                   <div className="mb-4">
                       <h3 className="text-xl font-bold text-white">{activeRecipeLabel}</h3>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                      {headerRounds !== null && (
-                          <div className="bg-black/40 rounded-xl p-3 border border-slate-800/60">
-                              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Capacity</p>
-                              <p className="text-2xl font-black text-slate-100">{headerRounds.toLocaleString()}</p>
-                              <p className="text-[10px] text-slate-600">Rounds possible</p>
-                          </div>
-                      )}
-                      
-                      {hasBallistics && (
-                          <div className="bg-black/40 rounded-xl p-3 border border-slate-800/60">
-                              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Ballistics</p>
-                              <div className="text-xs text-slate-300 space-y-0.5 mt-1">
-                                  {activeRecipe.bulletWeightGr && <div>{activeRecipe.bulletWeightGr} gr</div>}
-                                  {activeRecipe.muzzleVelocityFps && <div>{activeRecipe.muzzleVelocityFps} fps</div>}
-                                  {activeRecipe.zeroDistanceYards && <div>{activeRecipe.zeroDistanceYards} yd Zero</div>}
-                              </div>
-                          </div>
-                      )}
                   </div>
 
                   {capacity && capacity.limiting && (
@@ -496,14 +508,13 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
                       </div>
                       <div className={`text-sm border-t pt-2 mt-2 ${roiStats.isSavings ? 'text-emerald-200/80 border-emerald-500/20' : 'text-red-200/80 border-red-500/20'}`}>
                           {roiStats.isSavings ? 'Save ' : 'Spend '} 
-                          {/* FIX: Use 2-decimal formatter */}
                           <span className="font-bold text-white">{toStandardMoney(roiStats.diff)}</span> 
                           {roiStats.isSavings ? ' every time you pull the trigger.' : ' more per shot than factory.'}
                       </div>
                   </div>
               )}
 
-              {/* COST TABLE (2 Decimals for Clean Look) */}
+              {/* COST TABLE */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-slate-400">
                     <span>Per 50</span>
@@ -525,7 +536,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
             </div>
           </div>
 
-          {/* 3. COMPONENT BREAKDOWN (3-4 Decimals for Precision) */}
+          {/* 3. COMPONENT BREAKDOWN */}
           <div className="glass rounded-2xl p-6">
             <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-3">Components (Unit Cost)</p>
             <div className="grid grid-cols-2 gap-3">
@@ -537,16 +548,6 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-function BreakdownRow({ label, value }) {
-  return (
-    <div className="flex items-center justify-between bg-black/40 rounded-xl px-3 py-2">
-      <span className="text-slate-400 text-xs">{label}</span>
-      {/* Use Precision Money here (3-4 decimals) because $0.035 matters for primers */}
-      <span className="font-semibold text-slate-100 text-xs" title={toPrecisionMoney(value)}>{toPrecisionMoney(value)}</span>
     </div>
   )
 }

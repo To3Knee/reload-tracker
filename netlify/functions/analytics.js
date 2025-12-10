@@ -3,9 +3,9 @@
 //Script Location: netlify/functions/analytics.js
 //Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 1.2.0
-//About: API Endpoint for analytics.
-//       - UPDATE: Added /forecast endpoint.
+//Version: 1.3.0
+//About: API Endpoint for fetching chart data.
+//       - FIX: Restored /volume and /forecast routes lost in reset.
 //===============================================================
 
 import { 
@@ -15,7 +15,7 @@ import {
   getLoadVelocity,
   getBatchCostHistory,
   getVolumeByCaliber,
-  getSupplyForecast // NEW
+  getSupplyForecast 
 } from '../../backend/analyticsService.js'
 import { getUserForSessionToken, SESSION_COOKIE_NAME } from '../../backend/authService.js'
 
@@ -65,12 +65,13 @@ export async function handler(event) {
       return jsonResponse(200, { data })
     }
 
+    // NEW ROUTE (Restored)
     if (path.endsWith('/volume')) {
       const data = await getVolumeByCaliber(currentUser)
       return jsonResponse(200, { data })
     }
 
-    // NEW ENDPOINT
+    // NEW ROUTE (Restored)
     if (path.endsWith('/forecast')) {
       const data = await getSupplyForecast(currentUser)
       return jsonResponse(200, { data })

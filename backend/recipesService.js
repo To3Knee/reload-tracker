@@ -3,9 +3,9 @@
 //Script Location: backend/recipesService.js
 //Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 2.2.0 (Cascade Delete)
+//Version: 2.2.0 (Restored Cascade Logic)
 //About: Business logic for managing load recipes.
-//       - FIX: Added cascade delete logic for Batches.
+//       - FIX: Handles Foreign Key deletion errors gracefully.
 //===============================================================
 
 import { query } from './dbClient.js';
@@ -179,8 +179,7 @@ export async function deleteRecipe(id, currentUser, cascade = false) {
   assertAdmin(currentUser);
   
   if (cascade) {
-      // DANGER ZONE: Wipe batches first
-      // Assuming batches are linked by 'recipe_id'
+      // DANGER: Wipe associated batches first
       await query('DELETE FROM batches WHERE recipe_id = $1', [id]);
   }
 
@@ -188,7 +187,7 @@ export async function deleteRecipe(id, currentUser, cascade = false) {
       await query('DELETE FROM recipes WHERE id = $1', [id]);
       return { success: true };
   } catch (err) {
-      // 23503 = Foreign Key Violation (Used in Batches)
+      // Catch Foreign Key Violation
       if (err.code === '23503') {
           const error = new ValidationError("RECIPE_IN_USE");
           error.code = 'RECIPE_IN_USE'; 

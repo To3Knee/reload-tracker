@@ -3,16 +3,13 @@
 //Script Location: backend/marketService.js
 //Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 2.1.0 (Fixed Exports)
+//Version: 3.1.0 (Robust AI Parsing)
 //About: Scrapes web data for reloading components.
-//       - FIX: Restored function names to match API requirements.
-//       - FEATURE: Uses OpenRouter via aiService for scraping.
+//       - FIX: Added Regex to extract JSON from chatty AI responses.
 //===============================================================
 
 import { query } from './dbClient.js'
 import { chatWithAi } from './aiService.js'
-
-// --- DATABASE FUNCTIONS (Exported with names expected by market.js) ---
 
 export async function listMarket(userId) {
     const res = await query(
@@ -24,7 +21,6 @@ export async function listMarket(userId) {
 
 export async function addListing(item, userId) {
     const { url, name } = item
-    // Insert with 'pending' status; the scraper will populate the rest later
     const res = await query(
         `INSERT INTO market_listings (user_id, url, name, price, in_stock, status) 
          VALUES ($1, $2, $3, 0, false, 'pending') 
@@ -40,65 +36,66 @@ export async function deleteListing(id, userId) {
 }
 
 export async function updateListing(id, data, userId) {
-    // Manually update fields if needed (not via scraper)
-    const { name, price, in_stock } = data
+    const { name, price, in_stock, notes } = data
     const res = await query(
         `UPDATE market_listings 
          SET name = COALESCE($1, name), 
              price = COALESCE($2, price), 
-             in_stock = COALESCE($3, in_stock) 
-         WHERE id = $4 AND user_id = $5 
+             in_stock = COALESCE($3, in_stock),
+             notes = COALESCE($4, notes)
+         WHERE id = $5 AND user_id = $6 
          RETURNING *`,
-        [name, price, in_stock, id, userId]
+        [name, price, in_stock, notes, id, userId]
     )
     return res.rows[0]
 }
 
-// --- SCRAPING ENGINE (Mapped to refreshListing) ---
-
+// --- INTELLIGENT SCRAPER ---
 export async function refreshListing(id, userId) {
-    // 1. Get the item URL
     const itemRes = await query(`SELECT url FROM market_listings WHERE id = $1 AND user_id = $2`, [id, userId])
     if (itemRes.rows.length === 0) throw new Error("Item not found")
     const url = itemRes.rows[0].url
 
     try {
-        // 2. Fetch Raw HTML
+        // 1. Fetch Raw HTML (Fake User Agent to avoid blocks)
         const response = await fetch(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ReloadTracker/1.0)' }
+            headers: { 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' 
+            }
         })
         if (!response.ok) throw new Error(`HTTP Error ${response.status}`)
         const html = await response.text()
 
-        // 3. Truncate HTML to fit in AI context (Save tokens)
-        const cleanHtml = html.substring(0, 50000).replace(/\s+/g, ' ');
+        // 2. Truncate to save tokens (Head + Body start is usually enough)
+        const cleanHtml = html.substring(0, 40000).replace(/\s+/g, ' ');
 
-        // 4. Ask AI to extract data
+        // 3. Ask AI to extract data
         const prompt = `
-            Analyze this raw HTML from a reloading supply website.
-            Extract the following details into a strict JSON format:
+            Analyze this HTML snippet from a product page.
+            Extract the following fields into a strict JSON object:
             {
-                "name": "Product Title",
-                "price": 0.00 (Number only),
+                "name": "Exact Product Title",
+                "price": 0.00 (Number, numeric value only),
                 "in_stock": true/false (Boolean),
-                "image_url": "URL to main product image"
+                "image_url": "Full HTTP URL to main product image"
             }
+            HTML: ${cleanHtml}
             
-            Rules:
-            - If "Add to Cart" is present, in_stock is true.
-            - If "Out of Stock" or "Notify Me", in_stock is false.
-            - Return ONLY the JSON string. No markdown.
-            
-            HTML:
-            ${cleanHtml}
+            IMPORTANT: Return ONLY the raw JSON. No markdown, no conversational text.
         `;
 
-        // Use the new OpenRouter Service
         const aiResponse = await chatWithAi(prompt);
         
-        // Clean the response
-        const jsonStr = aiResponse.replace(/```json|```/g, '').trim();
-        const data = JSON.parse(jsonStr);
+        // 4. ROBUST PARSING (The Fix)
+        // Find the JSON object starting with { and ending with }
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        
+        if (!jsonMatch) {
+            console.error("AI Response was not JSON:", aiResponse);
+            throw new Error("AI returned invalid data format.");
+        }
+
+        const data = JSON.parse(jsonMatch[0]);
 
         // 5. Update Database
         const updateRes = await query(
@@ -114,6 +111,6 @@ export async function refreshListing(id, userId) {
     } catch (err) {
         console.error("Scrape Error:", err);
         await query(`UPDATE market_listings SET status = 'error' WHERE id = $1`, [id]);
-        throw new Error("Failed to scrape: " + err.message);
+        throw new Error("Scrape failed: " + err.message);
     }
 }

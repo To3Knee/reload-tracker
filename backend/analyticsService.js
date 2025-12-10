@@ -3,9 +3,9 @@
 //Script Location: backend/analyticsService.js
 //Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 2.3.0
+//Version: 2.4.0
 //About: Business logic for aggregating cost and trend data.
-//       - FIX: Better handling for 'Infinite' supply (0 burn rate).
+//       - FIX: Smart Fallback for Supply Forecast (Recent vs All-Time).
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -92,13 +92,12 @@ export async function getVolumeByCaliber(currentUser) {
   }))
 }
 
+// SMART SUPPLY FORECAST
 export async function getSupplyForecast(currentUser) {
-    // 1. Get Inventory
     const invSql = `SELECT component_type, qty, unit FROM purchases WHERE status = 'active'`
     const invRes = await query(invSql)
     
     let stock = { powder: 0, primer: 0, bullet: 0, case: 0 }
-    
     invRes.rows.forEach(r => {
         const type = r.component_type
         const qty = Number(r.qty)
@@ -112,46 +111,65 @@ export async function getSupplyForecast(currentUser) {
         }
     })
 
-    // 2. Get Usage (90 Days)
     const usageSql = `
-        SELECT b.rounds_loaded, r.charge_grains
+        SELECT b.rounds_loaded, r.charge_grains, b.load_date
         FROM batches b
         JOIN recipes r ON b.recipe_id = r.id
-        WHERE b.load_date >= NOW() - INTERVAL '90 days'
     `
     const usageRes = await query(usageSql)
     
-    let usage90Days = { powder: 0, primer: 0, bullet: 0, case: 0 }
+    let usage90 = { powder: 0, primer: 0, bullet: 0, case: 0 }
+    let usageAll = { powder: 0, primer: 0, bullet: 0, case: 0 }
+    
+    const now = new Date()
+    const ninetyDaysAgo = new Date()
+    ninetyDaysAgo.setDate(now.getDate() - 90)
+    
+    let firstDate = now
     
     usageRes.rows.forEach(r => {
+        const date = new Date(r.load_date)
+        if (date < firstDate) firstDate = date
         const rounds = Number(r.rounds_loaded)
-        usage90Days.primer += rounds
-        usage90Days.bullet += rounds
-        usage90Days.case += rounds 
-        if (r.charge_grains) {
-            usage90Days.powder += (rounds * Number(r.charge_grains))
+        const isRecent = date >= ninetyDaysAgo
+        
+        usageAll.primer += rounds
+        usageAll.bullet += rounds
+        usageAll.case += rounds
+        if (r.charge_grains) usageAll.powder += (rounds * Number(r.charge_grains))
+        
+        if (isRecent) {
+            usage90.primer += rounds
+            usage90.bullet += rounds
+            usage90.case += rounds
+            if (r.charge_grains) usage90.powder += (rounds * Number(r.charge_grains))
         }
     })
 
-    // 3. Forecast
+    const totalMonths = Math.max(1, (now - firstDate) / (1000 * 60 * 60 * 24 * 30))
+
     const forecast = []
     const types = ['powder', 'primer', 'bullet', 'case']
     
     types.forEach(type => {
-        const monthlyBurn = usage90Days[type] / 3
-        let months = null // Null means "Infinite" or "No Burn Rate"
+        let monthlyBurn = usage90[type] / 3
+        let mode = 'Recent'
         
-        if (monthlyBurn > 0) {
-            months = stock[type] / monthlyBurn
-        } else if (stock[type] === 0) {
-            months = 0
+        if (monthlyBurn === 0 && usageAll[type] > 0) {
+            monthlyBurn = usageAll[type] / totalMonths
+            mode = 'Long Term'
         }
+
+        let months = null 
+        if (monthlyBurn > 0) months = stock[type] / monthlyBurn
+        else if (stock[type] === 0) months = 0
         
         forecast.push({
             type: type.charAt(0).toUpperCase() + type.slice(1),
             stock: stock[type],
             burnRate: monthlyBurn,
-            months: months !== null ? Number(months.toFixed(1)) : null
+            months: months !== null ? Number(months.toFixed(1)) : null,
+            mode: mode
         })
     })
 

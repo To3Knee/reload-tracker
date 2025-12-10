@@ -3,9 +3,9 @@
 //Script Location: src/components/Analytics.jsx
 //Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 4.1.0 (Polished UI)
+//Version: 4.3.0 (Interactive Factory Compare)
 //About: Visualizes cost history and production metrics. 
-//       - UPDATE: Added Icons, Legends, and Smart Labels.
+//       - FEATURE: Clickable 'Compare vs Factory' with adjustable price.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -20,7 +20,7 @@ import {
 } from '../lib/analytics'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts'
 import { formatCurrency } from '../lib/db'
-import { AlertCircle, Clock, Package, Flame, Coins, Crosshair } from 'lucide-react'
+import { AlertCircle, Clock, Package, Flame, Coins, Crosshair, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react'
 
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1']
 
@@ -33,8 +33,7 @@ function NoData({ message = "No data recorded" }) {
     )
 }
 
-function ForecastItem({ type, months }) {
-    // Logic for display
+function ForecastItem({ type, months, mode }) {
     let color = 'bg-slate-700';
     let text = 'text-slate-500';
     let label = 'Idle / No Usage';
@@ -47,7 +46,6 @@ function ForecastItem({ type, months }) {
             label = 'Empty';
             percent = 5;
         } else {
-            // Cap visual at 12 months for the bar
             percent = Math.min((months / 12) * 100, 100);
             label = `${months} Months`;
             
@@ -56,17 +54,16 @@ function ForecastItem({ type, months }) {
             else { color = 'bg-emerald-500'; text = 'text-emerald-400'; }
         }
     } else {
-        // If null (stock exists but no burn rate), show as "Safe/Idle" but distinct
         color = 'bg-slate-600';
         text = 'text-slate-400';
-        percent = 100; // Full bar to show stock exists
+        percent = 100; 
     }
     
     return (
         <div className="mb-4 last:mb-0">
             <div className="flex justify-between items-end mb-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{type}</span>
-                <span className={`text-xs font-mono font-bold ${text}`}>{label}</span>
+                <span className={`text-xs font-mono font-bold ${text}`}>{label} {mode === 'Long Term' && <span className="text-[8px] text-slate-600 ml-1">(LTA)</span>}</span>
             </div>
             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full ${color} transition-all duration-1000`} style={{ width: `${percent}%` }}></div>
@@ -82,6 +79,14 @@ export function Analytics() {
   const [volumeData, setVolumeData] = useState([])
   const [forecastData, setForecastData] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // Factory Compare State
+  const [showFactory, setShowFactory] = useState(false)
+  const [factoryPrice, setFactoryPrice] = useState(1.20) // Default $1.20
+
+  const avgCost = historyData.length > 0 ? historyData[historyData.length - 1].cost : 0;
+  const savingsPerRound = Math.max(0, factoryPrice - avgCost);
+  const savingsPercent = avgCost > 0 ? Math.round((savingsPerRound / factoryPrice) * 100) : 0;
 
   useEffect(() => {
     async function load() {
@@ -160,11 +165,11 @@ export function Analytics() {
             </h3>
             <div className="flex-1 flex flex-col justify-center">
                 {forecastData.length > 0 ? (
-                    forecastData.map(f => <ForecastItem key={f.type} type={f.type} months={f.months} />)
+                    forecastData.map(f => <ForecastItem key={f.type} type={f.type} months={f.months} mode={f.mode} />)
                 ) : <NoData message="Need Data" />}
             </div>
             <div className="mt-4 pt-3 border-t border-slate-800/50 text-[9px] text-slate-500 text-center">
-                Based on 90-day activity.
+                Based on 90-day activity (or Long Term).
             </div>
           </div>
 
@@ -190,11 +195,37 @@ export function Analytics() {
       </div>
       
       <div className="grid md:grid-cols-3 gap-6">
-          {/* 4. COST TREND */}
+          {/* 4. COST TREND (INTERACTIVE) */}
           <div className="glass rounded-2xl p-6 border border-zinc-800/50 md:col-span-2">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Coins size={14} className="text-red-500"/> Avg Cost Per Round
-            </h3>
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:text-white transition" onClick={() => setShowFactory(!showFactory)}>
+                    <Coins size={14} className="text-red-500"/> Avg Cost Per Round
+                    {showFactory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </h3>
+                
+                {showFactory && (
+                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700">
+                        <label className="text-[10px] text-zinc-400 uppercase tracking-wider">Compare vs Factory ($):</label>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            className="w-16 bg-black border border-zinc-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-red-500"
+                            value={factoryPrice}
+                            onChange={(e) => setFactoryPrice(Number(e.target.value))}
+                        />
+                    </div>
+                )}
+
+                {avgCost > 0 && !showFactory && (
+                    <div className="text-right cursor-pointer" onClick={() => setShowFactory(true)}>
+                        <span className="text-[10px] text-slate-400 block uppercase tracking-wider">vs Factory (${factoryPrice.toFixed(2)})</span>
+                        <span className="text-sm font-bold text-emerald-400 flex items-center gap-1 justify-end">
+                            <TrendingUp size={12} /> {savingsPercent}% Savings
+                        </span>
+                    </div>
+                )}
+            </div>
+            
             <div className="h-[250px] w-full">
                 {historyData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -204,6 +235,10 @@ export function Analytics() {
                             <YAxis stroke="#555" fontSize={10} tickFormatter={(val) => `$${val}`} />
                             <Tooltip contentStyle={tooltipStyle} itemStyle={{color: '#ef4444'}} formatter={(val) => formatCurrency(val)} />
                             <Line type="monotone" dataKey="cost" stroke="#ef4444" strokeWidth={3} dot={{r: 4, fill: '#ef4444', strokeWidth: 0}} activeDot={{r: 6}} />
+                            {/* Comparison Line */}
+                            {showFactory && (
+                                <Line type="monotone" dataKey={() => factoryPrice} stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={false} name="Factory Price" />
+                            )}
                         </LineChart>
                     </ResponsiveContainer>
                 ) : <NoData message="No History" />}
