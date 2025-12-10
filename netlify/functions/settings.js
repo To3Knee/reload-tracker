@@ -1,46 +1,61 @@
 //===============================================================
 //Script Name: Reload Tracker Settings Function
 //Script Location: netlify/functions/settings.js
-//Date: 11/29/2025
+//Date: 12/09/2025
 //Created By: T03KNEE
-//About: API Endpoint for global settings.
+//Version: 1.0.0
 //===============================================================
 
-import { getSettings, updateSetting } from '../../backend/settingsService.js'
+import { getSettings, saveSetting } from '../../backend/settingsService.js'
 import { getUserForSessionToken, SESSION_COOKIE_NAME } from '../../backend/authService.js'
 
-const baseHeaders = { 'Content-Type': 'application/json' }
+const headers = { 'Content-Type': 'application/json' }
 
-async function getCurrentUser(event) {
-  const cookieHeader = event.headers.cookie || event.headers.Cookie || ''
-  const cookies = {};
-  cookieHeader.split(';').forEach(c => {
-    const [k, v] = c.trim().split('=');
-    if (k) cookies[k] = decodeURIComponent(v || '')
-  })
-  const token = cookies[SESSION_COOKIE_NAME]
-  if (!token) return null
-  return await getUserForSessionToken(token)
+async function getUser(event) {
+    const cookies = event.headers.cookie || ''
+    const match = cookies.match(new RegExp(`${SESSION_COOKIE_NAME}=([^;]+)`))
+    if (!match) return null
+    return await getUserForSessionToken(decodeURIComponent(match[1]))
 }
 
 export async function handler(event) {
-  try {
-    const currentUser = await getCurrentUser(event)
-
-    if (event.httpMethod === 'GET') {
-      const settings = await getSettings()
-      return { statusCode: 200, headers: baseHeaders, body: JSON.stringify(settings) }
+    // 1. Auth Check (Admins Only)
+    const user = await getUser(event)
+    if (!user || user.role !== 'admin') {
+        return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
     }
 
-    if (event.httpMethod === 'POST') {
-      const body = JSON.parse(event.body)
-      // Expecting { key: 'ai_enabled', value: 'true' }
-      const updated = await updateSetting(body.key, body.value, currentUser)
-      return { statusCode: 200, headers: baseHeaders, body: JSON.stringify(updated) }
-    }
+    try {
+        // GET: Fetch all settings
+        if (event.httpMethod === 'GET') {
+            const data = await getSettings()
+            
+            // Security: Mask the API Key when sending to frontend?
+            // For the Admin Panel, we usually want to see it, or at least know it exists.
+            // Let's send a flag for safety if it's there.
+            const safeData = { ...data }
+            if (safeData.ai_api_key) {
+                safeData.hasAiKey = true
+                // Uncomment next line to hide the actual key in the UI (User preference)
+                // safeData.ai_api_key = '••••••••' 
+            }
+            
+            return { statusCode: 200, headers, body: JSON.stringify(safeData) }
+        }
 
-    return { statusCode: 405, headers: baseHeaders, body: 'Method Not Allowed' }
-  } catch (err) {
-    return { statusCode: 500, headers: baseHeaders, body: JSON.stringify({ message: err.message }) }
-  }
+        // POST: Save a setting
+        if (event.httpMethod === 'POST') {
+            const { key, value } = JSON.parse(event.body)
+            if (!key) return { statusCode: 400, body: 'Missing Key' }
+            
+            await saveSetting(key, value)
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true }) }
+        }
+        
+        return { statusCode: 405, body: 'Method Not Allowed' }
+
+    } catch (e) {
+        console.error("Settings Error:", e)
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) }
+    }
 }

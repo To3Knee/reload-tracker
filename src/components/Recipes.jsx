@@ -1,18 +1,18 @@
 //===============================================================
 //Script Name: Recipes.jsx
 //Script Location: src/components/Recipes.jsx
-//Date: 12/07/2025
+//Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 5.6.0
+//Version: 6.0.0
 //About: Manage recipes. 
-//       Updated: Perfect Alignment (Notes stretches to match Ingredients).
+//       Updated: "Conflict Resolution" modal for In-Use Recipes.
 //===============================================================
 
 import { useEffect, useState, useMemo } from 'react'
 import {
   getAllRecipes,
   saveRecipe,
-  deleteRecipe,
+  // deleteRecipe, // We will use a custom local delete to handle cascade
   formatCurrency
 } from '../lib/db'
 import { getFirearms } from '../lib/armory'
@@ -20,7 +20,7 @@ import { downloadExcel } from '../lib/excel'
 import { createBatch } from '../lib/batches'
 import { 
   ClipboardList, X, User, Clock, Printer, FileText, 
-  Crosshair, HelpCircle, AlertTriangle, Trash2, AlignLeft, Info
+  Crosshair, HelpCircle, AlertTriangle, Trash2, AlignLeft, Info, Archive
 } from 'lucide-react'
 import { HAPTIC } from '../lib/haptics'
 import { calculateCostPerUnit } from '../lib/math'
@@ -67,6 +67,23 @@ function FieldLabel({ label, help }) {
     )
 }
 
+// --- LOCAL API HELPER FOR DELETE ---
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+async function apiDeleteRecipe(id, cascade = false) {
+    const res = await fetch(`${API_BASE}/recipes/${id}${cascade ? '?cascade=true' : ''}`, {
+        method: 'DELETE',
+        credentials: 'include'
+    })
+    if (res.status === 409) {
+        throw new Error("RECIPE_IN_USE")
+    }
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Delete failed')
+    }
+    return true
+}
+
 export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   const [recipes, setRecipes] = useState([])
   const [guns, setGuns] = useState([]) 
@@ -76,7 +93,10 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   const [saving, setSaving] = useState(false)
   const [editingRecipe, setEditingRecipe] = useState(null)
   const [archivingId, setArchivingId] = useState(null)
+  
+  // DELETE STATES
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [conflictModalOpen, setConflictModalOpen] = useState(false)
   const [recipeToDelete, setRecipeToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -95,17 +115,11 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   const getSmartList = (type, currentCaliber) => {
       const items = activePurchases.filter(p => p.componentType === type)
       if (!currentCaliber) return items
-      
       const cal = currentCaliber.toLowerCase()
-      // Rank 1: Strict Caliber Match
       const rank1 = items.filter(p => p.caliber && p.caliber.toLowerCase() === cal)
-      // Rank 2: Name contains caliber (fuzzy) but not in Rank 1
       const rank2 = items.filter(p => !rank1.includes(p) && (p.name.toLowerCase().includes(cal) || (p.brand && p.brand.toLowerCase().includes(cal))))
-      // Rank 3: Universal (No caliber specified)
       const rank3 = items.filter(p => !rank1.includes(p) && !rank2.includes(p) && !p.caliber)
-      // Rank 4: The Rest
       const rank4 = items.filter(p => !rank1.includes(p) && !rank2.includes(p) && !rank3.includes(p))
-      
       return [...rank1, ...rank2, ...rank3, ...rank4]
   }
 
@@ -180,17 +194,53 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   }
 
   function promptDelete(recipe) { if (!canEdit) return; setRecipeToDelete(recipe); setDeleteModalOpen(true); HAPTIC.click(); }
-  async function executeDelete() {
-    if (!recipeToDelete) return; setIsDeleting(true);
+  
+  async function executeDelete(cascade = false) {
+    if (!recipeToDelete) return; 
+    setIsDeleting(true);
     try {
-      await deleteRecipe(recipeToDelete.id); HAPTIC.success(); if (editingRecipe && editingRecipe.id === recipeToDelete.id) resetForm();
-      await loadData(); setDeleteModalOpen(false); setRecipeToDelete(null);
-    } catch (err) { setError(`Failed to delete: ${err.message}`); setDeleteModalOpen(false); HAPTIC.error(); } finally { setIsDeleting(false); }
+      // Use local helper to handle specific error codes
+      await apiDeleteRecipe(recipeToDelete.id, cascade);
+      
+      HAPTIC.success(); 
+      if (editingRecipe && editingRecipe.id === recipeToDelete.id) resetForm();
+      await loadData(); 
+      
+      // Close all modals
+      setDeleteModalOpen(false); 
+      setConflictModalOpen(false);
+      setRecipeToDelete(null);
+    } catch (err) { 
+        if (err.message === 'RECIPE_IN_USE') {
+            // CONFLICT! Show the decision modal.
+            setDeleteModalOpen(false); // Close generic delete
+            setConflictModalOpen(true); // Open specific conflict
+            HAPTIC.soft();
+        } else {
+            setError(`Failed to delete: ${err.message}`); 
+            setDeleteModalOpen(false); 
+            setConflictModalOpen(false);
+            HAPTIC.error(); 
+        }
+    } finally { setIsDeleting(false); }
   }
 
   async function handleArchiveToggle(recipe) {
     if (!canEdit || !recipe) return; setArchivingId(recipe.id);
     try { const updated = { ...recipe, archived: !recipe.archived }; await saveRecipe(updated); HAPTIC.soft(); if (editingRecipe && editingRecipe.id === recipe.id) setEditingRecipe(updated); await loadData(); } catch (err) { setError(`Failed: ${err.message}`); } finally { setArchivingId(null); }
+  }
+
+  async function handleResolveConflict(action) {
+      if (!recipeToDelete) return;
+      if (action === 'archive') {
+          // User chose to Archive instead
+          await handleArchiveToggle(recipeToDelete);
+          setConflictModalOpen(false);
+          setRecipeToDelete(null);
+      } else if (action === 'cascade') {
+          // User chose to Nuke everything
+          await executeDelete(true);
+      }
   }
 
   function handleExportExcel(dataToExport = recipes, filenameSuffix = 'all') {
@@ -391,7 +441,35 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
             <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
                 <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto"><Trash2 className="text-red-500" size={24} /></div>
                 <div><h3 className="text-lg font-bold text-white">Delete Recipe?</h3><p className="text-sm text-slate-400 mt-1">Are you sure you want to delete <span className="text-white font-medium">"{recipeToDelete.name}"</span>?<br/>This action cannot be undone.</p></div>
-                <div className="grid grid-cols-2 gap-3 pt-2"><button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 font-medium text-sm transition">Cancel</button><button onClick={executeDelete} disabled={isDeleting} className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button></div>
+                <div className="grid grid-cols-2 gap-3 pt-2"><button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 font-medium text-sm transition">Cancel</button><button onClick={() => executeDelete(false)} disabled={isDeleting} className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button></div>
+            </div>
+        </div>
+      )}
+
+      {/* CONFLICT RESOLUTION MODAL */}
+      {conflictModalOpen && recipeToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4 pt-[env(safe-area-inset-top)] animate-in zoom-in-95 duration-200">
+            <div className="bg-[#0f0f10] border border-amber-500/50 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4 relative">
+                <button onClick={() => setConflictModalOpen(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X size={20} /></button>
+                <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0 border border-amber-500/50">
+                        <AlertTriangle className="text-amber-500" size={28} />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-white">Recipe In Use</h3>
+                        <p className="text-xs text-slate-400 leading-relaxed mt-1">The recipe <span className="text-amber-400 font-medium">"{recipeToDelete.name}"</span> has batches associated with it. You cannot delete it without losing that history.</p>
+                    </div>
+                </div>
+                
+                <div className="bg-black/40 rounded-xl p-4 border border-slate-800 text-sm text-slate-300">
+                    <p className="mb-2 font-bold text-slate-200">Recommended Action:</p>
+                    <p className="text-xs text-slate-400 mb-4">Archive the recipe instead. It will be hidden from the active list but your batch history will be preserved.</p>
+                    <button onClick={() => handleResolveConflict('archive')} className="w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-900/20"><Archive size={14} /> Archive Recipe (Safe)</button>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/50">
+                    <button onClick={() => handleResolveConflict('cascade')} className="w-full py-2 rounded-lg border border-red-900/50 text-red-500 hover:bg-red-900/20 hover:text-red-400 font-bold text-[10px] uppercase tracking-wide transition flex items-center justify-center gap-2">I don't care, delete everything (Destructive)</button>
+                </div>
             </div>
         </div>
       )}

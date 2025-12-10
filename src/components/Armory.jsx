@@ -1,11 +1,12 @@
 //===============================================================
 //Script Name: Armory.jsx
 //Script Location: src/components/Armory.jsx
-//Date: 12/08/2025
+//Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 2.9.0
+//Version: 3.0.0 (Data Saving Fix)
 //About: The Digital Armory. 
-//       - FIX: "Pro" Layout (Action Bar, Zinc/Red Theme).
+//       - FIX: Ensures Round Count is sent as integer.
+//       - FIX: Ensures Specs are mapped correctly.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -90,17 +91,69 @@ export function Armory({ canEdit }) {
   }
 
   function handleAddNew() { setEditingId(null); setForm(DEFAULT_FORM); setIsFormOpen(true); HAPTIC.click(); }
-  function handleEdit(gun) { setEditingId(gun.id); const safeGearIds = (gun.gearIds || []).map(id => Number(id)); setForm({ name: gun.name, platform: gun.platform, caliber: gun.caliber||'', manufacturer: gun.manufacturer||'', model: gun.model||'', roundCount: gun.roundCount||0, imageUrl: gun.imageUrl||'', twistRate: gun.specs?.twistRate||'', barrelLength: gun.specs?.barrelLength||'', optic: gun.specs?.optic||'', opticHeight: gun.specs?.opticHeight||'', trigger: gun.specs?.trigger||'', notes: gun.specs?.notes||'', gearIds: safeGearIds }); setIsFormOpen(true); HAPTIC.click(); }
+  
+  function handleEdit(gun) { 
+      setEditingId(gun.id); 
+      const safeGearIds = (gun.gearIds || []).map(id => Number(id)); 
+      setForm({ 
+          name: gun.name, 
+          platform: gun.platform, 
+          caliber: gun.caliber||'', 
+          manufacturer: gun.manufacturer||'', 
+          model: gun.model||'', 
+          roundCount: gun.roundCount||0, 
+          imageUrl: gun.imageUrl||'', 
+          twistRate: gun.specs?.twistRate||'', 
+          barrelLength: gun.specs?.barrelLength||'', 
+          optic: gun.specs?.optic||'', 
+          opticHeight: gun.specs?.opticHeight||'', 
+          trigger: gun.specs?.trigger||'', 
+          notes: gun.specs?.notes||'', 
+          gearIds: safeGearIds 
+      }); 
+      setIsFormOpen(true); 
+      HAPTIC.click(); 
+  }
+
   function addGear(id) { if (!id) return; const numericId = Number(id); setForm(prev => { if (prev.gearIds.includes(numericId)) return prev; return { ...prev, gearIds: [...prev.gearIds, numericId] } }); HAPTIC.click(); }
   function removeGear(id) { const numericId = Number(id); setForm(prev => ({ ...prev, gearIds: prev.gearIds.filter(g => g !== numericId) })); HAPTIC.soft(); }
-  async function handleSubmit(e) { e.preventDefault(); setLoading(true); try { const payload = { id: editingId, name: form.name, platform: form.platform, caliber: form.caliber, manufacturer: form.manufacturer, model: form.model, roundCount: form.roundCount, imageUrl: form.imageUrl, specs: { twistRate: form.twistRate, barrelLength: form.barrelLength, optic: form.optic, opticHeight: form.opticHeight, trigger: form.trigger, notes: form.notes }, gearIds: form.gearIds }; await saveFirearm(payload); setIsFormOpen(false); HAPTIC.success(); loadData(); } catch (err) { alert(err.message); } finally { setLoading(false); } }
+  
+  async function handleSubmit(e) { 
+      e.preventDefault(); 
+      setLoading(true); 
+      try { 
+          const payload = { 
+              id: editingId, 
+              name: form.name, 
+              platform: form.platform, 
+              caliber: form.caliber, 
+              manufacturer: form.manufacturer, 
+              model: form.model, 
+              roundCount: Number(form.roundCount) || 0, // Ensure Number 
+              imageUrl: form.imageUrl, 
+              specs: { 
+                  twistRate: form.twistRate, 
+                  barrelLength: form.barrelLength, 
+                  optic: form.optic, 
+                  opticHeight: form.opticHeight, 
+                  trigger: form.trigger, 
+                  notes: form.notes 
+              }, 
+              gearIds: form.gearIds 
+          }; 
+          await saveFirearm(payload); 
+          setIsFormOpen(false); 
+          HAPTIC.success(); 
+          loadData(); 
+      } catch (err) { alert(err.message); } 
+      finally { setLoading(false); } 
+  }
+
   async function handleDelete(id) { setVerifyDeleteId(null); HAPTIC.error(); await deleteFirearm(id); loadData(); }
   const toggleExpand = (id) => { setExpandedId(expandedId === id ? null : id); HAPTIC.soft(); }
 
   const inputClass = "w-full bg-black/60 border border-zinc-700 rounded-xl px-3 py-2 text-[11px] text-zinc-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 placeholder:text-zinc-600"
   const labelClass = "block text-xs font-semibold text-zinc-400 mb-1 flex items-center gap-1"
-  
-  // THEME FIX: Zinc/Red Colors
   const tabBtnClass = (active) => `pb-2 px-1 text-xs font-bold uppercase tracking-wider transition border-b-2 ${active ? 'border-red-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`
 
   const availableGear = gear.filter(g => !form.gearIds.includes(Number(g.id)))
@@ -113,7 +166,7 @@ export function Armory({ canEdit }) {
         <div><span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Asset Management</span><h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">THE ARMORY</h2></div>
       </div>
 
-      {/* ACTION BAR: Tabs Left, Button Right */}
+      {/* ACTION BAR */}
       <div className="flex flex-wrap items-end justify-between border-b border-zinc-800 gap-4">
           <div className="flex gap-6">
               <button onClick={() => setActiveSubTab('firearms')} className={tabBtnClass(activeSubTab === 'firearms')}><Crosshair size={14} className="inline mr-2 mb-0.5"/>Firearms</button>
@@ -142,7 +195,7 @@ export function Armory({ canEdit }) {
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4"><div><label className={labelClass}>Caliber</label><input className={inputClass} value={form.caliber} onChange={e => setForm({...form, caliber: e.target.value})} placeholder="e.g. 6.5 CM" /></div><div><label className={labelClass}>Manufacturer</label><input className={inputClass} value={form.manufacturer} onChange={e => setForm({...form, manufacturer: e.target.value})} placeholder="e.g. Tikka" /></div><div><label className={labelClass}>Model</label><input className={inputClass} value={form.model} onChange={e => setForm({...form, model: e.target.value})} placeholder="e.g. T3x" /></div></div>
                         <div className="bg-black/20 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between"><label className={labelClass}>Reference Photo</label><div className="flex-1 flex flex-col justify-center"><UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} /></div></div>
                         <div className="bg-black/20 rounded-xl p-3 border border-zinc-800"><div className="flex justify-between items-center mb-2"><label className={labelClass}><Link size={12} className="inline mr-1"/> Attached Gear</label><span className="text-[9px] text-zinc-500">{selectedGear.length} Items</span></div><div className="mb-3"><select className={inputClass} onChange={(e) => { addGear(e.target.value); e.target.value = ''; }} disabled={availableGear.length === 0}><option value="">{availableGear.length === 0 ? 'All gear attached' : 'Select gear to attach...'}</option>{availableGear.map(g => (<option key={g.id} value={g.id}>{g.name} ({g.type}) {g.ownerName ? ` - ${g.ownerName}` : ''}</option>))}</select></div><div className="flex flex-wrap gap-2">{selectedGear.map(g => (<div key={g.id} className="flex items-center gap-2 px-3 py-1 rounded-md bg-zinc-900 border border-zinc-700 text-zinc-300 text-[10px] shadow-sm animate-in fade-in zoom-in duration-200"><span>{g.name}</span><button type="button" onClick={() => removeGear(Number(g.id))} className="text-zinc-500 hover:text-red-400 transition"><X size={12} /></button></div>))}</div></div>
-                        <div className="pt-4 border-t border-zinc-800/50"><p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-3">Technical Specifications</p><div className="grid grid-cols-2 md:grid-cols-4 gap-4"><div><label className={labelClass}>Twist Rate</label><input className={inputClass} value={form.twistRate} onChange={e => setForm({...form, twistRate: e.target.value})} placeholder="1:8" /></div><div><label className={labelClass}>Barrel Len (in)</label><input className={inputClass} value={form.barrelLength} onChange={e => setForm({...form, barrelLength: e.target.value})} placeholder='24"' /></div><div><label className={labelClass}>Current Odometer</label><input type="number" className={inputClass} value={form.roundCount} onChange={e => setForm({...form, roundCount: e.target.value})} /></div><div><label className={labelClass}>Trigger Weight</label><input className={inputClass} value={form.trigger} onChange={e => setForm({...form, trigger: e.target.value})} placeholder="1.5 lbs" /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"><div><label className={labelClass}>Optic / Scope</label><input className={inputClass} value={form.optic} onChange={e => setForm({...form, optic: e.target.value})} placeholder="e.g. Vortex Viper 5-25x" /></div><div><label className={labelClass}>Build Notes</label><input className={inputClass} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Muzzle brake, bedding, etc." /></div></div></div>
+                        <div className="pt-4 border-t border-zinc-800/50"><p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-3">Technical Specifications</p><div className="grid grid-cols-2 md:grid-cols-4 gap-4"><div><label className={labelClass}>Twist Rate</label><input className={inputClass} value={form.twistRate} onChange={e => setForm({...form, twistRate: e.target.value})} placeholder="1:8" /></div><div><label className={labelClass}>Barrel Len (in)</label><input className={inputClass} value={form.barrelLength} onChange={e => setForm({...form, barrelLength: e.target.value})} placeholder='24"' /></div><div><label className={labelClass}>Current Odometer</label><input type="number" className={inputClass} value={form.roundCount} onChange={e => setForm({...form, roundCount: parseInt(e.target.value) || 0})} /></div><div><label className={labelClass}>Trigger Weight</label><input className={inputClass} value={form.trigger} onChange={e => setForm({...form, trigger: e.target.value})} placeholder="1.5 lbs" /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"><div><label className={labelClass}>Optic / Scope</label><input className={inputClass} value={form.optic} onChange={e => setForm({...form, optic: e.target.value})} placeholder="e.g. Vortex Viper 5-25x" /></div><div><label className={labelClass}>Build Notes</label><input className={inputClass} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Muzzle brake, bedding, etc." /></div></div></div>
                         <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-full border border-zinc-600 text-zinc-300 hover:bg-zinc-800/60 text-xs font-bold transition">Cancel</button><button type="submit" disabled={loading} className="px-6 py-2 rounded-full bg-red-700 hover:bg-red-600 text-white text-xs font-bold transition">{loading ? 'Saving...' : 'Save to Armory'}</button></div>
                     </form>
                 </div>

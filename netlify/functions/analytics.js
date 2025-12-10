@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Reload Tracker Analytics Function
 //Script Location: netlify/functions/analytics.js
-//Date: 11/29/2025
+//Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 1.0.1
-//About: API Endpoint for fetching chart data.
-//       Updated: Fixed currentUser definition bug.
+//Version: 1.2.0
+//About: API Endpoint for analytics.
+//       - UPDATE: Added /forecast endpoint.
 //===============================================================
 
 import { 
@@ -13,10 +13,11 @@ import {
   getComponentPriceTrends,
   getInventoryDistribution,
   getLoadVelocity,
-  getBatchCostHistory
+  getBatchCostHistory,
+  getVolumeByCaliber,
+  getSupplyForecast // NEW
 } from '../../backend/analyticsService.js'
 import { getUserForSessionToken, SESSION_COOKIE_NAME } from '../../backend/authService.js'
-import { ValidationError } from '../../backend/errors.js'
 
 const baseHeaders = { 'Content-Type': 'application/json' }
 
@@ -41,12 +42,7 @@ export async function handler(event) {
     const method = event.httpMethod || 'GET'
     if (method === 'OPTIONS') return { statusCode: 204, headers: baseHeaders }
 
-    // FIX: Define currentUser here!
     const currentUser = await getCurrentUser(event)
-    
-    // Analytics are viewable by everyone (Shooters/Admins), 
-    // or restrict if you prefer: if (!currentUser) return 401...
-
     const path = event.path || ''
     
     if (path.endsWith('/spend')) {
@@ -66,6 +62,17 @@ export async function handler(event) {
 
     if (path.endsWith('/velocity')) {
       const data = await getLoadVelocity(currentUser)
+      return jsonResponse(200, { data })
+    }
+
+    if (path.endsWith('/volume')) {
+      const data = await getVolumeByCaliber(currentUser)
+      return jsonResponse(200, { data })
+    }
+
+    // NEW ENDPOINT
+    if (path.endsWith('/forecast')) {
+      const data = await getSupplyForecast(currentUser)
       return jsonResponse(200, { data })
     }
 

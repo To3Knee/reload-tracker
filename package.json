@@ -1,6 +1,6 @@
 {
   "name": "reload-tracker",
-  "version": "2.8.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "cheerio": "^1.1.2",
     "exceljs": "^4.4.0",
     "got-scraping": "^4.1.2",

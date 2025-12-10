@@ -1,26 +1,34 @@
 //===============================================================
 //Script Name: settings.js
 //Script Location: src/lib/settings.js
-//Date: 11/29/2025
+//Date: 12/09/2025
 //Created By: T03KNEE
-//About: Client-side fetchers for system settings.
+//Version: 1.0.0
+//About: Client-side API for System Config.
 //===============================================================
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+
+async function request(endpoint, method = 'GET', body = null) {
+    const options = {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Important for Admin Auth Cookie
+    }
+    if (body) options.body = JSON.stringify(body)
+    
+    const res = await fetch(`${API_BASE}${endpoint}`, options)
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || `Request failed: ${res.status}`)
+    }
+    return res.json()
+}
 
 export async function fetchSettings() {
-  const res = await fetch(`${API_BASE_URL}/settings`, { credentials: 'include' })
-  if (!res.ok) throw new Error('Failed to load settings')
-  return await res.json()
+    return request('/settings')
 }
 
 export async function saveSetting(key, value) {
-  const res = await fetch(`${API_BASE_URL}/settings`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key, value }),
-    credentials: 'include'
-  })
-  if (!res.ok) throw new Error('Failed to save setting')
-  return await res.json()
+    return request('/settings', 'POST', { key, value })
 }

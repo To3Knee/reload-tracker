@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Reload Tracker Recipes Service
 //Script Location: backend/recipesService.js
-//Date: 12/07/2025
+//Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 2.0.0
+//Version: 2.2.0 (Cascade Delete)
 //About: Business logic for managing load recipes.
-//       Updated: Added Geometry fields (COAL, Case Cap, Bullet Len).
+//       - FIX: Added cascade delete logic for Batches.
 //===============================================================
 
 import { query } from './dbClient.js';
@@ -37,7 +37,7 @@ function mapRecipeRowToJson(row) {
     groupSizeInches: row.group_size_inches !== null ? Number(row.group_size_inches) : null,
     rangeNotes: row.range_notes,
     
-    // Geometry (New v3.2)
+    // Geometry
     coal: row.coal !== null ? Number(row.coal) : null,
     caseCapacity: row.case_capacity !== null ? Number(row.case_capacity) : null,
     bulletLength: row.bullet_length !== null ? Number(row.bullet_length) : null,
@@ -175,8 +175,25 @@ export async function updateRecipe(id, updates, currentUser) {
   return all.find(r => String(r.id) === String(id));
 }
 
-export async function deleteRecipe(id, currentUser) {
+export async function deleteRecipe(id, currentUser, cascade = false) {
   assertAdmin(currentUser);
-  await query('DELETE FROM recipes WHERE id = $1', [id]);
-  return { success: true };
+  
+  if (cascade) {
+      // DANGER ZONE: Wipe batches first
+      // Assuming batches are linked by 'recipe_id'
+      await query('DELETE FROM batches WHERE recipe_id = $1', [id]);
+  }
+
+  try {
+      await query('DELETE FROM recipes WHERE id = $1', [id]);
+      return { success: true };
+  } catch (err) {
+      // 23503 = Foreign Key Violation (Used in Batches)
+      if (err.code === '23503') {
+          const error = new ValidationError("RECIPE_IN_USE");
+          error.code = 'RECIPE_IN_USE'; 
+          throw error;
+      }
+      throw err;
+  }
 }

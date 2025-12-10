@@ -1,12 +1,12 @@
 //===============================================================
 //Script Name: Reload Tracker Recipes Function
 //Script Location: netlify/functions/recipes.js
-//Date: 11/28/2025
+//Date: 12/10/2025
 //Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.1.0
-//About: Netlify Function HTTP handler for Reload Tracker recipes
-//       API. Now wires up Auth to enforce Admin access.
+//Version: 1.3.0
+//About: API Endpoint for Recipes.
+//       - FIX: 200 JSON Response.
+//       - FEATURE: Handles cascade delete via query param.
 //===============================================================
 
 import {
@@ -26,9 +26,6 @@ const baseHeaders = {
 };
 
 function jsonResponse(statusCode, payload) {
-  if (statusCode === 204) {
-    return { statusCode, headers: baseHeaders, body: '' };
-  }
   return {
     statusCode,
     headers: baseHeaders,
@@ -47,7 +44,6 @@ function extractIdFromPath(path) {
   return Number.isNaN(n) ? null : n;
 }
 
-// Helper to get current user from cookies
 async function getCurrentUser(event) {
   const cookieHeader = event.headers.cookie || event.headers.Cookie || '';
   const cookies = {};
@@ -62,12 +58,12 @@ async function getCurrentUser(event) {
   return await getUserForSessionToken(token);
 }
 
-export async function handler(event /*, context */) {
+export async function handler(event) {
   try {
     const method = event.httpMethod || 'GET';
 
     if (method === 'OPTIONS') {
-      return jsonResponse(204, null);
+      return { statusCode: 204, headers: baseHeaders, body: '' };
     }
 
     const id = extractIdFromPath(event.path || '');
@@ -79,14 +75,12 @@ export async function handler(event /*, context */) {
         status: query.status || undefined,
         caliber: query.caliber || undefined,
       };
-      // Read-only access is allowed for everyone (Shooters + Reloaders)
       const recipes = await listRecipes(filters);
       return jsonResponse(200, recipes);
     }
 
     const body = event.body ? JSON.parse(event.body) : {};
 
-    // For write operations, currentUser is passed. The Service layer enforces Admin role.
     if (method === 'POST') {
       const created = await createRecipe(body, currentUser);
       return jsonResponse(201, created);
@@ -100,14 +94,22 @@ export async function handler(event /*, context */) {
 
     if (method === 'DELETE') {
       if (!id) return jsonResponse(400, { message: 'Missing id in path.' });
-      await deleteRecipe(id, currentUser);
-      return jsonResponse(204, null);
+      
+      // FEATURE: Check for cascade flag from frontend
+      const cascade = query.cascade === 'true';
+      
+      await deleteRecipe(id, currentUser, cascade);
+      return jsonResponse(200, { success: true });
     }
 
     return jsonResponse(405, { message: `Method ${method} not allowed.` });
   } catch (err) {
     if (err instanceof ValidationError) {
-      // If auth failure message, return 401/403
+      // SPECIAL: Return 409 if recipe is in use, so frontend can show the decision modal
+      if (err.code === 'RECIPE_IN_USE') {
+          return jsonResponse(409, { error: 'RECIPE_IN_USE', message: err.message });
+      }
+      
       const msg = (err.message || '').toLowerCase();
       if (msg.includes('must be a reloader')) {
         return jsonResponse(403, { message: err.message });

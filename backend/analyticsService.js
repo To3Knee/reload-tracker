@@ -1,10 +1,11 @@
 //===============================================================
 //Script Name: Reload Tracker Analytics Service
 //Script Location: backend/analyticsService.js
-//Date: 12/07/2025
+//Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 1.3.0
+//Version: 2.3.0
 //About: Business logic for aggregating cost and trend data.
+//       - FIX: Better handling for 'Infinite' supply (0 burn rate).
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -75,10 +76,93 @@ export async function getLoadVelocity(currentUser) {
   }))
 }
 
+export async function getVolumeByCaliber(currentUser) {
+  const sql = `
+    SELECT r.caliber, SUM(b.rounds_loaded) as total_rounds
+    FROM batches b
+    JOIN recipes r ON b.recipe_id = r.id
+    GROUP BY 1
+    ORDER BY 2 DESC
+    LIMIT 10
+  `
+  const res = await query(sql)
+  return res.rows.map(r => ({
+    name: r.caliber || 'Unknown',
+    value: Number(r.total_rounds)
+  }))
+}
+
+export async function getSupplyForecast(currentUser) {
+    // 1. Get Inventory
+    const invSql = `SELECT component_type, qty, unit FROM purchases WHERE status = 'active'`
+    const invRes = await query(invSql)
+    
+    let stock = { powder: 0, primer: 0, bullet: 0, case: 0 }
+    
+    invRes.rows.forEach(r => {
+        const type = r.component_type
+        const qty = Number(r.qty)
+        if (type === 'powder') {
+            const u = (r.unit || '').toLowerCase()
+            if (u === 'lb' || u === 'lbs') stock.powder += qty * GRAINS_PER_LB
+            else if (u === 'kg' || u === 'kgs') stock.powder += qty * GRAINS_PER_KG
+            else stock.powder += qty 
+        } else if (stock[type] !== undefined) {
+            stock[type] += qty
+        }
+    })
+
+    // 2. Get Usage (90 Days)
+    const usageSql = `
+        SELECT b.rounds_loaded, r.charge_grains
+        FROM batches b
+        JOIN recipes r ON b.recipe_id = r.id
+        WHERE b.load_date >= NOW() - INTERVAL '90 days'
+    `
+    const usageRes = await query(usageSql)
+    
+    let usage90Days = { powder: 0, primer: 0, bullet: 0, case: 0 }
+    
+    usageRes.rows.forEach(r => {
+        const rounds = Number(r.rounds_loaded)
+        usage90Days.primer += rounds
+        usage90Days.bullet += rounds
+        usage90Days.case += rounds 
+        if (r.charge_grains) {
+            usage90Days.powder += (rounds * Number(r.charge_grains))
+        }
+    })
+
+    // 3. Forecast
+    const forecast = []
+    const types = ['powder', 'primer', 'bullet', 'case']
+    
+    types.forEach(type => {
+        const monthlyBurn = usage90Days[type] / 3
+        let months = null // Null means "Infinite" or "No Burn Rate"
+        
+        if (monthlyBurn > 0) {
+            months = stock[type] / monthlyBurn
+        } else if (stock[type] === 0) {
+            months = 0
+        }
+        
+        forecast.push({
+            type: type.charAt(0).toUpperCase() + type.slice(1),
+            stock: stock[type],
+            burnRate: monthlyBurn,
+            months: months !== null ? Number(months.toFixed(1)) : null
+        })
+    })
+
+    return forecast
+}
+
 export async function getBatchCostHistory(currentUser) {
   const sql = `
     SELECT 
-      b.load_date, 
+      TO_CHAR(b.load_date, 'YYYY-MM') as month,
+      b.rounds_loaded,
       r.charge_grains,
       p.price as p_price, p.qty as p_qty, p.unit as p_unit,
       bu.price as bu_price, bu.qty as bu_qty,
@@ -90,12 +174,14 @@ export async function getBatchCostHistory(currentUser) {
     LEFT JOIN purchases bu ON b.bullet_lot_id = bu.id
     LEFT JOIN purchases pr ON b.primer_lot_id = pr.id
     LEFT JOIN purchases ca ON b.case_lot_id = ca.id
-    ORDER BY b.load_date ASC
+    ORDER BY 1 ASC
   `
   const res = await query(sql)
 
-  return res.rows.map(row => {
-    let cost = 0
+  const monthMap = new Map()
+
+  res.rows.forEach(row => {
+    let unitCost = 0
     if (row.p_price && row.charge_grains) {
       const pTotal = Number(row.p_price)
       const pQty = Number(row.p_qty)
@@ -104,18 +190,21 @@ export async function getBatchCostHistory(currentUser) {
       else if (row.p_unit === 'kg') grainsInLot = pQty * GRAINS_PER_KG
       else grainsInLot = pQty
       
-      if (grainsInLot > 0) {
-        cost += (pTotal / grainsInLot) * Number(row.charge_grains)
-      }
+      if (grainsInLot > 0) unitCost += (pTotal / grainsInLot) * Number(row.charge_grains)
     }
+    if (row.bu_price && row.bu_qty) unitCost += Number(row.bu_price) / Number(row.bu_qty)
+    if (row.pr_price && row.pr_qty) unitCost += Number(row.pr_price) / Number(row.pr_qty)
+    if (row.ca_price && row.ca_qty) unitCost += (Number(row.ca_price) / Number(row.ca_qty)) / 5
 
-    if (row.bu_price && row.bu_qty) cost += Number(row.bu_price) / Number(row.bu_qty)
-    if (row.pr_price && row.pr_qty) cost += Number(row.pr_price) / Number(row.pr_qty)
-    if (row.ca_price && row.ca_qty) cost += (Number(row.ca_price) / Number(row.ca_qty)) / 5
-
-    return {
-      date: row.load_date.toISOString().slice(0,10),
-      cost: Number(cost.toFixed(3))
+    if (unitCost > 0) {
+        const rounds = Number(row.rounds_loaded) || 0
+        const current = monthMap.get(row.month) || { totalCost: 0, totalRounds: 0 }
+        monthMap.set(row.month, { totalCost: current.totalCost + (unitCost * rounds), totalRounds: current.totalRounds + rounds })
     }
-  }).filter(r => r.cost > 0)
+  })
+
+  return Array.from(monthMap.entries()).map(([month, data]) => {
+      const avgCost = data.totalRounds > 0 ? (data.totalCost / data.totalRounds) : 0
+      return { date: month, cost: Number(avgCost.toFixed(3)) }
+  })
 }

@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Reload Tracker Firearms Service
 //Script Location: backend/firearmsService.js
-//Date: 12/07/2025
+//Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 2.0.0
+//Version: 2.2.0 (Type-Safe Fix)
 //About: Business logic for "The Armory".
-//       - Updated: Supports Linked Gear (Many-to-Many).
+//       - FIX: Explicitly casts roundCount to Integer in updates.
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -26,13 +26,12 @@ function mapFirearmRow(row) {
     roundCount: row.round_count,
     imageUrl: row.image_url,
     status: row.status,
-    gearIds: row.gear_ids || [], // ARRAY of IDs
+    gearIds: row.gear_ids || [], 
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
 }
 
-// Helper: Fetch firearm with aggregated gear IDs
 const SELECT_SQL = `
     SELECT f.*, u.username as owner_name,
     (SELECT COALESCE(array_agg(gear_id), '{}') FROM firearm_gear WHERE firearm_id = f.id) as gear_ids
@@ -73,12 +72,12 @@ export async function createFirearm(payload, currentUser) {
       }
   }
 
-  // Re-fetch to get full object
   const full = await query(`${SELECT_SQL} AND f.id = $1`, [newId])
   return mapFirearmRow(full.rows[0])
 }
 
 export async function updateFirearm(id, updates, currentUser) {
+  // 1. Verify existence
   const check = await query('SELECT id FROM firearms WHERE id = $1 AND status != \'deleted\'', [id])
   if (check.rows.length === 0) throw new NotFoundError('Firearm not found.')
 
@@ -90,10 +89,19 @@ export async function updateFirearm(id, updates, currentUser) {
   for (const key of Object.keys(updates)) {
     if (fields.includes(key)) {
       let col = key
-      if (key === 'roundCount') col = 'round_count'
+      let val = updates[key]
+
+      // --- CRITICAL FIX: Force Type Casting ---
+      if (key === 'roundCount') {
+          col = 'round_count'
+          val = Number(val) // Convert string "100" to number 100
+          if (isNaN(val)) val = 0; // Fallback safety
+      }
       if (key === 'imageUrl') col = 'image_url'
+      // ----------------------------------------
+
       setParts.push(`${col} = $${idx++}`)
-      values.push(updates[key])
+      values.push(val)
     }
   }
 
