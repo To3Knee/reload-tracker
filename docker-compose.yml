@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  reload-tracker:
+    image: ghcr.io/to3knee/reload-tracker:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/reload_tracker
+      - VITE_REQUIRE_LOGIN=true
+      - GEMINI_API_KEY=your_key_here
+      - CLOUDINARY_URL=...
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=reload_tracker
+    volumes:
+      - ./appdata/db:/var/lib/postgresql/data
+    restart: unless-stopped

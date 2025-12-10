@@ -1,15 +1,16 @@
 //===============================================================
 //Script Name: AuthModal.jsx
 //Script Location: src/components/AuthModal.jsx
-//Date: 12/07/2025
+//Date: 12/08/2025
 //Created By: T03KNEE
-//Version: 2.32.0
+//Version: 3.2.0
 //About: Login/Admin Modal.
-//       Updated: Added Branding & Warning Text.
+//       - FIX: Admin Tabs no longer crushed (removed flex-1).
+//       - FIX: Horizontal scrolling enabled for small screens.
 //===============================================================
 
 import { useEffect, useState } from 'react'
-import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, ChevronDown, Eye, EyeOff, Ban, Trash2, Power, Save, Key } from 'lucide-react'
+import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, ChevronDown, Eye, EyeOff, Ban, Trash2, Power, Save, Key, Terminal, Play, CheckCircle, Database } from 'lucide-react'
 import {
   ROLE_ADMIN,
   ROLE_SHOOTER,
@@ -22,9 +23,8 @@ import {
   permanentlyDeleteUser
 } from '../lib/auth'
 import { fetchSettings, saveSetting } from '../lib/settings'
-import logo from '../assets/logo.png' // Import Logo
+import logo from '../assets/logo.png' 
 
-// --- HELPER COMPONENTS ---
 const PasswordInput = ({ value, onChange, show, onToggle, placeholder = "Password" }) => (
   <div className="relative">
       <input 
@@ -53,114 +53,108 @@ export default function AuthModal({
   onLogout,
   canClose = true
 }) {
-  // Login State
   const [loginForm, setLoginForm] = useState({ username: '', password: '' })
   const [showLoginPass, setShowLoginPass] = useState(false)
-
-  // Registration State
   const [newUser, setNewUser] = useState({ firstName: '', lastName: '', username: '', phone: '', email: '', password: '', role: ROLE_SHOOTER })
   const [showRegPass, setShowRegPass] = useState(false)
-  
-  // Reset Password State
-  const [resetForm, setResetForm] = useState({ username: '', newPassword: '' })
-  const [showResetPass, setShowResetPass] = useState(false)
-
-  // User Management State
   const [editingUserId, setEditingUserId] = useState(null)
   const [adminUsers, setAdminUsers] = useState([])
-  
-  // Delete/Deactivate Confirmation State
   const [verifyActionId, setVerifyActionId] = useState(null)
-  const [verifyType, setVerifyType] = useState(null)
-  
-  // System Settings State
+  const [verifyType, setVerifyType] = useState(null) 
+  const [resetForm, setResetForm] = useState({ username: '', newPassword: '' })
+  const [showResetPass, setShowResetPass] = useState(false)
   const [systemSettings, setSystemSettings] = useState({ ai_enabled: 'false', ai_model: 'gemini-2.5-flash', hasAiKey: false })
   const [aiModel, setAiModel] = useState('gemini-2.5-flash')
   const [customModel, setCustomModel] = useState('') 
   const [apiKeyOverride, setApiKeyOverride] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
-  
+  const [sqlQuery, setSqlQuery] = useState('')
+  const [sqlResult, setSqlResult] = useState(null)
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [activeTab, setActiveTab] = useState('manage') 
-
   const isAdmin = currentUser?.role === ROLE_ADMIN
 
-  useEffect(() => {
-    if (!open) return
-    if (isAdmin) {
-      loadUsers()
-      loadSettings()
-    }
-    clearMessages()
-    handleCancelEdit()
-    setVerifyActionId(null)
-    setShowLoginPass(false)
-    setShowRegPass(false)
-    setShowResetPass(false)
-    setShowApiKey(false)
+  useEffect(() => { 
+      if (!open) return; 
+      if (isAdmin) { loadUsers(); loadSettings(); } 
+      clearMessages(); 
+      handleCancelEdit(); 
+      setVerifyActionId(null); 
+      setSqlResult(null);
   }, [open, currentUser, isAdmin])
 
-  async function loadUsers() {
-    try {
-      const users = await listAdminUsers()
-      setAdminUsers(users)
-    } catch (err) { console.log(err) }
-  }
-
-  async function loadSettings() {
-    try {
-      const data = await fetchSettings()
-      setSystemSettings(data)
-      const presets = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
-      if (data.ai_model && !presets.includes(data.ai_model)) {
-          setAiModel('custom')
-          setCustomModel(data.ai_model)
-      } else {
-          setAiModel(data.ai_model || 'gemini-2.5-flash')
-          setCustomModel('')
-      }
-      if (data.ai_api_key) setApiKeyOverride(data.ai_api_key)
-    } catch (err) { console.log(err) }
+  async function loadUsers() { try { const users = await listAdminUsers(); setAdminUsers(users); } catch (err) { console.log(err) } }
+  
+  async function loadSettings() { 
+      try { 
+          const data = await fetchSettings(); 
+          setSystemSettings(data); 
+          const presets = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']; 
+          if (data.ai_model && !presets.includes(data.ai_model)) { setAiModel('custom'); setCustomModel(data.ai_model); } 
+          else { setAiModel(data.ai_model || 'gemini-2.5-flash'); setCustomModel(''); } 
+          if (data.ai_api_key) setApiKeyOverride(data.ai_api_key); 
+      } catch (err) { console.log(err) } 
   }
 
   function clearMessages() { setStatusMessage(''); setErrorMessage(''); }
-  
-  // ... (Keep existing User/Login Handlers same as v2.28.0)
   function handleEditUser(user) { setEditingUserId(user.id); setNewUser({ firstName: user.firstName||'', lastName: user.lastName||'', username: user.username||'', phone: user.phone||'', email: user.email||'', password: '', role: user.role||ROLE_SHOOTER }); setVerifyActionId(null); setActiveTab('manage'); }
   function handleCancelEdit() { setEditingUserId(null); setNewUser({ firstName: '', lastName: '', username: '', phone: '', email: '', password: '', role: ROLE_SHOOTER }); }
+  
   async function handleLoginSubmit(e) { e.preventDefault(); setBusy(true); clearMessages(); try { const user = await loginUser({ username: loginForm.username, password: loginForm.password }); setLoginForm({ username: '', password: '' }); if (onLogin) onLogin(user); } catch (err) { setErrorMessage(err?.message || 'Login failed.'); } finally { setBusy(false); } }
   async function handleRegisterSubmit(e) { e.preventDefault(); setBusy(true); clearMessages(); try { if (editingUserId) { const payload = { ...newUser }; if (!payload.password) delete payload.password; await updateUser(editingUserId, payload); handleCancelEdit(); if (isAdmin) loadUsers(); setStatusMessage(`User updated.`); } else { await registerUser(newUser); handleCancelEdit(); if (isAdmin) loadUsers(); setStatusMessage(`User created.`); } } catch (err) { setErrorMessage(err?.message || 'Operation failed.'); } finally { setBusy(false); } }
   async function handleResetSubmit(e) { e.preventDefault(); setBusy(true); try { await resetUserPassword({ username: resetForm.username, newPassword: resetForm.newPassword }); setStatusMessage(`Password reset.`); setResetForm({ username: '', newPassword: '' }); } catch (err) { setErrorMessage(err?.message || 'Failed.'); } finally { setBusy(false); } }
+  
   function initiateDelete(id, type) { setVerifyActionId(id); setVerifyType(type); }
   function cancelDelete() { setVerifyActionId(null); setVerifyType(null); }
   async function confirmAction(id) { setBusy(true); setVerifyActionId(null); try { if (verifyType === 'hard') { await permanentlyDeleteUser(id) } else { await removeUser(id); if (currentUser && currentUser.id === id && onLogout) onLogout() } await loadUsers() } catch (err) { setErrorMessage('Action failed.') } finally { setBusy(false) } }
+  
   async function toggleAi(enabled) { setBusy(true); try { await saveSetting('ai_enabled', enabled); setSystemSettings(prev => ({ ...prev, ai_enabled: String(enabled) })) } catch (err) { setErrorMessage(err.message) } finally { setBusy(false) } }
   async function saveAiConfig() { setBusy(true); clearMessages(); try { const finalModel = aiModel === 'custom' ? customModel.trim() : aiModel; if (!finalModel) throw new Error("Model name is required."); await saveSetting('ai_model', finalModel); if (apiKeyOverride) await saveSetting('ai_api_key', apiKeyOverride); setStatusMessage('AI Configuration Saved.'); setTimeout(() => window.location.reload(), 1000); } catch (err) { setErrorMessage(err.message) } finally { setBusy(false) } }
 
+  async function runQuery() {
+      if(!sqlQuery) return
+      setBusy(true)
+      setSqlResult(null)
+      try {
+          const res = await fetch('/api/system', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ action: 'sql', query: sqlQuery })
+          })
+          const data = await res.json()
+          setSqlResult(data)
+      } catch(e) {
+          setSqlResult({ success: false, error: e.message })
+      } finally { setBusy(false) }
+  }
+  
   if (!open) return null
 
   const inputClass = "w-full bg-[#1a1a1a] border border-zinc-800 rounded-lg px-3 py-2 text-[11px] text-zinc-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-zinc-600"
   const labelClass = "block text-xs font-semibold text-zinc-400 mb-1"
   const subLabelClass = "text-[10px] text-zinc-600 font-normal ml-2 italic tracking-normal"
-  const tabClass = (active) => `flex-1 md:flex-none text-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-zinc-800 text-zinc-500'}`
+  
+  // FIX: Removed 'flex-1 text-center', Added 'px-4 flex-shrink-0' to prevent crushing
+  const tabBtnClass = (active) => `px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0 ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-4 pt-[env(safe-area-inset-top)]">
-      
-      <div className={`bg-[#0f0f10] border-zinc-800 md:border rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex ${isAdmin ? "w-full max-w-4xl flex-col md:flex-row" : "w-full max-w-md flex-col"} h-full md:h-auto md:max-h-[90vh] relative`}>
+      <div className={`bg-[#0f0f10] border-zinc-800 md:border shadow-2xl overflow-hidden flex flex-col md:flex-row 
+          w-full h-full md:w-full md:max-w-5xl md:h-auto md:max-h-[90vh] 
+          rounded-none md:rounded-2xl relative`}>
         
-        {canClose && (
-            <button onClick={onClose} className="absolute top-2 right-2 md:top-4 md:right-4 z-50 p-2 bg-[#1a1a1a] rounded-full text-zinc-400 hover:text-white hover:bg-red-900/50 border border-transparent md:border-zinc-800 transition shadow-lg">
-                <X size={18} />
-            </button>
-        )}
-
-        {/* LEFT PANEL (BRANDING & LOGIN) */}
-        <div className={`bg-black/40 p-6 flex flex-col relative border-b border-zinc-800 md:border-b-0 md:border-r ${isAdmin ? "w-full md:w-[35%] shrink-0" : "w-full flex-1"} ${isAdmin ? "min-h-[auto]" : ""}`}>
+        {/* LEFT PANEL: Identity & Login */}
+        <div className={`bg-black/40 p-6 flex flex-col relative border-b border-zinc-800 md:border-b-0 md:border-r ${isAdmin ? "w-full md:w-[30%] shrink-0" : "w-full flex-1"}`}>
           
-          {/* BRANDING HEADER */}
+          {/* Close button for Mobile/Non-Admin View */}
+          {canClose && !isAdmin && (
+             <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-[#1a1a1a] rounded-full text-zinc-400 hover:text-white border border-zinc-800">
+                <X size={16} />
+             </button>
+          )}
+
           <div className="mb-6 flex flex-col items-center md:items-start text-center md:text-left border-b border-zinc-800/50 pb-6">
             <img src={logo} alt="Reload Tracker" className="h-16 w-auto mb-4 object-contain opacity-90" />
             <div>
@@ -169,7 +163,6 @@ export default function AuthModal({
             </div>
           </div>
 
-          {/* USER CARD (If Logged In) */}
           {currentUser && (
               <div className="bg-zinc-900/50 rounded-xl p-3 md:p-4 border border-zinc-800 mb-4">
                 <div className="flex items-center gap-3">
@@ -182,23 +175,11 @@ export default function AuthModal({
           {!currentUser ? (
             <div className="flex-1 animation-fade-in">
                 <div className="bg-red-900/10 border border-red-900/30 p-3 rounded-lg mb-4">
-                    <p className="text-[10px] text-red-400 font-bold flex items-center gap-2">
-                        <Shield size={12} /> AUTHORIZED PERSONNEL ONLY
-                    </p>
-                    <p className="text-[9px] text-red-400/70 mt-1 leading-relaxed">
-                        This system monitors ballistics data. Unauthorized access is prohibited.
-                    </p>
+                    <p className="text-[10px] text-red-400 font-bold flex items-center gap-2"><Shield size={12} /> AUTHORIZED PERSONNEL ONLY</p>
                 </div>
-
                 <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
-                    <div>
-                        <label className={labelClass}>Username</label>
-                        <input className={inputClass} value={loginForm.username} onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))} />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Password</label>
-                        <PasswordInput value={loginForm.password} onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))} show={showLoginPass} onToggle={() => setShowLoginPass(!showLoginPass)} />
-                    </div>
+                    <div><label className={labelClass}>Username</label><input className={inputClass} value={loginForm.username} onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))} /></div>
+                    <div><label className={labelClass}>Password</label><PasswordInput value={loginForm.password} onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))} show={showLoginPass} onToggle={() => setShowLoginPass(!showLoginPass)} /></div>
                     <div className="pt-2"><button type="submit" disabled={busy} className="w-full py-3 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20"><LogIn size={14} className="inline mr-2"/>{busy ? 'Verifying...' : 'Authenticate'}</button></div>
                 </form>
             </div>
@@ -208,48 +189,47 @@ export default function AuthModal({
           {(statusMessage || errorMessage) && (<div className="mt-4 p-3 rounded-lg bg-black/40 border border-zinc-800">{statusMessage && <p className="text-[10px] text-emerald-400">{statusMessage}</p>}{errorMessage && <p className="text-[10px] text-red-400">{errorMessage}</p>}</div>)}
         </div>
 
-        {/* RIGHT PANEL: ADMIN TOOLS (Only visible if Admin) */}
+        {/* RIGHT PANEL: SUPER ADMIN CONSOLE */}
         {isAdmin && (
           <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-br from-[#121214] to-[#0a0a0a]">
-            {/* ... (Existing Admin Tools UI kept exactly as is from v2.28.0) ... */}
-            <div className="flex-shrink-0 border-b border-zinc-800 p-2 bg-[#0f0f10]/95 backdrop-blur z-10">
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                    <button onClick={() => setActiveTab('manage')} className={tabClass(activeTab === 'manage')}>Users</button>
-                    <button onClick={() => setActiveTab('reset')} className={tabClass(activeTab === 'reset')}>Passwords</button>
-                    <button onClick={() => setActiveTab('system')} className={tabClass(activeTab === 'system')}>Systems</button>
+            
+            {/* ADMIN HEADER & TABS */}
+            <div className="flex-shrink-0 border-b border-zinc-800 p-4 bg-[#0f0f10]/95 backdrop-blur z-10 flex items-center justify-between">
+                <div className="flex gap-2 overflow-x-auto min-w-0 pr-2 custom-scrollbar">
+                    <button onClick={() => setActiveTab('manage')} className={tabBtnClass(activeTab === 'manage')}><Users size={12} className="inline mr-1"/> Users</button>
+                    <button onClick={() => setActiveTab('reset')} className={tabBtnClass(activeTab === 'reset')}><Lock size={12} className="inline mr-1"/> Security</button>
+                    <button onClick={() => setActiveTab('config')} className={tabBtnClass(activeTab === 'config')}><Settings size={12} className="inline mr-1"/> Config</button>
+                    <button onClick={() => setActiveTab('console')} className={tabBtnClass(activeTab === 'console')}><Terminal size={12} className="inline mr-1"/> Console</button>
                 </div>
+                
+                {/* CLOSE BUTTON (Integrated into header) */}
+                {canClose && (
+                    <button onClick={onClose} className="p-2 bg-zinc-900 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-700 transition flex-shrink-0 ml-2" title="Close Panel">
+                        <X size={16} />
+                    </button>
+                )}
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-              {/* Reuse exact logic from v2.28.0 for Manage/Reset/System tabs */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar pb-20 md:pb-4">
+              
+              {/* 1. MANAGE USERS */}
               {activeTab === 'manage' && (
-                <div className="space-y-6 pb-20 md:pb-0">
+                <div className="space-y-6">
                   <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
                     <h3 className="text-xs md:text-sm font-bold text-zinc-300 flex items-center gap-2 mb-4"><Users size={16} className="text-red-500" />{editingUserId ? 'Edit User' : 'Create New User'}</h3>
                     <form onSubmit={handleRegisterSubmit} className="space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div><label className={labelClass}>First Name</label><input className={inputClass} value={newUser.firstName} onChange={e => setNewUser(p => ({ ...p, firstName: e.target.value }))} /></div>
-                        <div><label className={labelClass}>Last Name</label><input className={inputClass} value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} /></div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div><label className={labelClass}>Username</label><input className={inputClass} value={newUser.username} onChange={e => setNewUser(p => ({ ...p, username: e.target.value }))} /></div>
-                        <div><label className={labelClass}>Phone</label><input className={inputClass} value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} /></div>
-                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3"><div><label className={labelClass}>First Name</label><input className={inputClass} value={newUser.firstName} onChange={e => setNewUser(p => ({ ...p, firstName: e.target.value }))} /></div><div><label className={labelClass}>Last Name</label><input className={inputClass} value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} /></div></div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3"><div><label className={labelClass}>Username</label><input className={inputClass} value={newUser.username} onChange={e => setNewUser(p => ({ ...p, username: e.target.value }))} /></div><div><label className={labelClass}>Phone</label><input className={inputClass} value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} /></div></div>
                       <div><label className={labelClass}>Email</label><input type="email" className={inputClass} value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} /></div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div><label className={labelClass}>{editingUserId ? 'New Password' : 'Password'}</label><PasswordInput value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} show={showRegPass} onToggle={() => setShowRegPass(!showRegPass)} /></div>
-                        <div><label className={labelClass}>Role</label><div className="relative"><select className={`${inputClass} appearance-none`} value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}><option value={ROLE_SHOOTER}>Shooter</option><option value={ROLE_ADMIN}>Reloader (Admin)</option></select><div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400"><ChevronDown size={14} /></div></div></div>
-                      </div>
-                      <div className="pt-2 flex justify-end gap-2">
-                        {editingUserId && <button type="button" onClick={handleCancelEdit} className="px-4 py-2 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800 text-xs font-bold transition">Cancel</button>}
-                        <button type="submit" disabled={busy} className="px-5 py-2 rounded-full bg-red-900/40 text-red-200 border border-red-500/30 hover:bg-red-900/60 text-xs font-bold transition">{busy ? 'Saving...' : editingUserId ? 'Save Changes' : 'Create User'}</button>
-                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3"><div><label className={labelClass}>{editingUserId ? 'New Password' : 'Password'}</label><PasswordInput value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} show={showRegPass} onToggle={() => setShowRegPass(!showRegPass)} /></div><div><label className={labelClass}>Role</label><div className="relative"><select className={`${inputClass} appearance-none`} value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}><option value={ROLE_SHOOTER}>Shooter</option><option value={ROLE_ADMIN}>Reloader (Admin)</option></select><div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400"><ChevronDown size={14} /></div></div></div></div>
+                      <div className="pt-2 flex justify-end gap-2">{editingUserId && <button type="button" onClick={handleCancelEdit} className="px-4 py-2 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800 text-xs font-bold transition">Cancel</button>}<button type="submit" disabled={busy} className="px-5 py-2 rounded-full bg-red-900/40 text-red-200 border border-red-500/30 hover:bg-red-900/60 text-xs font-bold transition">{busy ? 'Saving...' : editingUserId ? 'Save Changes' : 'Create User'}</button></div>
                     </form>
                   </div>
                   <div><p className={labelClass + " mb-2"}>User Directory</p><div className="grid gap-2">{adminUsers.map(u => (<div key={u.id} className={`flex items-center justify-between p-3 rounded-lg border transition-all ${u.isActive ? 'bg-black/20 border-zinc-800/50' : 'bg-red-900/10 border-red-900/30 opacity-70 grayscale-[0.5]'}`}><div className="flex items-center gap-3"><div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-zinc-600'}`} /><div className="min-w-0"><div className="flex items-center gap-2"><p className={`text-xs font-bold truncate ${u.isActive ? 'text-zinc-200' : 'text-zinc-500 line-through'}`}>{u.username}</p>{!u.isActive && (<span className="flex items-center gap-1 text-[9px] bg-red-900/60 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"><Ban size={8} /> Deactivated</span>)}</div><p className="text-[10px] text-zinc-500 truncate">{u.email}</p></div></div><div className="flex gap-2">{verifyActionId === u.id ? (<div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200"><span className="text-[10px] text-zinc-400 font-bold hidden sm:inline">Sure?</span><button onClick={() => confirmAction(u.id)} className="px-3 py-1.5 rounded bg-red-600 text-[10px] text-white font-bold shadow-lg hover:bg-red-500 transition">Yes</button><button onClick={cancelDelete} className="px-3 py-1.5 rounded bg-zinc-800 text-[10px] text-zinc-400 font-medium hover:bg-zinc-700 transition">No</button></div>) : (<><button onClick={() => handleEditUser(u)} className="px-3 py-1.5 rounded bg-zinc-800 text-[10px] text-zinc-300 font-medium border border-zinc-700/50 hover:border-zinc-600 transition">Edit</button>{u.isActive ? (<button onClick={() => initiateDelete(u.id, 'soft')} className="px-3 py-1.5 rounded bg-amber-900/20 text-[10px] text-amber-500 font-medium border border-amber-900/30 hover:bg-amber-900/30 transition flex items-center gap-1"><Power size={10} /> Disable</button>) : (<button onClick={() => initiateDelete(u.id, 'hard')} className="px-3 py-1.5 rounded bg-red-900/20 text-[10px] text-red-400 font-medium border border-red-900/30 hover:bg-red-900/30 transition flex items-center gap-1"><Trash2 size={10} /> Delete</button>)}</>)}</div></div>))}</div></div>
                 </div>
               )}
               
+              {/* 2. PASSWORD RESET TAB */}
               {activeTab === 'reset' && (
                   <div className="space-y-6">
                      <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
@@ -262,8 +242,9 @@ export default function AuthModal({
                      </div>
                   </div>
               )}
-
-              {activeTab === 'system' && (
+              
+              {/* 3. CONFIG TAB */}
+              {activeTab === 'config' && (
                   <div className="space-y-6">
                      <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
                         <h3 className="text-sm font-bold text-zinc-300 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
@@ -280,17 +261,15 @@ export default function AuthModal({
                                     <select className={`${inputClass} appearance-none`} value={aiModel === 'custom' ? 'custom' : aiModel} onChange={e => setAiModel(e.target.value)}>
                                         <option value="gemini-2.0-flash">Gemini 2.0 Flash (Default)</option>
                                         <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Experimental</option>
-                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Generic)</option>
                                         <option value="gemini-1.5-flash-001">Gemini 1.5 Flash-001 (Stable)</option>
-                                        <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B (Efficient)</option>
-                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Generic)</option>
-                                        <option value="gemini-1.5-pro-001">Gemini 1.5 Pro-001 (Stable)</option>
+                                        <option value="gemini-1.5-pro-001">Gemini 1.5 Pro-001 (Reasoning)</option>
                                         <option value="custom">Custom Model ID...</option>
                                     </select>
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400"><ChevronDown size={14} /></div>
                                 </div>
                                 {aiModel === 'custom' && (<input className={`${inputClass} mt-2`} placeholder="e.g. gemini-3.0-future" value={customModel} onChange={e => setCustomModel(e.target.value)} />)}
                             </div>
+                            
                             <div>
                                 <label className={labelClass}>API Key Override <span className={subLabelClass}>(Optional)</span></label>
                                 <div className="relative">
@@ -299,9 +278,64 @@ export default function AuthModal({
                                 </div>
                                 <p className="text-[9px] text-zinc-600 mt-1 italic">Leave blank to use the server's environment variable.</p>
                             </div>
+
                             <div className="flex justify-end pt-2"><button onClick={saveAiConfig} disabled={busy} className="px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 text-[10px] font-bold border border-zinc-700 transition flex items-center gap-2"><Save size={12}/> Save Config</button></div>
                         </div>
                      </div>
+                  </div>
+              )}
+
+              {/* 4. SQL CONSOLE TAB */}
+              {activeTab === 'console' && (
+                  <div className="space-y-4 h-full flex flex-col">
+                      <div className="bg-amber-900/10 border border-amber-900/30 p-3 rounded-lg flex items-start gap-3">
+                          <Database className="text-amber-500 shrink-0" size={20} />
+                          <div><h4 className="text-xs font-bold text-amber-400">Database Console</h4><p className="text-[10px] text-amber-400/70">Execute raw SQL commands. USE CAUTION.</p></div>
+                      </div>
+
+                      <textarea 
+                          className="w-full h-48 bg-zinc-950 border border-zinc-700 rounded-xl p-4 font-mono text-xs text-emerald-400 focus:border-red-500 focus:outline-none resize-none"
+                          placeholder="SELECT * FROM users;"
+                          value={sqlQuery}
+                          onChange={e => setSqlQuery(e.target.value)}
+                          spellCheck={false}
+                      />
+                      
+                      <div className="flex justify-end">
+                          <button onClick={runQuery} disabled={busy} className="px-6 py-2 bg-red-700 hover:bg-red-600 text-white font-bold rounded-lg flex items-center gap-2 transition text-xs">
+                              <Play size={14} fill="currentColor" /> Execute Query
+                          </button>
+                      </div>
+
+                      {/* RESULTS */}
+                      {sqlResult && (
+                          <div className={`p-4 rounded-xl border flex-1 overflow-hidden flex flex-col ${sqlResult.success ? 'bg-zinc-900/50 border-zinc-700' : 'bg-red-900/20 border-red-500/50'}`}>
+                              <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+                                  {sqlResult.success ? <CheckCircle size={16} className="text-emerald-500"/> : <AlertTriangle size={16} className="text-red-500"/>}
+                                  <span className="text-xs font-bold text-zinc-200">{sqlResult.success ? 'Success' : 'Error'}</span>
+                                  <span className="text-[10px] text-zinc-500 ml-auto">{sqlResult.message || ''}</span>
+                              </div>
+                              
+                              {sqlResult.error && <pre className="text-[10px] text-red-400 whitespace-pre-wrap font-mono">{sqlResult.error}</pre>}
+                              
+                              {sqlResult.rows && (
+                                  <div className="overflow-auto custom-scrollbar flex-1">
+                                      <table className="w-full text-left text-[10px] text-zinc-300 border-collapse">
+                                          <thead className="sticky top-0 bg-zinc-900 text-zinc-500 font-bold border-b border-zinc-700">
+                                              <tr>{Object.keys(sqlResult.rows[0] || {}).map(k => <th key={k} className="p-2 whitespace-nowrap">{k}</th>)}</tr>
+                                          </thead>
+                                          <tbody>
+                                              {sqlResult.rows.map((row, i) => (
+                                                  <tr key={i} className="border-b border-zinc-800/50 hover:bg-white/5">
+                                                      {Object.values(row).map((v, j) => <td key={j} className="p-2 whitespace-nowrap max-w-[200px] truncate">{v === null ? 'NULL' : String(v)}</td>)}
+                                                  </tr>
+                                              ))}
+                                          </tbody>
+                                      </table>
+                                  </div>
+                              )}
+                          </div>
+                      )}
                   </div>
               )}
             </div>

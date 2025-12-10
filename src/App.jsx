@@ -3,9 +3,9 @@
 //Script Location: src/App.jsx
 //Date: 12/08/2025
 //Created By: T03KNEE
-//Version: 3.5.0
+//Version: 3.8.0
 //About: Root shell. 
-//       Updated: Removed top-level Supply Chain tab (Moved to Purchases).
+//       - Updated: Removed System Tab (Moved to AuthModal).
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -35,7 +35,7 @@ const REQUIRE_LOGIN = import.meta.env.VITE_REQUIRE_LOGIN === 'true'
 
 const MENU_ITEMS = [
   { id: 'calculator', label: 'Calculator', icon: Gauge },
-  { id: 'purchases', label: 'Purchases', icon: ShoppingCart }, // Now includes Supply Chain
+  { id: 'purchases', label: 'Purchases', icon: ShoppingCart },
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'recipes', label: 'Recipes', icon: Beaker },
   { id: 'batches', label: 'Batches', icon: ClipboardList },
@@ -123,6 +123,7 @@ export default function App() {
       />
 
       <main className="max-w-6xl mx-auto px-4 pt-[calc(5rem+env(safe-area-inset-top))] md:pt-28 pb-24">
+        
         <div className="flex justify-center mb-6 md:hidden">
            <img src={logo} alt="Reload Tracker" className="w-40 opacity-90 drop-shadow-2xl" />
         </div>
@@ -143,7 +144,13 @@ export default function App() {
             onClose={() => { if (!REQUIRE_LOGIN || currentUser) setIsAuthOpen(false) }} 
             currentUser={currentUser} 
             onLogin={user => { setCurrentUser(user); setIsAuthOpen(false); HAPTIC.success(); }} 
-            onLogout={async () => { await logoutUser(); setCurrentUser(null); if (!REQUIRE_LOGIN) setIsAuthOpen(false); setIsAiOpen(false); HAPTIC.soft(); }} 
+            onLogout={async () => { 
+                await logoutUser()
+                setCurrentUser(null)
+                if (!REQUIRE_LOGIN) setIsAuthOpen(false)
+                setIsAiOpen(false)
+                HAPTIC.soft() 
+            }} 
             canClose={!REQUIRE_LOGIN || !!currentUser}
           />
       )}
