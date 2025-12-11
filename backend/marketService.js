@@ -3,10 +3,10 @@
 //Script Location: backend/marketService.js
 //Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 4.2.0 (Full Data Extraction)
+//Version: 4.5.0 (Stealth & Graceful Fail)
 //About: Scrapes web data.
-//       - FIX: Saves Qty, Vendor, Category on Edit.
-//       - FIX: AI now guesses Qty and Vendor automatically.
+//       - FIX: Added Stealth Headers to bypass 403 Blocks.
+//       - FIX: Returns 'Error' status instead of crashing (500).
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -26,13 +26,25 @@ export async function listMarket(userId) {
 
 export async function addListing(item, userId) {
     const { url, name } = item
+    
+    // 1. Create Placeholder
     const res = await query(
         `INSERT INTO market_listings (user_id, url, name, price, in_stock, status) 
          VALUES ($1, $2, $3, 0, false, 'pending') 
          RETURNING *`,
-        [userId, url, name || 'New Item']
+        [userId, url, name || 'Scanning...',]
     )
-    return res.rows[0]
+    const newItem = res.rows[0]
+
+    // 2. Trigger Immediate Scrape
+    try {
+        console.log(`[Market] Auto-scraping new item: ${newItem.id}`);
+        return await refreshListing(newItem.id, userId);
+    } catch (err) {
+        console.error("[Market] Auto-scrape failed, returning placeholder:", err);
+        // Return the placeholder if scrape fails (don't crash the add)
+        return newItem;
+    }
 }
 
 export async function deleteListing(id, userId) {
@@ -41,7 +53,6 @@ export async function deleteListing(id, userId) {
 }
 
 export async function updateListing(id, data, userId) {
-    // FIX: Added missing fields (qty, category, vendor)
     const { name, price, in_stock, notes, qty_per_unit, category, vendor } = data
     const res = await query(
         `UPDATE market_listings 
@@ -66,19 +77,25 @@ export async function refreshListing(id, userId) {
     const url = itemRes.rows[0].url
 
     try {
-        // 1. SETUP FETCH
+        // 1. SETUP FETCH with Stealth Headers
         const scraperKey = process.env.SCRAPER_API_KEY
         let fetchUrl = url
+        
+        const headers = { 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.google.com/',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0',
+            'Connection': 'keep-alive'
+        }
+
         if (scraperKey) {
             fetchUrl = `http://api.scrape.do?token=${scraperKey}&url=${encodeURIComponent(url)}`
         }
 
-        const response = await fetch(fetchUrl, {
-            headers: { 
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-            }
-        })
+        const response = await fetch(fetchUrl, { headers })
         
         if (!response.ok) throw new Error(`HTTP Error ${response.status}`)
         const html = await response.text()
@@ -97,11 +114,11 @@ export async function refreshListing(id, userId) {
             image = `${u.protocol}//${u.host}${image}`;
         }
 
-        // 3. GUESS VENDOR FROM URL
+        // 3. GUESS VENDOR
         let vendor = '';
         try {
             const hostname = new URL(url).hostname.replace('www.', '');
-            vendor = hostname.split('.')[0]; // e.g. midwayusa.com -> midwayusa
+            vendor = hostname.split('.')[0]; 
             vendor = vendor.charAt(0).toUpperCase() + vendor.slice(1);
         } catch (e) {}
 
@@ -109,18 +126,20 @@ export async function refreshListing(id, userId) {
         $('script').remove(); $('style').remove(); $('nav').remove(); $('footer').remove(); $('svg').remove();
         const cleanText = $('body').text().replace(/\s+/g, ' ').trim().substring(0, 15000);
 
-        // 5. ASK AI FOR DATA
+        // 5. ASK AI
         const prompt = `
             Analyze this product page. Extract:
             1. PRICE (Number).
             2. IN_STOCK (Boolean).
-            3. QUANTITY (Number of items in this pack). E.g. "1000 primers" = 1000. "8 lbs" = 8. "500 rounds" = 500. Default to 1 if unknown.
+            3. QUANTITY (Number of items in this pack). E.g. "1000 primers" = 1000. "8 lbs" = 8. Default to 1.
+            4. CATEGORY (String). Strictly one of: "powder", "primer", "bullet", "case", "ammo", "gear", "other".
             
             JSON Format:
             {
                 "price": 0.00,
                 "in_stock": true,
-                "qty": 1
+                "qty": 1,
+                "category": "other"
             }
 
             Page Text:
@@ -136,17 +155,27 @@ export async function refreshListing(id, userId) {
         // 6. UPDATE DATABASE
         const updateRes = await query(
             `UPDATE market_listings 
-             SET name = $1, price = $2, in_stock = $3, image_url = $4, qty_per_unit = $5, vendor = $6, status = 'active', last_scraped_at = NOW() 
-             WHERE id = $7 AND user_id = $8 
+             SET name = $1, price = $2, in_stock = $3, image_url = $4, qty_per_unit = $5, vendor = $6, category = $7, status = 'active', last_scraped_at = NOW() 
+             WHERE id = $8 AND user_id = $9 
              RETURNING *`,
-            [title.trim(), data.price || 0, data.in_stock, image, data.qty || 1, vendor, id, userId]
+            [title.trim(), data.price || 0, data.in_stock, image, data.qty || 1, vendor, data.category || 'other', id, userId]
         )
 
         return updateRes.rows[0];
 
     } catch (err) {
         console.error("Scrape Error:", err);
-        await query(`UPDATE market_listings SET status = 'error' WHERE id = $1`, [id]);
+        
+        // GRACEFUL FAIL: Mark as error in DB so UI updates to Red
+        const failRes = await query(
+            `UPDATE market_listings SET status = 'error' WHERE id = $1 AND user_id = $2 RETURNING *`,
+            [id, userId]
+        );
+        
+        // Return the "Error" item instead of crashing the API with 500
+        if(failRes.rows.length > 0) return failRes.rows[0];
+        
+        // Only throw if we couldn't even update the status
         throw new Error("Scan failed: " + err.message);
     }
 }
