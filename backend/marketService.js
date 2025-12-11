@@ -3,10 +3,9 @@
 //Script Location: backend/marketService.js
 //Date: 12/10/2025
 //Created By: T03KNEE
-//Version: 4.5.0 (Stealth & Graceful Fail)
+//Version: 4.6.0 (Smart Vendor Detection)
 //About: Scrapes web data.
-//       - FIX: Added Stealth Headers to bypass 403 Blocks.
-//       - FIX: Returns 'Error' status instead of crashing (500).
+//       - FIX: Correctly extracts vendor from 'shop.domain.com'.
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -42,7 +41,6 @@ export async function addListing(item, userId) {
         return await refreshListing(newItem.id, userId);
     } catch (err) {
         console.error("[Market] Auto-scrape failed, returning placeholder:", err);
-        // Return the placeholder if scrape fails (don't crash the add)
         return newItem;
     }
 }
@@ -77,18 +75,18 @@ export async function refreshListing(id, userId) {
     const url = itemRes.rows[0].url
 
     try {
-        // 1. SETUP FETCH with Stealth Headers
+        // 1. SETUP FETCH
         const scraperKey = process.env.SCRAPER_API_KEY
         let fetchUrl = url
         
+        // Use Headers to look like a real browser (Bypass 403)
         const headers = { 
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
             'Referer': 'https://www.google.com/',
             'Upgrade-Insecure-Requests': '1',
-            'Cache-Control': 'max-age=0',
-            'Connection': 'keep-alive'
+            'Cache-Control': 'max-age=0'
         }
 
         if (scraperKey) {
@@ -114,12 +112,23 @@ export async function refreshListing(id, userId) {
             image = `${u.protocol}//${u.host}${image}`;
         }
 
-        // 3. GUESS VENDOR
+        // 3. SMART VENDOR GUESS (The Fix)
         let vendor = '';
         try {
-            const hostname = new URL(url).hostname.replace('www.', '');
-            vendor = hostname.split('.')[0]; 
+            const hostname = new URL(url).hostname;
+            const parts = hostname.split('.');
+            // If we have > 2 parts (e.g. shop.hodgdon.com), grab the second to last part.
+            // If just (midwayusa.com), grab the first.
+            if (parts.length >= 2) {
+                vendor = parts[parts.length - 2]; 
+            } else {
+                vendor = parts[0];
+            }
+            // Title Case
             vendor = vendor.charAt(0).toUpperCase() + vendor.slice(1);
+            
+            // Clean up common bad guesses
+            if (vendor === 'Co' || vendor === 'Com') vendor = parts[0];
         } catch (e) {}
 
         // 4. CLEAN HTML FOR AI
@@ -165,17 +174,13 @@ export async function refreshListing(id, userId) {
 
     } catch (err) {
         console.error("Scrape Error:", err);
-        
-        // GRACEFUL FAIL: Mark as error in DB so UI updates to Red
+        // Soft Fail: Update status to 'error' but don't crash 500
         const failRes = await query(
-            `UPDATE market_listings SET status = 'error' WHERE id = $1 AND user_id = $2 RETURNING *`,
+            `UPDATE market_listings SET status = 'error' WHERE id = $1 AND user_id = $2 RETURNING *`, 
             [id, userId]
         );
-        
-        // Return the "Error" item instead of crashing the API with 500
         if(failRes.rows.length > 0) return failRes.rows[0];
         
-        // Only throw if we couldn't even update the status
         throw new Error("Scan failed: " + err.message);
     }
 }
