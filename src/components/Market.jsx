@@ -1,17 +1,22 @@
 //===============================================================
 //Script Name: Market.jsx
 //Script Location: src/components/Market.jsx
-//Date: 12/10/2025
+//Date: 12/11/2025
 //Created By: T03KNEE
-//Version: 3.1.0 (Editable Vendor)
+//Version: 5.0.0 (Tactical Symmetry)
 //About: Market Watch Dashboard.
+//       - FIX: Aligned UI with Dashboard (Red/Glass Theme).
+//       - FIX: Removed unused imports.
 //===============================================================
 
 import { useEffect, useState } from 'react'
 import { getMarketListings, createMarketListing, deleteMarketListing, refreshMarketListing, updateMarketListing } from '../lib/market'
-import { Plus, Trash2, RefreshCw, Edit, ExternalLink, Tag, AlertCircle, CheckCircle, Search, Globe } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Edit, ExternalLink, AlertCircle, Search, Globe, ShoppingCart } from 'lucide-react'
 import { HAPTIC } from '../lib/haptics'
 import { formatCurrency } from '../lib/db'
+
+// Consistent Card Style
+const cardClass = "bg-[#09090b]/80 border border-white/5 backdrop-blur-md rounded-2xl overflow-hidden group transition-all hover:border-red-500/30"
 
 export function Market() {
   const [items, setItems] = useState([])
@@ -74,27 +79,28 @@ export function Market() {
 
   return (
     <div className="space-y-6">
+      {/* HEADER: Standardized to Red */}
       <div className="flex items-start gap-4">
-        <div className="w-1.5 self-stretch bg-emerald-600 rounded-sm"></div>
+        <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
         <div>
-            <span className="block text-[10px] uppercase tracking-[0.2em] text-emerald-500 font-bold mb-0.5">Supply Chain</span>
+            <span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Supply Chain</span>
             <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">MARKET WATCH</h2>
         </div>
       </div>
 
-      {/* ADD BAR */}
-      <div className="glass p-4 rounded-xl border border-zinc-800">
+      {/* ADD BAR: Standardized Glass */}
+      <div className="glass p-4 rounded-2xl border border-white/5">
           <form onSubmit={handleAdd} className="flex gap-2">
               <div className="relative flex-1">
                   <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
                   <input 
-                      className="w-full bg-black/60 border border-zinc-700 rounded-xl pl-10 pr-4 py-3 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 placeholder:text-zinc-600"
+                      className="w-full bg-black/60 border border-zinc-700 rounded-xl pl-10 pr-4 py-3 text-sm text-zinc-200 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500/50 placeholder:text-zinc-600"
                       placeholder="Paste Product URL (Midway, Brownells, etc)..."
                       value={newItemUrl}
                       onChange={e => setNewItemUrl(e.target.value)}
                   />
               </div>
-              <button disabled={loading} type="submit" className="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-6 rounded-xl transition flex items-center gap-2 text-sm">
+              <button disabled={loading} type="submit" className="bg-red-700 hover:bg-red-600 text-white font-bold px-6 rounded-xl transition flex items-center gap-2 text-sm shadow-lg shadow-red-900/20">
                   {loading ? <RefreshCw size={16} className="animate-spin"/> : <Plus size={16}/>} Track
               </button>
           </form>
@@ -103,25 +109,29 @@ export function Market() {
       {/* GRID */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map(item => (
-              <div key={item.id} className="bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 rounded-xl overflow-hidden group transition-all">
-                  <div className="h-32 bg-black relative">
+              <div key={item.id} className={cardClass}>
+                  <div className="h-32 bg-black relative border-b border-white/5">
                       {item.image_url ? (
-                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
+                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition duration-500" />
                       ) : (
-                          <div className="w-full h-full flex items-center justify-center text-zinc-700"><Search size={32}/></div>
+                          <div className="w-full h-full flex items-center justify-center text-zinc-800"><ShoppingCart size={32}/></div>
                       )}
-                      <div className="absolute top-2 right-2 flex gap-2">
-                          <button onClick={() => handleRefresh(item.id)} className={`p-2 rounded-full bg-black/60 text-zinc-300 hover:text-white backdrop-blur-md border border-zinc-700 ${refreshingId === item.id ? 'animate-spin text-emerald-400' : ''}`}>
+                      
+                      {/* ACTION OVERLAY */}
+                      <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleRefresh(item.id)} className={`p-2 rounded-full bg-black/80 text-zinc-300 hover:text-white border border-zinc-700 backdrop-blur-md ${refreshingId === item.id ? 'animate-spin text-emerald-400' : ''}`}>
                               <RefreshCw size={14} />
                           </button>
-                          <button onClick={() => setEditingItem(item)} className="p-2 rounded-full bg-black/60 text-zinc-300 hover:text-amber-400 backdrop-blur-md border border-zinc-700">
+                          <button onClick={() => setEditingItem(item)} className="p-2 rounded-full bg-black/80 text-zinc-300 hover:text-amber-400 border border-zinc-700 backdrop-blur-md">
                               <Edit size={14} />
                           </button>
-                          <button onClick={() => handleDelete(item.id)} className="p-2 rounded-full bg-black/60 text-zinc-300 hover:text-red-400 backdrop-blur-md border border-zinc-700">
+                          <button onClick={() => handleDelete(item.id)} className="p-2 rounded-full bg-black/80 text-zinc-300 hover:text-red-400 border border-zinc-700 backdrop-blur-md">
                               <Trash2 size={14} />
                           </button>
                       </div>
-                      <div className={`absolute bottom-2 left-2 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border ${item.in_stock ? 'bg-emerald-900/80 border-emerald-500/50 text-emerald-300' : 'bg-red-900/80 border-red-500/50 text-red-300'}`}>
+
+                      {/* STOCK BADGE */}
+                      <div className={`absolute bottom-2 left-2 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border shadow-lg ${item.in_stock ? 'bg-emerald-900/80 border-emerald-500/50 text-emerald-300' : 'bg-red-900/80 border-red-500/50 text-red-300'}`}>
                           {item.in_stock ? 'In Stock' : 'Out of Stock'}
                       </div>
                   </div>
@@ -129,7 +139,7 @@ export function Market() {
                   <div className="p-4">
                       <div className="flex justify-between items-start gap-2 mb-1">
                           <h3 className="text-sm font-bold text-zinc-200 line-clamp-1 flex-1" title={item.name}>{item.name}</h3>
-                          {item.vendor && <span className="text-[9px] px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400 border border-zinc-700 whitespace-nowrap">{item.vendor}</span>}
+                          {item.vendor && <span className="text-[9px] px-1.5 py-0.5 bg-white/5 rounded text-zinc-400 border border-white/10 whitespace-nowrap">{item.vendor}</span>}
                       </div>
                       
                       <div className="flex justify-between items-end">
@@ -145,36 +155,36 @@ export function Market() {
                           )}
                       </div>
                       
-                      <div className="mt-3 pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[10px] text-zinc-600">
-                          <a href={item.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-emerald-400 transition">
+                      <div className="mt-3 pt-3 border-t border-white/5 flex justify-between items-center text-[10px] text-zinc-600">
+                          <a href={item.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-red-400 transition">
                               Store Page <ExternalLink size={10} />
                           </a>
-                          <span>{new Date(item.last_scraped_at).toLocaleDateString()}</span>
+                          <span>{item.status === 'error' ? <span className="text-red-500 flex items-center gap-1"><AlertCircle size={10}/> Error</span> : new Date(item.last_scraped_at).toLocaleDateString()}</span>
                       </div>
                   </div>
               </div>
           ))}
       </div>
 
-      {/* EDIT MODAL */}
+      {/* EDIT MODAL: Standardized Dark Theme */}
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
-            <div className="bg-[#0f0f10] border border-zinc-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-                <h3 className="text-lg font-bold text-white">Edit Listing</h3>
+            <div className="bg-[#0f0f10] border border-red-900/30 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2"><Edit size={18} className="text-red-500"/> Edit Listing</h3>
                 
                 <div>
                     <label className="text-xs text-zinc-500 block mb-1">Product Name</label>
-                    <input className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-emerald-500 focus:outline-none" value={editingItem.name} onChange={e => setEditingItem({...editingItem, name: e.target.value})} />
+                    <input className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.name} onChange={e => setEditingItem({...editingItem, name: e.target.value})} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="text-xs text-zinc-500 block mb-1">Price ($)</label>
-                        <input type="number" step="0.01" className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-emerald-500 focus:outline-none" value={editingItem.price} onChange={e => setEditingItem({...editingItem, price: e.target.value})} />
+                        <input type="number" step="0.01" className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.price} onChange={e => setEditingItem({...editingItem, price: e.target.value})} />
                     </div>
                     <div>
                         <label className="text-xs text-zinc-500 block mb-1">Status</label>
-                        <select className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-emerald-500 focus:outline-none" value={editingItem.in_stock} onChange={e => setEditingItem({...editingItem, in_stock: e.target.value === 'true'})}>
+                        <select className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.in_stock} onChange={e => setEditingItem({...editingItem, in_stock: e.target.value === 'true'})}>
                             <option value="true">In Stock</option>
                             <option value="false">Out of Stock</option>
                         </select>
@@ -184,18 +194,18 @@ export function Market() {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="text-xs text-zinc-500 block mb-1">Pack Quantity</label>
-                        <input type="number" className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-emerald-500 focus:outline-none" value={editingItem.qty_per_unit} onChange={e => setEditingItem({...editingItem, qty_per_unit: e.target.value})} />
-                        <p className="text-[9px] text-zinc-600 mt-1">e.g. 1000 for primers, 500 for bullets</p>
+                        <input type="number" className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.qty_per_unit} onChange={e => setEditingItem({...editingItem, qty_per_unit: e.target.value})} />
+                        <p className="text-[9px] text-zinc-600 mt-1">e.g. 1000 for primers</p>
                     </div>
                     <div>
                         <label className="text-xs text-zinc-500 block mb-1">Vendor Name</label>
-                        <input className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-emerald-500 focus:outline-none" value={editingItem.vendor || ''} onChange={e => setEditingItem({...editingItem, vendor: e.target.value})} placeholder="e.g. MidwayUSA" />
+                        <input className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.vendor || ''} onChange={e => setEditingItem({...editingItem, vendor: e.target.value})} />
                     </div>
                 </div>
 
                 <div className="flex gap-3 pt-2">
                     <button onClick={() => setEditingItem(null)} className="flex-1 py-2 rounded-lg border border-zinc-700 text-zinc-400 hover:text-white transition text-sm">Cancel</button>
-                    <button onClick={handleSaveEdit} className="flex-1 py-2 rounded-lg bg-emerald-700 text-white font-bold hover:bg-emerald-600 transition text-sm">Save Changes</button>
+                    <button onClick={handleSaveEdit} className="flex-1 py-2 rounded-lg bg-red-700 text-white font-bold hover:bg-red-600 transition text-sm shadow-lg shadow-red-900/20">Save Changes</button>
                 </div>
             </div>
         </div>

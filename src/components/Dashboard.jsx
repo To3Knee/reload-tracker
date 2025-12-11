@@ -1,11 +1,13 @@
 //===============================================================
 //Script Name: Dashboard.jsx
 //Script Location: src/components/Dashboard.jsx
-//Date: 12/10/2025
+//Date: 12/11/2025
 //Created By: T03KNEE
-//Version: 4.9.0
+//Version: 5.2.0 (Math Fixes & UI Lock)
 //About: Live Round Calculator + ROI Engine.
-//       - FIX: Moved renderOptionLabel & inputClass to global scope.
+//       - FIX: Added "Suspicious Math" detector for Factory Ammo.
+//       - FIX: Hardened Recipe Selection logic.
+//       - UI: STRICTLY PRESERVED "Tactical Red" theme.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -187,6 +189,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
     }
   }, [purchases.length, powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, lotSize, caseReuse])
 
+  // LOGIC FIX: Check for suspicious data
   const roiStats = useMemo(() => {
       const factoryCost = Number(manualFactoryCost) || 0
       if (!breakdown || factoryCost <= 0) return null
@@ -195,6 +198,10 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
       const diff = factoryCost - handloadCost
       const isSavings = diff >= 0
       
+      const factoryItem = marketItems.find(m => String(m.id) === selectedFactoryId)
+      // If Factory Item is Ammo/Other, has price > $5, but Qty is 1, it's likely a data error.
+      const suspiciousMath = factoryItem && factoryItem.qty_per_unit === 1 && factoryItem.price > 5
+
       let label = ''
       if (isSavings) {
           const percent = factoryCost > 0 ? (Math.abs(diff) / factoryCost) * 100 : 0
@@ -209,7 +216,8 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
           diff: Math.abs(diff),
           label,
           isSavings,
-          name: selectedFactoryId ? (marketItems.find(m=>String(m.id)===selectedFactoryId)?.name || 'Custom Price') : 'Manual Price'
+          name: selectedFactoryId ? (marketItems.find(m=>String(m.id)===selectedFactoryId)?.name || 'Custom Price') : 'Manual Price',
+          suspiciousMath
       }
   }, [breakdown, manualFactoryCost, selectedFactoryId, marketItems])
 
@@ -490,6 +498,11 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
               {/* ROI GAUGE */}
               {roiStats && (
                   <div className={`mb-6 p-4 rounded-xl border relative overflow-hidden ${roiStats.isSavings ? 'bg-emerald-900/10 border-emerald-500/30' : 'bg-red-900/10 border-red-500/30'}`}>
+                      {roiStats.suspiciousMath && (
+                          <div className="absolute top-2 right-2 flex items-center gap-1 text-[9px] text-amber-400 bg-amber-900/40 px-2 py-0.5 rounded border border-amber-500/30 z-20">
+                              <AlertTriangle size={10} /> Check Qty
+                          </div>
+                      )}
                       <div className={`absolute -right-4 -top-4 w-20 h-20 blur-2xl rounded-full ${roiStats.isSavings ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}></div>
                       <div className="flex justify-between items-start mb-2 relative z-10">
                           <div className="flex-1 min-w-0 pr-4">

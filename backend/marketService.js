@@ -1,11 +1,12 @@
 //===============================================================
 //Script Name: Reload Tracker Market Service
 //Script Location: backend/marketService.js
-//Date: 12/10/2025
+//Date: 12/11/2025
 //Created By: T03KNEE
-//Version: 4.6.0 (Smart Vendor Detection)
+//Version: 5.0.0 (Community Edition)
 //About: Scrapes web data.
-//       - FIX: Correctly extracts vendor from 'shop.domain.com'.
+//       - FIX: Shared Visibility (Community List).
+//       - FIX: Access Denied Protection.
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -16,9 +17,9 @@ import * as cheerio from 'cheerio'
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 export async function listMarket(userId) {
+    // COMMUNITY CHANGE: Show all recent items, not just user's
     const res = await query(
-        `SELECT * FROM market_listings WHERE user_id = $1 ORDER BY last_scraped_at DESC`,
-        [userId]
+        `SELECT * FROM market_listings ORDER BY last_scraped_at DESC LIMIT 100`
     )
     return res.rows
 }
@@ -46,12 +47,18 @@ export async function addListing(item, userId) {
 }
 
 export async function deleteListing(id, userId) {
-    await query(`DELETE FROM market_listings WHERE id = $1 AND user_id = $2`, [id, userId])
+    // SECURITY: Only allow deleting your own items
+    const res = await query(`DELETE FROM market_listings WHERE id = $1 AND user_id = $2 RETURNING id`, [id, userId])
+    if (res.rowCount === 0) {
+        // Silent fail or throw - purely for safety
+        throw new Error("Unauthorized: You can only delete items you tracked.")
+    }
     return { success: true }
 }
 
 export async function updateListing(id, data, userId) {
     const { name, price, in_stock, notes, qty_per_unit, category, vendor } = data
+    // SECURITY: Only allow editing your own items
     const res = await query(
         `UPDATE market_listings 
          SET name = COALESCE($1, name), 
@@ -70,7 +77,7 @@ export async function updateListing(id, data, userId) {
 
 // --- HYBRID INTELLIGENT SCRAPER ---
 export async function refreshListing(id, userId) {
-    const itemRes = await query(`SELECT url FROM market_listings WHERE id = $1 AND user_id = $2`, [id, userId])
+    const itemRes = await query(`SELECT url FROM market_listings WHERE id = $1`, [id])
     if (itemRes.rows.length === 0) throw new Error("Item not found")
     const url = itemRes.rows[0].url
 
@@ -79,7 +86,6 @@ export async function refreshListing(id, userId) {
         const scraperKey = process.env.SCRAPER_API_KEY
         let fetchUrl = url
         
-        // Use Headers to look like a real browser (Bypass 403)
         const headers = { 
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
@@ -95,15 +101,23 @@ export async function refreshListing(id, userId) {
 
         const response = await fetch(fetchUrl, { headers })
         
-        if (!response.ok) throw new Error(`HTTP Error ${response.status}`)
+        if (!response.ok) {
+            if (response.status === 403) throw new Error("Access Denied (403)");
+            throw new Error(`HTTP Error ${response.status}`);
+        }
         const html = await response.text()
 
         // 2. PARSE WITH CHEERIO
         const $ = cheerio.load(html)
         
         let title = $('meta[property="og:title"]').attr('content') || $('title').text() || 'Unknown Item';
-        let image = $('meta[property="og:image"]').attr('content');
         
+        // GUARD: Check for "Access Denied" Titles
+        if (title.includes("Access Denied") || title.includes("Just a moment") || title.includes("Attention Required")) {
+            throw new Error("Scraper Blocked (Soft 403)");
+        }
+
+        let image = $('meta[property="og:image"]').attr('content');
         if (!image) {
             image = $('img[id*="product"], img[class*="product"], img[class*="main"]').first().attr('src');
         }
@@ -112,22 +126,17 @@ export async function refreshListing(id, userId) {
             image = `${u.protocol}//${u.host}${image}`;
         }
 
-        // 3. SMART VENDOR GUESS (The Fix)
+        // 3. SMART VENDOR GUESS
         let vendor = '';
         try {
             const hostname = new URL(url).hostname;
             const parts = hostname.split('.');
-            // If we have > 2 parts (e.g. shop.hodgdon.com), grab the second to last part.
-            // If just (midwayusa.com), grab the first.
             if (parts.length >= 2) {
                 vendor = parts[parts.length - 2]; 
             } else {
                 vendor = parts[0];
             }
-            // Title Case
             vendor = vendor.charAt(0).toUpperCase() + vendor.slice(1);
-            
-            // Clean up common bad guesses
             if (vendor === 'Co' || vendor === 'Com') vendor = parts[0];
         } catch (e) {}
 
@@ -140,7 +149,7 @@ export async function refreshListing(id, userId) {
             Analyze this product page. Extract:
             1. PRICE (Number).
             2. IN_STOCK (Boolean).
-            3. QUANTITY (Number of items in this pack). E.g. "1000 primers" = 1000. "8 lbs" = 8. Default to 1.
+            3. QUANTITY (Number of items in this pack). E.g. "1000 primers" = 1000. "8 lbs" = 8. "Box of 20" = 20. Default to 1.
             4. CATEGORY (String). Strictly one of: "powder", "primer", "bullet", "case", "ammo", "gear", "other".
             
             JSON Format:
@@ -165,22 +174,16 @@ export async function refreshListing(id, userId) {
         const updateRes = await query(
             `UPDATE market_listings 
              SET name = $1, price = $2, in_stock = $3, image_url = $4, qty_per_unit = $5, vendor = $6, category = $7, status = 'active', last_scraped_at = NOW() 
-             WHERE id = $8 AND user_id = $9 
+             WHERE id = $8 
              RETURNING *`,
-            [title.trim(), data.price || 0, data.in_stock, image, data.qty || 1, vendor, data.category || 'other', id, userId]
+            [title.trim(), data.price || 0, data.in_stock, image, data.qty || 1, vendor, data.category || 'other', id]
         )
 
         return updateRes.rows[0];
 
     } catch (err) {
         console.error("Scrape Error:", err);
-        // Soft Fail: Update status to 'error' but don't crash 500
-        const failRes = await query(
-            `UPDATE market_listings SET status = 'error' WHERE id = $1 AND user_id = $2 RETURNING *`, 
-            [id, userId]
-        );
-        if(failRes.rows.length > 0) return failRes.rows[0];
-        
-        throw new Error("Scan failed: " + err.message);
+        await query(`UPDATE market_listings SET status = 'error' WHERE id = $1`, [id]);
+        return { id, status: 'error', name: 'Scrape Failed' };
     }
 }
