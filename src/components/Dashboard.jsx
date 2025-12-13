@@ -1,13 +1,12 @@
 //===============================================================
 //Script Name: Dashboard.jsx
 //Script Location: src/components/Dashboard.jsx
-//Date: 12/11/2025
+//Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 5.2.0 (Math Fixes & UI Lock)
+//Version: 5.2.1 (ROI Precision Fix)
 //About: Live Round Calculator + ROI Engine.
-//       - FIX: Added "Suspicious Math" detector for Factory Ammo.
-//       - FIX: Hardened Recipe Selection logic.
-//       - UI: STRICTLY PRESERVED "Tactical Red" theme.
+//       - FIX: Increased ROI Multiplier precision to 2 decimals (e.g. 1.04x instead of 1.0x).
+//       - FIX: This prevents "1.0x Cost" when there is actually a slight cost increase.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -189,7 +188,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
     }
   }, [purchases.length, powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, lotSize, caseReuse])
 
-  // LOGIC FIX: Check for suspicious data
+  // LOGIC FIX: Increased precision for multiplier
   const roiStats = useMemo(() => {
       const factoryCost = Number(manualFactoryCost) || 0
       if (!breakdown || factoryCost <= 0) return null
@@ -199,7 +198,6 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
       const isSavings = diff >= 0
       
       const factoryItem = marketItems.find(m => String(m.id) === selectedFactoryId)
-      // If Factory Item is Ammo/Other, has price > $5, but Qty is 1, it's likely a data error.
       const suspiciousMath = factoryItem && factoryItem.qty_per_unit === 1 && factoryItem.price > 5
 
       let label = ''
@@ -208,7 +206,8 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
           label = `${percent.toFixed(0)}%`
       } else {
           const multiplier = factoryCost > 0 ? (handloadCost / factoryCost) : 0
-          label = `${multiplier.toFixed(1)}x Cost`
+          // CHANGED: .toFixed(1) -> .toFixed(2) to catch small increases (1.04x vs 1.0x)
+          label = `${multiplier.toFixed(2)}x Cost`
       }
       
       return {

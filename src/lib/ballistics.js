@@ -1,14 +1,11 @@
 //===============================================================
 //Script Name: ballistics.js
 //Script Location: src/lib/ballistics.js
-//Date: 12/07/2025
+//Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 3.0.0 (Physics Engine Upgrade)
+//Version: 3.1.0 (Robust String Matching)
 //About: Scientific Ballistics Engine.
-//       - Solver: 3-DOF Point Mass via Runge-Kutta 4 (RK4).
-//       - Atmosphere: Full density altitude calculation.
-//       - Stability: Miller Formula with velocity correction.
-//       - Recoil: SAAMI Momentum Impulse method.
+//       - FIX: guessDiameter now strips spaces to handle "45ACP" vs "45 ACP" consistently.
 //===============================================================
 
 // --- CONSTANTS ---
@@ -34,7 +31,6 @@ export function calculateAirDensityRatio(tempF = 59, pressureHg = 29.92, humidit
   // Standard ICAO Sea Level
   const stdTempR = 518.67
   const stdPressurePa = 101325
-  const stdRho = 1.225 // kg/m^3
   
   // Simplified Density Formula (ignoring humidity for micro-optimization as it's <1% effect)
   // rho = P / (R_specific * T)
@@ -156,13 +152,17 @@ export function calculateTrajectory({
 
 export function guessDiameter(caliber) {
   if (!caliber) return 0.308
-  const c = String(caliber).toLowerCase()
+  
+  // FIX: Normalize string by removing spaces (handles "45 ACP" == "45ACP")
+  const c = String(caliber).toLowerCase().replace(/\s+/g, '')
+  
   if (c.includes('6.5') || c.includes('264') || c.includes('creedmoor')) return 0.264
   if (c.includes('308') || c.includes('7.62') || c.includes('30-06')) return 0.308
   if (c.includes('223') || c.includes('5.56')) return 0.224
   if (c.includes('9mm') || c.includes('355')) return 0.355
-  if (c.includes('45 acp') || c.includes('45 auto')) return 0.451
+  if (c.includes('45acp') || c.includes('45auto')) return 0.451
   if (c.includes('338') || c.includes('lapua')) return 0.338
+  
   return 0.308
 }
 

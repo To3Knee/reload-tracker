@@ -1,18 +1,19 @@
 //===============================================================
 //Script Name: Recipes.jsx
 //Script Location: src/components/Recipes.jsx
-//Date: 12/10/2025
+//Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 6.0.0
+//Version: 6.4.1 (Fix ReferenceError)
 //About: Manage recipes. 
-//       Updated: "Conflict Resolution" modal for In-Use Recipes.
+//       - FIX: Defined 'guessCaseLength' and 'guessBulletLength' helpers 
+//              at the top level to prevent ReferenceErrors.
+//       - FIX: Visualizer logic now properly uses smart defaults.
 //===============================================================
 
 import { useEffect, useState, useMemo } from 'react'
 import {
   getAllRecipes,
   saveRecipe,
-  // deleteRecipe, // We will use a custom local delete to handle cascade
   formatCurrency
 } from '../lib/db'
 import { getFirearms } from '../lib/armory'
@@ -67,16 +68,65 @@ function FieldLabel({ label, help }) {
     )
 }
 
-// --- LOCAL API HELPER FOR DELETE ---
+// --- SMART GEOMETRY HELPERS (Must be defined before component) ---
+
+function guessCaseLength(caliber) {
+    if (!caliber) return 2.035 
+    const c = caliber.toLowerCase().replace(/\s+/g, '') // Strip spaces
+    
+    // Pistol
+    if (c.includes('9mm') || c.includes('380') || c.includes('makarov')) return 0.754
+    if (c.includes('40s&w') || c.includes('40sw')) return 0.850
+    if (c.includes('45acp') || c.includes('45auto')) return 0.898
+    if (c.includes('10mm')) return 0.992
+    if (c.includes('38spl') || c.includes('38special')) return 1.155
+    if (c.includes('357mag')) return 1.290
+    
+    // Rifle
+    if (c.includes('300blk') || c.includes('blackout')) return 1.368
+    if (c.includes('7.62x39')) return 1.524
+    if (c.includes('223') || c.includes('5.56')) return 1.760
+    if (c.includes('6.5') || c.includes('creedmoor')) return 1.920
+    if (c.includes('308') || c.includes('7.62x51')) return 2.015
+    if (c.includes('30-06')) return 2.494
+    if (c.includes('300win')) return 2.620
+    if (c.includes('338lap')) return 2.724
+    
+    return 2.015 // Default Rifle
+}
+
+function getCaliberDefaults(input) {
+    if (!input) return null
+    const c = input.toLowerCase().replace(/\s+/g, '') 
+
+    // PISTOL
+    if (c.includes('9mm') || c.includes('380') || c.includes('makarov')) return { coal: 1.169, bulletLength: 0.600, caseCapacity: 13.0 }
+    if (c.includes('40s&w') || c.includes('40sw')) return { coal: 1.135, bulletLength: 0.620, caseCapacity: 19.0 }
+    if (c.includes('45acp') || c.includes('45auto')) return { coal: 1.275, bulletLength: 0.680, caseCapacity: 25.0 }
+    if (c.includes('10mm')) return { coal: 1.260, bulletLength: 0.650, caseCapacity: 24.0 }
+    if (c.includes('357mag')) return { coal: 1.590, bulletLength: 0.700, caseCapacity: 26.0 }
+    if (c.includes('38spl')) return { coal: 1.550, bulletLength: 0.680, caseCapacity: 23.0 }
+
+    // RIFLE
+    if (c.includes('300blk') || c.includes('blackout')) return { coal: 2.260, bulletLength: 1.300, caseCapacity: 24.0 }
+    if (c.includes('223') || c.includes('5.56')) return { coal: 2.260, bulletLength: 0.900, caseCapacity: 28.0 }
+    if (c.includes('308') || c.includes('7.62x51')) return { coal: 2.800, bulletLength: 1.200, caseCapacity: 56.0 }
+    if (c.includes('6.5') || c.includes('creedmoor')) return { coal: 2.800, bulletLength: 1.350, caseCapacity: 52.0 }
+    if (c.includes('30-06')) return { coal: 3.340, bulletLength: 1.250, caseCapacity: 68.0 }
+    if (c.includes('300win')) return { coal: 3.340, bulletLength: 1.400, caseCapacity: 90.0 }
+    if (c.includes('338lap')) return { coal: 3.680, bulletLength: 1.700, caseCapacity: 114.0 }
+
+    return null
+}
+
+// --- LOCAL API HELPER ---
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 async function apiDeleteRecipe(id, cascade = false) {
     const res = await fetch(`${API_BASE}/recipes/${id}${cascade ? '?cascade=true' : ''}`, {
         method: 'DELETE',
         credentials: 'include'
     })
-    if (res.status === 409) {
-        throw new Error("RECIPE_IN_USE")
-    }
+    if (res.status === 409) throw new Error("RECIPE_IN_USE")
     if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.message || 'Delete failed')
@@ -134,6 +184,22 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   }
 
   useEffect(() => { loadData() }, [])
+
+  // --- AUTO-FILL EFFECT ---
+  // When caliber changes (and isn't editing an existing recipe), attempt to fill defaults
+  useEffect(() => {
+      if (editingRecipe || !form.caliber) return
+      
+      const defaults = getCaliberDefaults(form.caliber)
+      if (defaults) {
+          setForm(prev => ({
+              ...prev,
+              coal: prev.coal ? prev.coal : defaults.coal,
+              bulletLength: prev.bulletLength ? prev.bulletLength : defaults.bulletLength,
+              caseCapacity: prev.caseCapacity ? prev.caseCapacity : defaults.caseCapacity
+          }))
+      }
+  }, [form.caliber, editingRecipe])
 
   async function loadData() {
     try {
@@ -199,22 +265,17 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     if (!recipeToDelete) return; 
     setIsDeleting(true);
     try {
-      // Use local helper to handle specific error codes
       await apiDeleteRecipe(recipeToDelete.id, cascade);
-      
       HAPTIC.success(); 
       if (editingRecipe && editingRecipe.id === recipeToDelete.id) resetForm();
       await loadData(); 
-      
-      // Close all modals
       setDeleteModalOpen(false); 
       setConflictModalOpen(false);
       setRecipeToDelete(null);
     } catch (err) { 
         if (err.message === 'RECIPE_IN_USE') {
-            // CONFLICT! Show the decision modal.
-            setDeleteModalOpen(false); // Close generic delete
-            setConflictModalOpen(true); // Open specific conflict
+            setDeleteModalOpen(false); 
+            setConflictModalOpen(true); 
             HAPTIC.soft();
         } else {
             setError(`Failed to delete: ${err.message}`); 
@@ -233,12 +294,10 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   async function handleResolveConflict(action) {
       if (!recipeToDelete) return;
       if (action === 'archive') {
-          // User chose to Archive instead
           await handleArchiveToggle(recipeToDelete);
           setConflictModalOpen(false);
           setRecipeToDelete(null);
       } else if (action === 'cascade') {
-          // User chose to Nuke everything
           await executeDelete(true);
       }
   }
@@ -262,7 +321,27 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
           const primerName = recipe.primerName || resolve(recipe.primerLotId, 'Primer'); const caseName = recipe.caseName || resolve(recipe.caseLotId, 'Brass');
           const logoUrl = `${window.location.origin}/logo.png`; const name = recipe.name || 'Untitled'; const caliber = recipe.caliber || 'Unknown'; const source = recipe.source || ''; const charge = recipe.chargeGrains ? `${recipe.chargeGrains} gr` : '---';
           
-          const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${name}</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');@page{margin:0;size:6in 4in}body{margin:0;padding:0;font-family:'Inter',sans-serif;background:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#111}.card{width:6in;height:4in;background:#fdfbf7;position:relative;overflow:hidden;display:flex;flex-direction:column}.header{background:#111;color:#fff;padding:.8rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid #b33c3c}.header-text h1{margin:0;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.header-text h2{margin:2px 0 0 0;font-size:11px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:.2em}.logo{width:110px;height:auto}.content{padding:.8rem 2rem;flex:1;display:flex;gap:1.5rem}.main-specs{flex:1;display:flex;flex-direction:column;gap:8px}.stat-row{display:flex;flex-direction:column;border-bottom:1px solid #e5e5e5;padding-bottom:3px}.stat-row:last-child{border-bottom:none}.stat-label{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-bottom:1px}.stat-value{font-size:11px;font-weight:700;color:#000;line-height:1.2;text-align:left}.notes-section{flex:1.3;background:#f5f5f5;border-radius:8px;padding:.75rem;border:1px solid #ddd;display:flex;flex-direction:column}.notes-label{font-size:9px;font-weight:700;color:#b33c3c;text-transform:uppercase;letter-spacing:.15em;margin-bottom:.25rem;display:block}.notes-body{font-size:10px;line-height:1.3;color:#333;flex:1;white-space:pre-wrap}.footer{padding:.3rem 2rem;background:#e5e5e5;text-align:center;font-size:8px;color:#666;text-transform:uppercase;letter-spacing:.1em}.close-btn{position:fixed;top:10px;right:10px;z-index:9999;background:rgba(0,0,0,.8);color:#fff;padding:12px 24px;border-radius:50px;font-family:sans-serif;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 15px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);cursor:pointer;backdrop-filter:blur(10px)}@media print{.close-btn{display:none!important}}</style></head><body><button onclick="window.close()" class="close-btn">Done / Close</button><div class="card"><div class="header"><div class="header-text"><h1>${name}</h1><h2>${caliber}</h2></div><img src="${logoUrl}" class="logo" alt="Reload Tracker"/></div><div class="content"><div class="main-specs"><div class="stat-row"><span class="stat-label">Bullet</span><span class="stat-value">${bulletName}</span></div><div class="stat-row"><span class="stat-label">Powder</span><span class="stat-value">${powderName}</span></div><div class="stat-row"><span class="stat-label">Charge</span><span class="stat-value">${charge}</span></div><div class="stat-row"><span class="stat-label">COAL / Cap</span><span class="stat-value">${recipe.coal||'--'}" / ${recipe.caseCapacity||'--'} gr</span></div><div class="stat-row"><span class="stat-label">Brass</span><span class="stat-value">${caseName}</span></div></div><div class="notes-section"><span class="notes-label">Load Notes</span><div class="notes-body">${recipe.notes||'No specific load notes.'}</div></div></div><div class="footer">Generated by Reload Tracker • Safety First • Verify All Loads</div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);</script></body></html>`;
+          const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${name}</title><style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+          @page{margin:0;size:6in auto}
+          body{margin:0;padding:0;font-family:'Inter',sans-serif;background:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#111}
+          .card{width:6in;min-height:4in;height:auto;background:#fdfbf7;position:relative;display:flex;flex-direction:column;overflow:visible}
+          .header{background:#111;color:#fff;padding:.8rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid #b33c3c}
+          .header-text h1{margin:0;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+          .header-text h2{margin:2px 0 0 0;font-size:11px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:.2em}
+          .logo{width:110px;height:auto}
+          .content{padding:.8rem 2rem;flex:1;display:flex;gap:1.5rem}
+          .main-specs{flex:1;display:flex;flex-direction:column;gap:8px}
+          .stat-row{display:flex;flex-direction:column;border-bottom:1px solid #e5e5e5;padding-bottom:3px}
+          .stat-row:last-child{border-bottom:none}
+          .stat-label{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-bottom:1px}
+          .stat-value{font-size:11px;font-weight:700;color:#000;line-height:1.2;text-align:left}
+          .notes-section{flex:1.3;background:#f5f5f5;border-radius:8px;padding:.75rem;border:1px solid #ddd;display:flex;flex-direction:column}
+          .notes-label{font-size:9px;font-weight:700;color:#b33c3c;text-transform:uppercase;letter-spacing:.15em;margin-bottom:.25rem;display:block}
+          .notes-body{font-size:10px;line-height:1.3;color:#333;flex:1;white-space:pre-wrap}
+          .footer{padding:.3rem 2rem;background:#e5e5e5;text-align:center;font-size:8px;color:#666;text-transform:uppercase;letter-spacing:.1em;margin-top:auto}
+          .close-btn{position:fixed;top:10px;right:10px;z-index:9999;background:rgba(0,0,0,.8);color:#fff;padding:12px 24px;border-radius:50px;font-family:sans-serif;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 15px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);cursor:pointer;backdrop-filter:blur(10px)}
+          @media print{.close-btn{display:none!important}}</style></head><body><button onclick="window.close()" class="close-btn">Done / Close</button><div class="card"><div class="header"><div class="header-text"><h1>${name}</h1><h2>${caliber}</h2></div><img src="${logoUrl}" class="logo" alt="Reload Tracker"/></div><div class="content"><div class="main-specs"><div class="stat-row"><span class="stat-label">Bullet</span><span class="stat-value">${bulletName}</span></div><div class="stat-row"><span class="stat-label">Powder</span><span class="stat-value">${powderName}</span></div><div class="stat-row"><span class="stat-label">Charge</span><span class="stat-value">${charge}</span></div><div class="stat-row"><span class="stat-label">COAL / Cap</span><span class="stat-value">${recipe.coal||'--'}" / ${recipe.caseCapacity||'--'} gr</span></div><div class="stat-row"><span class="stat-label">Brass</span><span class="stat-value">${caseName}</span></div></div><div class="notes-section"><span class="notes-label">Load Notes</span><div class="notes-body">${recipe.notes||'No specific load notes.'}</div></div></div><div class="footer">Generated by Reload Tracker • Safety First • Verify All Loads</div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);</script></body></html>`;
           
           win.document.open(); win.document.write(html); win.document.close();
       } catch (e) { setError(`Failed to generate PDF: ${e.message}`); }
@@ -281,6 +360,12 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     e.preventDefault(); if (!batchRecipe) return; setBatchSubmitting(true);
     try { await createBatch({ recipeId: batchRecipe.id, ...batchForm }); HAPTIC.success(); setBatchModalOpen(false); setBatchRecipe(null); } catch (err) { setError(`Batch failed: ${err.message}`); setBatchModalOpen(false); } finally { setBatchSubmitting(false); }
   }
+
+  // --- SAFE FALLBACKS FOR VISUALIZER ---
+  const visCaseLength = (() => {
+      // Use helper directly since we don't have a case length input field
+      return guessCaseLength(form.caliber) 
+  })()
 
   const inputClass = 'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/60 placeholder:text-slate-600'
   
@@ -308,11 +393,11 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
                 <div className="h-20 md:h-24 lg:h-56 min-h-[80px]">
                     <CartridgeVisualizer 
                         diameter={guessDiameter(form.caliber)}
-                        bulletLength={form.bulletLength}
-                        caseLength={2.035}
-                        coal={form.coal}
-                        charge={form.chargeGrains}
-                        capacity={form.caseCapacity}
+                        bulletLength={Number(form.bulletLength) || 0}
+                        caseLength={visCaseLength} 
+                        coal={Number(form.coal) || 0}
+                        charge={Number(form.chargeGrains) || 0}
+                        capacity={Number(form.caseCapacity) || 0}
                     />
                 </div>
 

@@ -4,10 +4,10 @@
 //Date: 12/12/2025
 //Created By: T03KNEE
 //Github: https://github.com/To3Knee/reload-tracker
-//Version: 5.6.0 (Adaptive PDF)
+//Version: 5.7.1 (Instructional Error Messages)
 //About: Range Logs management.
-//       - FIX: PDF now auto-extends height based on content (no text cutoff).
-//       - FIX: Footer sticks to bottom of dynamic height content.
+//       - FIX: Updated GPS Error messages to guide user to iOS Settings manually
+//              (since PWAs cannot deep-link to system settings).
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -159,16 +159,21 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     setShotString(prev => prev.filter((_, i) => i !== index))
   }
 
-  // --- WEATHER ENGINE ---
+  // --- WEATHER ENGINE (Instructional Update) ---
   async function handleAutoWeather() {
     setWeatherError(null)
     if (!navigator.geolocation) {
-        setWeatherError("Geolocation not supported")
+        setWeatherError("GPS hardware not found.")
         return
     }
     HAPTIC.click()
-    
     setForm(prev => ({...prev, weather: 'Locating...'}))
+
+    const geoOptions = {
+        enableHighAccuracy: false, 
+        timeout: 15000,            
+        maximumAge: 300000         
+    }
 
     navigator.geolocation.getCurrentPosition(async (pos) => {
         try {
@@ -182,7 +187,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
             const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
             const windDir = directions[Math.round(cur.wind_direction_10m / 45) % 8]
             
-            // Format: "Wind: 4.4mph SE, Baro: 1021.5hPa, Hum: 47%"
             const desc = `Wind: ${cur.wind_speed_10m}mph ${windDir}, Baro: ${cur.surface_pressure}hPa, Hum: ${cur.relative_humidity_2m}%`
             
             setForm(prev => ({ 
@@ -198,11 +202,18 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
             HAPTIC.error()
         }
     }, (err) => {
-        console.warn(err)
+        console.warn("Geo Error", err)
         setForm(prev => ({...prev, weather: ''})) 
-        setWeatherError("Location denied. Check browser settings.")
+        
+        let msg = "Location access denied."
+        // INSTRUCTIONAL ERROR MESSAGES FOR iOS
+        if (err.code === 1) msg = "🚫 Blocked. Go to Settings > Privacy > Location to enable."
+        else if (err.code === 2) msg = "⚠️ Signal Lost. Move outdoors."
+        else if (err.code === 3) msg = "⏱️ Timeout. Please try again."
+        
+        setWeatherError(msg)
         HAPTIC.error()
-    })
+    }, geoOptions)
   }
 
   async function handleSubmit(e) {
@@ -250,7 +261,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     return r ? `${r.name} (${r.caliber})` : 'Unknown Load'
   }
 
-  // --- PDF GENERATOR (UPDATED CSS) ---
   const handlePrintLog = async (log) => {
     HAPTIC.click()
     const win = window.open('', '_blank')
@@ -278,7 +288,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     const batchLine = log.batchId ? `<p style="margin-top:2px;"><strong>BATCH:</strong> #${log.batchId}</p>` : ''
     const shotsDisplay = (log.shots && log.shots.length > 0) ? `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;"><span class="stat-label">Shot Data (n=${log.shots.length})</span><div style="font-size:9px; color:#444; margin-top:4px; font-family:monospace; word-wrap:break-word;">${log.shots.join(', ')}</div></div>` : ''
 
-    // Weather Formatter
     let weatherHtml = ''
     if (log.weather) {
         const parts = log.weather.split(',')
@@ -302,10 +311,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
         }
     }
 
-    // FIX: CSS Changes for Adaptive Height
-    // 1. @page { size: 4in auto; } -> Allows PDF to grow longer than 6in if needed.
-    // 2. .card { height: auto; min-height: 6in; overflow: visible; } -> Prevents clipping.
-    // 3. .footer { margin-top: auto; } -> Ensures footer stays at the bottom of content.
     const html = `<!DOCTYPE html><html><head><title>Range Log #${log.id}</title><style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
     @page { margin: 0; size: 4in auto; } 

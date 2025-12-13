@@ -1,13 +1,14 @@
 //===============================================================
 //Script Name: math.js
 //Script Location: src/lib/math.js
-//Date: 12/11/2025
+//Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 3.0.0 (Unified Master)
+//Version: 3.1.0 (Safe Rounding)
 //About: Complete mathematical engine.
 //       - INCLUDES: Financials (Cost/Unit, Lot Totals).
 //       - INCLUDES: Statistics (Avg, SD, ES for Range Logs).
 //       - INCLUDES: Conversions (Grains/Lbs/Kg).
+//       - FEATURE: Added Currency Formatting helpers.
 //===============================================================
 
 // --- CONSTANTS ---
@@ -73,6 +74,29 @@ export function calculateBrassCostPerRound(caseLot, reuseTimes) {
     const costPerPiece = totalCost / qty
     const uses = Number(reuseTimes) || 1
     return costPerPiece / uses
+}
+
+// --- FORMATTERS (Human Readable Output) ---
+
+/**
+ * Rounds a number to 2 decimal places for currency display
+ * Resolves floating point quirks (e.g. 1.005 -> 1.01)
+ */
+export function roundCurrency(amount) {
+    return Math.round((Number(amount) || 0) * 100) / 100
+}
+
+/**
+ * Formats a number as USD currency string
+ * Example: 1234.5 -> "$1,234.50"
+ */
+export function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount)
 }
 
 // --- STATISTICAL ENGINE (Range Logs) ---
