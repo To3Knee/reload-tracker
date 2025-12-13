@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: Navbar.jsx
 //Script Location: src/components/Navbar.jsx
-//Date: 12/07/2025
+//Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 3.5.0
+//Version: 3.6.1 (iOS Touch Target Fix)
 //About: Unified Command Bar. 
-//       Updated: Mobile Logo REMOVED (Keeps nav sleek/compact).
+//       - FIX: Increased AI Button padding to p-3 to meet Apple's 44px minimum touch target.
 //===============================================================
 
 import { Settings, Bot } from 'lucide-react'
@@ -66,13 +66,13 @@ export default function Navbar({
       </div>
 
       {/* RIGHT: ACTIONS & SESSION */}
-      <div className="flex-shrink-0 flex items-center gap-3 pl-2 md:pl-0 border-l border-red-500/30 md:border-none w-auto md:w-48 md:justify-end">
+      <div className="flex-shrink-0 flex items-center gap-2 pl-2 md:pl-0 border-l border-red-500/30 md:border-none w-auto md:w-48 md:justify-end">
         
-        {/* AI Toggle */}
+        {/* AI Toggle - FIX: Increased padding (p-3) for 44px hit target */}
         {isAdmin && isAiEnabled && (
           <button 
             onClick={() => onOpenAi && onOpenAi()} 
-            className="p-2 rounded-full border border-emerald-500/20 bg-emerald-900/10 text-emerald-500 hover:text-emerald-300 hover:bg-emerald-900/30 hover:border-emerald-500/50 transition flex items-center justify-center"
+            className="p-3 md:p-2 rounded-full border border-emerald-500/20 bg-emerald-900/10 text-emerald-500 hover:text-emerald-300 hover:bg-emerald-900/30 hover:border-emerald-500/50 transition flex items-center justify-center active:scale-95"
             title="Ballistics AI"
           >
             <Bot size={20} />
@@ -86,7 +86,7 @@ export default function Navbar({
         </div>
 
         {/* Settings / Profile */}
-        <button onClick={() => onOpenSettings && onOpenSettings()} className="p-2 rounded-full border border-slate-700/80 bg-black/60 hover:bg-zinc-800 text-slate-400 hover:text-white hover:border-zinc-500 transition flex items-center justify-center">
+        <button onClick={() => onOpenSettings && onOpenSettings()} className="p-3 md:p-2 rounded-full border border-slate-700/80 bg-black/60 hover:bg-zinc-800 text-slate-400 hover:text-white hover:border-zinc-500 transition flex items-center justify-center active:scale-95">
             <Settings size={20} />
         </button>
       </div>

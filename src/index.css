@@ -3,9 +3,9 @@ Script Name: index.css
 Script Location: src/index.css
 Date: 12/12/2025
 Created By: T03KNEE
-Version: 2.15.0 (PTR Update)
+Version: 2.16.0 (Mobile Lag Fix)
 About: Global styles.
-       - ADDED: Pull-to-Refresh animations and overscroll control.
+       - FIX: Added touch-action to remove iOS 300ms tap delay.
 ===============================================================*/
 
 @tailwind base;
@@ -15,6 +15,9 @@ About: Global styles.
 * {
   font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
   letter-spacing: 0.02em;
+  /* MOBILE FIX: Removes the 300ms delay on tapping buttons */
+  touch-action: manipulation; 
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {

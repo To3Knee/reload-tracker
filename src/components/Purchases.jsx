@@ -3,10 +3,9 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 3.0.0 (Unified Market)
-//About: Manage component LOT purchases + Supply Chain.
-//       - FIX: Removed legacy SupplyChain.jsx usage.
-//       - FIX: Integrated Market.jsx for consistent UI.
+//Version: 3.0.1 (Mobile Stack Fix)
+//About: Manage component LOT purchases.
+//       - FIX: Added flex-wrap to cards to fix iOS squishing.
 //===============================================================
 
 import { useState, useEffect, useMemo } from 'react'
@@ -15,7 +14,7 @@ import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Glo
 import { printPurchaseLabel } from '../lib/labels' 
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
-import { Market } from './Market' // CHANGE: Use the new Market component
+import { Market } from './Market'
 import { formatCurrency } from '../lib/db'
 
 const COMPONENT_TYPES = [ { value: 'powder', label: 'Powder' }, { value: 'bullet', label: 'Bullet / Projectile' }, { value: 'primer', label: 'Primer' }, { value: 'case', label: 'Brass / Case' }, { value: 'other', label: 'Other' } ]
@@ -72,7 +71,6 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
         <div><span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Supply Chain</span><h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">PURCHASES</h2></div>
       </div>
 
-      {/* ACTION BAR: Tabs Left, Button Right */}
       <div className="flex flex-wrap items-end justify-between border-b border-zinc-800 gap-4">
           <div className="flex gap-6">
             <button onClick={() => setActiveSubTab('inventory')} className={tabBtnClass(activeSubTab === 'inventory')}>
@@ -83,7 +81,6 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
             </button>
           </div>
 
-          {/* Contextual Action Button */}
           {activeSubTab === 'inventory' && canEdit && !isFormOpen && (
               <button onClick={handleAddNew} className="mb-2 px-4 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-700 hover:border-red-500/50 hover:text-white transition flex items-center gap-2">
                   <Plus size={12} /> New Lot
@@ -91,9 +88,7 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
           )}
       </div>
 
-      {/* CONTENT */}
       {activeSubTab === 'supply' ? (
-          // Use the polished Market component instead of the old SupplyChain
           <Market />
       ) : (
           <>
@@ -101,6 +96,7 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
 
             {isFormOpen && (
                 <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in relative mb-6">
+                    {/* Form Content Unchanged from original */}
                     <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={18} /></button>
                     <span className={sectionLabelClass}>{editingId ? 'EDIT PURCHASE' : 'ADD PURCHASE'}</span>
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -140,7 +136,8 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
                                                 {attribution && (<div className="mt-2 flex items-center gap-2"><span className="flex items-center gap-1 text-[9px] text-zinc-500 px-2 py-0.5 bg-black/20 rounded-full border border-zinc-800">{p.updatedByUsername ? <Clock size={10}/> : <User size={10}/>} {attribution}</span></div>)}
                                             </div>
                                         </div>
-                                        <div className="mt-3 md:mt-0 flex items-center justify-between md:justify-end gap-6">
+                                        {/* FIX: Added flex-wrap and gap-y-4 to handle mobile overflow properly */}
+                                        <div className="mt-3 md:mt-0 flex flex-wrap items-center justify-between md:justify-end gap-x-6 gap-y-4">
                                             <div className="text-right flex flex-col justify-center"><span className="text-sm font-bold text-zinc-200 leading-none">{p.qty} <span className="text-xs font-normal text-zinc-500">{p.unit}</span></span><span className="text-xs font-bold text-emerald-400 mt-1">{formatCurrency(unitCost)} <span className="text-[10px] font-normal text-emerald-600/80">/ unit</span></span></div>
                                             <div className="flex flex-col items-end gap-2 min-w-[70px]">{canEdit && (<><button onClick={() => handleEdit(p)} className="px-3 py-1 rounded-full bg-black/60 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Edit size={12} /> Edit</button><button onClick={() => promptDelete(p)} className="px-3 py-1 rounded-full bg-black/60 border border-red-900/40 text-red-400 hover:text-red-300 hover:bg-red-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Trash2 size={12} /> Remove</button></>)}<button onClick={() => { HAPTIC.click(); printPurchaseLabel(p); }} className="px-3 py-1 rounded-full bg-black/60 border border-emerald-900/40 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Printer size={12} /> Label</button></div>
                                         </div>

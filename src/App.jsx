@@ -3,10 +3,9 @@
 //Script Location: src/App.jsx
 //Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 3.9.0
+//Version: 3.9.1
 //About: Root shell. 
-//       - FEATURE: Added Global Pull-to-Refresh (PTR) logic.
-//       - UPDATE: Centralized data refreshing.
+//       - FIX: Spinner z-index set to 60 to appear above Navbar (z-50).
 //===============================================================
 
 import { useEffect, useState, useRef } from 'react'
@@ -180,9 +179,9 @@ export default function App() {
         menuItems={MENU_ITEMS}
       />
 
-      {/* Pull To Refresh Indicator */}
+      {/* Pull To Refresh Indicator - Z-Index 60 to appear ABOVE navbar (z-50) */}
       <div 
-        className="fixed top-20 left-0 right-0 flex justify-center z-40 pointer-events-none transition-transform duration-200"
+        className="fixed top-20 left-0 right-0 flex justify-center z-[60] pointer-events-none transition-transform duration-200"
         style={{ 
           transform: `translateY(${pullDistance - 50}px)`, 
           opacity: pullDistance > 10 ? 1 : 0 

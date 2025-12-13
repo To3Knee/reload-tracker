@@ -1,12 +1,12 @@
 //===============================================================
 //Script Name: AiModal.jsx
 //Script Location: src/components/AiModal.jsx
-//Date: 12/10/2025
+//Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 5.3.0 (Clean Tactical)
+//Version: 5.4.0 (Mobile UX Patch)
 //About: Chat interface.
-//       - VISUAL: Square/Tactical layout.
-//       - FIX: Removed background texture for a clean look.
+//       - FIX: Mobile Input set to 16px (text-base) to prevent iOS auto-zoom.
+//       - FIX: Container uses 100dvh to handle mobile browser address bars.
 //===============================================================
 
 import { useState, useEffect, useRef } from 'react'
@@ -74,8 +74,8 @@ export default function AiModal({ open, onClose }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-0 md:p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
       
-      {/* MAIN CONTAINER: Sharp & Technical */}
-      <div className="bg-[#050505] border border-zinc-800 w-full max-w-3xl h-full md:h-[85vh] md:rounded-sm flex flex-col shadow-2xl relative overflow-hidden ring-1 ring-white/5 font-mono">
+      {/* MAIN CONTAINER: Uses 100dvh for proper mobile height */}
+      <div className="bg-[#050505] border border-zinc-800 w-full max-w-3xl h-[100dvh] md:h-[85vh] md:rounded-sm flex flex-col shadow-2xl relative overflow-hidden ring-1 ring-white/5 font-mono">
         
         {/* HEADER: Minimal Terminal Style */}
         <div className="flex items-center justify-between p-3 border-b border-zinc-800 bg-zinc-950/90 z-10">
@@ -98,7 +98,7 @@ export default function AiModal({ open, onClose }) {
         </div>
 
         {/* CHAT AREA: Clean Background (No Texture) */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-black/20">
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-black/20 pb-20 md:pb-3">
             {messages.map((m, i) => (
                 <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'} animate-in slide-in-from-bottom-1 duration-200`}>
                     
@@ -132,13 +132,15 @@ export default function AiModal({ open, onClose }) {
         </div>
 
         {/* INPUT AREA: Slimmer & Technical */}
-        <div className="p-2 bg-zinc-950 border-t border-zinc-800 z-20">
+        {/* FIX: pb-safe added for iPhone home bar */}
+        <div className="p-2 bg-zinc-950 border-t border-zinc-800 z-20 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             <form onSubmit={handleSend} className="relative flex items-center gap-0">
-                <div className="absolute left-3 text-zinc-600">
+                <div className="absolute left-3 text-zinc-600 pointer-events-none">
                     <ChevronRight size={14} />
                 </div>
                 <input 
-                    className="flex-1 bg-[#0a0a0a] border border-zinc-800 rounded-sm pl-8 pr-12 py-2.5 text-xs md:text-sm text-zinc-200 focus:border-red-900 focus:bg-black focus:outline-none focus:ring-1 focus:ring-red-900/20 transition placeholder:text-zinc-700 font-mono"
+                    /* FIX: text-base on mobile prevents zoom */
+                    className="flex-1 bg-[#0a0a0a] border border-zinc-800 rounded-sm pl-8 pr-12 py-2.5 text-base md:text-sm text-zinc-200 focus:border-red-900 focus:bg-black focus:outline-none focus:ring-1 focus:ring-red-900/20 transition placeholder:text-zinc-700 font-mono"
                     placeholder="Enter command..."
                     value={input}
                     onChange={e => setInput(e.target.value)}
