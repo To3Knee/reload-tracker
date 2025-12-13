@@ -1,11 +1,13 @@
 //===============================================================
 //Script Name: Analytics.jsx
 //Script Location: src/components/Analytics.jsx
-//Date: 12/10/2025
+//Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 4.3.0 (Interactive Factory Compare)
+//Version: 4.6.0 (Visual Polish)
 //About: Visualizes cost history and production metrics. 
-//       - FEATURE: Clickable 'Compare vs Factory' with adjustable price.
+//       - FIX: "Inventory Value" tooltip text is now white/readable.
+//       - FIX: "Production Volume" tooltip now formats numbers (e.g. 1,000 rnds).
+//       - FIX: Explicit text contrast styles for all charts.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -14,7 +16,7 @@ import {
     getPriceTrendData, 
     getInventoryDistributionData, 
     getLoadVelocityData, 
-    getBatchCostHistoryData,
+    getBatchCostHistoryData, 
     getVolumeByCaliberData,
     getSupplyForecastData
 } from '../lib/analytics'
@@ -24,109 +26,112 @@ import { AlertCircle, Clock, Package, Flame, Coins, Crosshair, TrendingUp, Chevr
 
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1']
 
+// --- SUB-COMPONENTS ---
+
 function NoData({ message = "No data recorded" }) {
     return (
-        <div className="h-full w-full flex flex-col items-center justify-center text-slate-600 border border-dashed border-slate-800 rounded-xl bg-black/20">
-            <AlertCircle size={24} className="mb-2 opacity-50" />
-            <span className="text-xs font-medium uppercase tracking-wider">{message}</span>
+        <div className="flex flex-col items-center justify-center h-full text-slate-600 space-y-2">
+            <AlertCircle size={24} className="opacity-50" />
+            <span className="text-xs font-mono uppercase">{message}</span>
         </div>
     )
 }
 
-function ForecastItem({ type, months, mode }) {
-    let color = 'bg-slate-700';
-    let text = 'text-slate-500';
-    let label = 'Idle / No Usage';
-    let percent = 0;
+function ForecastItem({ item }) {
+    let colorClass = "bg-emerald-500"
+    if (item.days < 30) colorClass = "bg-red-600 animate-pulse"
+    else if (item.days < 90) colorClass = "bg-amber-500"
 
-    if (months !== null) {
-        if (months === 0) {
-            color = 'bg-red-900';
-            text = 'text-red-500';
-            label = 'Empty';
-            percent = 5;
-        } else {
-            percent = Math.min((months / 12) * 100, 100);
-            label = `${months} Months`;
-            
-            if (months < 3) { color = 'bg-red-500'; text = 'text-red-400'; }
-            else if (months < 6) { color = 'bg-amber-500'; text = 'text-amber-400'; }
-            else { color = 'bg-emerald-500'; text = 'text-emerald-400'; }
-        }
-    } else {
-        color = 'bg-slate-600';
-        text = 'text-slate-400';
-        percent = 100; 
-    }
-    
     return (
-        <div className="mb-4 last:mb-0">
-            <div className="flex justify-between items-end mb-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{type}</span>
-                <span className={`text-xs font-mono font-bold ${text}`}>{label} {mode === 'Long Term' && <span className="text-[8px] text-slate-600 ml-1">(LTA)</span>}</span>
+        <div className="flex items-center justify-between p-3 bg-black/40 border border-zinc-800 rounded-xl mb-2 last:mb-0">
+            <div className="flex items-center gap-3">
+                <div className={`w-2 h-2 rounded-full ${colorClass}`} />
+                <div>
+                    <div className="text-xs font-bold text-slate-200">{item.name}</div>
+                    <div className="text-[10px] text-slate-500 flex items-center gap-2">
+                        <span>{item.rounds.toLocaleString()} rnds left</span>
+                        <span className="text-slate-600">•</span>
+                        <span className="text-orange-400 font-mono flex items-center gap-0.5">
+                            <Flame size={8}/> {item.burnRate}/mo
+                        </span>
+                    </div>
+                </div>
             </div>
-            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full ${color} transition-all duration-1000`} style={{ width: `${percent}%` }}></div>
+            <div className="text-right">
+                <div className="text-xs font-mono font-bold text-slate-300">{item.days} Days</div>
+                <div className="text-[10px] text-slate-600">Supply</div>
             </div>
         </div>
     )
 }
+
+// --- MAIN COMPONENT ---
 
 export function Analytics() {
+  const [spendData, setSpendData] = useState([])
+  const [trendData, setTrendData] = useState([])
   const [distData, setDistData] = useState([])
   const [velocityData, setVelocityData] = useState([])
-  const [historyData, setHistoryData] = useState([])
+  const [costHistory, setCostHistory] = useState([])
   const [volumeData, setVolumeData] = useState([])
   const [forecastData, setForecastData] = useState([])
+  
   const [loading, setLoading] = useState(true)
 
-  // Factory Compare State
-  const [showFactory, setShowFactory] = useState(false)
-  const [factoryPrice, setFactoryPrice] = useState(1.20) // Default $1.20
-
-  const avgCost = historyData.length > 0 ? historyData[historyData.length - 1].cost : 0;
-  const savingsPerRound = Math.max(0, factoryPrice - avgCost);
-  const savingsPercent = avgCost > 0 ? Math.round((savingsPerRound / factoryPrice) * 100) : 0;
+  // Factory Comparison State
+  const [factoryPrice, setFactoryPrice] = useState(0.40) 
+  const [showFactoryLine, setShowFactoryLine] = useState(false)
 
   useEffect(() => {
     async function load() {
-      try {
-        setLoading(true)
-        const [dist, velocity, history, volume, forecast] = await Promise.all([
-            getInventoryDistributionData().catch(()=>[]), 
-            getLoadVelocityData().catch(()=>[]), 
-            getBatchCostHistoryData().catch(()=>[]),
-            getVolumeByCaliberData().catch(()=>[]),
-            getSupplyForecastData().catch(()=>[])
-        ])
-        setDistData(dist || [])
-        setVelocityData(velocity || [])
-        setHistoryData(history || [])
-        setVolumeData(volume || [])
-        setForecastData(forecast || [])
-      } catch (e) {
-         console.error("Analytics Load Error", e)
-      } finally { 
-        setLoading(false) 
-      }
+        try {
+            const [spend, trends, dist, vel, costs, vol, forecast] = await Promise.all([
+                getMonthlySpendData().catch(()=>[]),
+                getPriceTrendData().catch(()=>[]),
+                getInventoryDistributionData().catch(()=>[]),
+                getLoadVelocityData().catch(()=>[]),
+                getBatchCostHistoryData().catch(()=>[]),
+                getVolumeByCaliberData().catch(()=>[]),
+                getSupplyForecastData().catch(()=>[])
+            ])
+            setSpendData(spend)
+            setTrendData(trends)
+            setDistData(dist)
+            setVelocityData(vel)
+            setCostHistory(costs)
+            setVolumeData(vol)
+            setForecastData(forecast)
+        } catch (e) {
+            console.error("Analytics Load Error:", e)
+        } finally {
+            setLoading(false)
+        }
     }
     load()
   }, [])
 
-  if (loading) return <div className="p-12 text-center text-slate-500 animate-pulse">Loading Intelligence...</div>
-
+  // Dark Theme Tooltip Style
   const tooltipStyle = {
-      backgroundColor: '#09090b', 
-      border: '1px solid #333', 
+      backgroundColor: '#09090b', // Zinc-950
+      borderColor: '#27272a',     // Zinc-800
       borderRadius: '8px',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
-      color: '#fff',
       fontSize: '11px',
-      padding: '8px 12px'
+      color: '#f4f4f5',           // Zinc-100 (White text)
+      boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+      outline: 'none'
   }
 
+  // Explicit text style for list items inside tooltip
+  const itemStyle = {
+      color: '#f4f4f5' 
+  }
+
+  if (loading) return <div className="p-8 text-center text-xs text-slate-500 animate-pulse">Running Ballistics Calculations...</div>
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 pb-12">
+      
+      {/* HEADER */}
       <div className="flex items-start gap-4">
         <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
         <div>
@@ -135,135 +140,201 @@ export function Analytics() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-2 gap-6">
           
-          {/* 1. BURN RATE */}
+          {/* 1. SPEND HISTORY */}
           <div className="glass rounded-2xl p-6 border border-zinc-800/50">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Flame size={14} className="text-red-500"/> Burn Rate (Rounds/Mo)
+                <Coins size={14} className="text-emerald-500"/> Monthly Spend
             </h3>
-            <div className="h-[200px] w-full">
-                {velocityData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                        <AreaChart data={velocityData}>
-                            <defs><linearGradient id="colorRounds" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/><stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/></linearGradient></defs>
+            <div className="h-[250px] w-full">
+                {spendData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <BarChart data={spendData} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
                             <XAxis dataKey="month" stroke="#555" fontSize={10} tickMargin={10} />
-                            <YAxis stroke="#555" fontSize={10} />
-                            <Tooltip contentStyle={tooltipStyle} itemStyle={{color: '#f59e0b'}} />
-                            <Area type="monotone" dataKey="rounds" stroke="#f59e0b" strokeWidth={2} fillOpacity={1} fill="url(#colorRounds)" />
+                            <YAxis stroke="#555" fontSize={10} tickFormatter={(val) => `$${val}`} />
+                            <Tooltip 
+                                contentStyle={tooltipStyle}
+                                itemStyle={itemStyle}
+                                formatter={(val) => formatCurrency(val)}
+                                cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                            />
+                            <Bar dataKey="total" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={30} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                ) : <NoData message="No Purchase History" />}
+            </div>
+          </div>
+
+          {/* 2. COST PER ROUND */}
+          <div className="glass rounded-2xl p-6 border border-zinc-800/50">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <TrendingUp size={14} className="text-blue-500"/> Cost Per Round History
+                </h3>
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setShowFactoryLine(!showFactoryLine)}
+                        className={`px-2 py-1 rounded text-[9px] font-bold uppercase transition ${showFactoryLine ? 'bg-blue-900/30 text-blue-400 border border-blue-500/30' : 'bg-zinc-800 text-zinc-500 border border-zinc-700'}`}
+                    >
+                        Vs Factory
+                    </button>
+                    {showFactoryLine && (
+                        <div className="flex items-center bg-black/40 border border-blue-900/50 rounded px-2">
+                            <span className="text-[10px] text-blue-500 mr-1">$</span>
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                className="w-10 bg-transparent text-[10px] text-blue-300 focus:outline-none font-mono"
+                                value={factoryPrice}
+                                onChange={(e) => setFactoryPrice(Number(e.target.value))}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+            
+            <div className="h-[250px] w-full">
+                {costHistory.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <AreaChart data={costHistory} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
+                            <defs>
+                                <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                            <XAxis dataKey="date" stroke="#555" fontSize={10} tickFormatter={(str) => str.substring(5)} />
+                            <YAxis stroke="#555" fontSize={10} tickFormatter={(val) => `$${val}`} />
+                            <Tooltip 
+                                contentStyle={tooltipStyle} 
+                                itemStyle={itemStyle}
+                                formatter={(val) => [`$${val.toFixed(3)}`, 'Cost/Rnd']} 
+                            />
+                            <Area type="monotone" dataKey="cost" stroke="#3b82f6" fillOpacity={1} fill="url(#colorCost)" strokeWidth={2} />
+                            
+                            {showFactoryLine && (
+                                <Area 
+                                    type="monotone" 
+                                    dataKey={() => factoryPrice} 
+                                    stroke="#60a5fa" 
+                                    strokeDasharray="4 4" 
+                                    strokeWidth={1} 
+                                    fill="transparent" 
+                                    activeDot={false}
+                                    isAnimationActive={false}
+                                />
+                            )}
                         </AreaChart>
                     </ResponsiveContainer>
                 ) : <NoData message="No Batches Logged" />}
             </div>
           </div>
 
-          {/* 2. SUPPLY ENDURANCE */}
-          <div className="glass rounded-2xl p-6 border border-zinc-800/50 flex flex-col">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Clock size={14} className="text-red-500"/> Supply Endurance
-            </h3>
-            <div className="flex-1 flex flex-col justify-center">
-                {forecastData.length > 0 ? (
-                    forecastData.map(f => <ForecastItem key={f.type} type={f.type} months={f.months} mode={f.mode} />)
-                ) : <NoData message="Need Data" />}
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-800/50 text-[9px] text-slate-500 text-center">
-                Based on 90-day activity (or Long Term).
-            </div>
-          </div>
-
-          {/* 3. INVENTORY VALUE */}
+          {/* 3. INVENTORY VALUE (Pie) */}
           <div className="glass rounded-2xl p-6 border border-zinc-800/50">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Package size={14} className="text-red-500"/> Inventory Value
+                <Package size={14} className="text-amber-500"/> Inventory Value
             </h3>
-            <div className="h-[200px] w-full">
+            <div className="h-[250px] w-full flex items-center justify-center">
                 {distData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <PieChart>
-                            <Pie data={distData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value" stroke="none">
-                                {distData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                            <Pie
+                                data={distData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                                nameKey="name"
+                                stroke="none"
+                            >
+                                {distData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
                             </Pie>
-                            <Tooltip contentStyle={tooltipStyle} itemStyle={{color: '#ccc'}} formatter={(val) => formatCurrency(val)} />
-                            <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{fontSize: '10px', color: '#888'}} />
+                            <Tooltip 
+                                contentStyle={tooltipStyle} 
+                                itemStyle={itemStyle} // FIX: Ensures white text
+                                formatter={(val) => formatCurrency(val)} 
+                            />
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize: '10px', paddingTop: '10px'}}/>
                         </PieChart>
                     </ResponsiveContainer>
-                ) : <NoData message="Empty Inventory" />}
-            </div>
-          </div>
-      </div>
-      
-      <div className="grid md:grid-cols-3 gap-6">
-          {/* 4. COST TREND (INTERACTIVE) */}
-          <div className="glass rounded-2xl p-6 border border-zinc-800/50 md:col-span-2">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:text-white transition" onClick={() => setShowFactory(!showFactory)}>
-                    <Coins size={14} className="text-red-500"/> Avg Cost Per Round
-                    {showFactory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </h3>
-                
-                {showFactory && (
-                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700">
-                        <label className="text-[10px] text-zinc-400 uppercase tracking-wider">Compare vs Factory ($):</label>
-                        <input 
-                            type="number" 
-                            step="0.01" 
-                            className="w-16 bg-black border border-zinc-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-red-500"
-                            value={factoryPrice}
-                            onChange={(e) => setFactoryPrice(Number(e.target.value))}
-                        />
-                    </div>
-                )}
-
-                {avgCost > 0 && !showFactory && (
-                    <div className="text-right cursor-pointer" onClick={() => setShowFactory(true)}>
-                        <span className="text-[10px] text-slate-400 block uppercase tracking-wider">vs Factory (${factoryPrice.toFixed(2)})</span>
-                        <span className="text-sm font-bold text-emerald-400 flex items-center gap-1 justify-end">
-                            <TrendingUp size={12} /> {savingsPercent}% Savings
-                        </span>
-                    </div>
-                )}
-            </div>
-            
-            <div className="h-[250px] w-full">
-                {historyData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                        <LineChart data={historyData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                            <XAxis dataKey="date" stroke="#555" fontSize={10} tickMargin={10} />
-                            <YAxis stroke="#555" fontSize={10} tickFormatter={(val) => `$${val}`} />
-                            <Tooltip contentStyle={tooltipStyle} itemStyle={{color: '#ef4444'}} formatter={(val) => formatCurrency(val)} />
-                            <Line type="monotone" dataKey="cost" stroke="#ef4444" strokeWidth={3} dot={{r: 4, fill: '#ef4444', strokeWidth: 0}} activeDot={{r: 6}} />
-                            {/* Comparison Line */}
-                            {showFactory && (
-                                <Line type="monotone" dataKey={() => factoryPrice} stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={false} name="Factory Price" />
-                            )}
-                        </LineChart>
-                    </ResponsiveContainer>
-                ) : <NoData message="No History" />}
+                ) : <NoData message="Inventory Empty" />}
             </div>
           </div>
 
-          {/* 5. TOP CALIBERS */}
-          <div className="glass rounded-2xl p-6 border border-zinc-800/50">
+          {/* 4. SUPPLY FORECAST */}
+          <div className="glass rounded-2xl p-6 border border-zinc-800/50 flex flex-col">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Crosshair size={14} className="text-red-500"/> Top Calibers
+                <Flame size={14} className="text-orange-500"/> Supply Forecast
+            </h3>
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-[250px]">
+                {forecastData.length > 0 ? (
+                    forecastData.map((item, i) => (
+                        <ForecastItem key={item.name} item={item} />
+                    ))
+                ) : <NoData message="Not Enough Usage Data" />}
+            </div>
+          </div>
+
+          {/* 5. VELOCITY CONSISTENCY */}
+          <div className="glass rounded-2xl p-6 border border-zinc-800/50 lg:col-span-2">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Clock size={14} className="text-purple-500"/> Velocity Consistency (SD)
             </h3>
             <div className="h-[250px] w-full">
+                {velocityData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <LineChart data={velocityData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                            <XAxis dataKey="date" stroke="#555" fontSize={10} tickFormatter={(str) => str.substring(5)} />
+                            <YAxis stroke="#555" fontSize={10} label={{ value: 'SD (fps)', angle: -90, position: 'insideLeft', fill: '#666', fontSize: 9 }} />
+                            <Tooltip 
+                                contentStyle={tooltipStyle}
+                                itemStyle={itemStyle}
+                                labelFormatter={(label, payload) => {
+                                    if (!payload || !payload.length) return label;
+                                    return `${payload[0].payload.name} (${payload[0].payload.caliber})`;
+                                }}
+                            />
+                            <Line type="monotone" dataKey="sd" stroke="#8b5cf6" strokeWidth={2} dot={{r: 3, fill: '#8b5cf6'}} activeDot={{r: 5}} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                ) : <NoData message="No Range Data" />}
+            </div>
+          </div>
+
+          {/* 6. TOP CALIBERS */}
+          <div className="glass rounded-2xl p-6 border border-zinc-800/50 lg:col-span-2">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Crosshair size={14} className="text-red-500"/> Production Volume
+            </h3>
+            <div className="h-[200px] w-full">
                 {volumeData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <BarChart data={volumeData} layout="vertical" margin={{ left: 10 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#222" horizontal={true} vertical={false} />
                             <XAxis type="number" stroke="#555" fontSize={10} />
                             <YAxis dataKey="name" type="category" stroke="#999" fontSize={10} width={60} />
-                            <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
+                            <Tooltip 
+                                contentStyle={tooltipStyle} 
+                                itemStyle={itemStyle}
+                                cursor={{fill: 'rgba(255,255,255,0.05)'}} 
+                                formatter={(value) => [`${value.toLocaleString()} rnds`, 'Total Loaded']} // FIX: Formatted nicely
+                            />
                             <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={15} />
                         </BarChart>
                     </ResponsiveContainer>
-                ) : <NoData message="No Volume Data" />}
+                ) : <NoData message="No Production History" />}
             </div>
           </div>
+
       </div>
     </div>
   )
