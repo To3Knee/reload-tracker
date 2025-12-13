@@ -1,20 +1,22 @@
 //===============================================================
 //Script Name: Purchases.jsx
 //Script Location: src/components/Purchases.jsx
-//Date: 12/08/2025
+//Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 2.36.0
+//Version: 3.0.0 (Unified Market)
 //About: Manage component LOT purchases + Supply Chain.
-//       - FIX: "Pro" Layout (Tabs & Action Button inline).
+//       - FIX: Removed legacy SupplyChain.jsx usage.
+//       - FIX: Integrated Market.jsx for consistent UI.
 //===============================================================
 
 import { useState, useEffect, useMemo } from 'react'
-import { getAllPurchases, addPurchase, deletePurchase, formatCurrency, calculatePerUnit } from '../lib/db'
-import { Trash2, Plus, ShoppingCart, Search, Printer, X, Edit, User, Clock, Image as ImageIcon, AlertTriangle, Globe, Package } from 'lucide-react'
+import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit } from '../lib/db'
+import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package } from 'lucide-react'
 import { printPurchaseLabel } from '../lib/labels' 
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
-import { SupplyChain } from './SupplyChain'
+import { Market } from './Market' // CHANGE: Use the new Market component
+import { formatCurrency } from '../lib/db'
 
 const COMPONENT_TYPES = [ { value: 'powder', label: 'Powder' }, { value: 'bullet', label: 'Bullet / Projectile' }, { value: 'primer', label: 'Primer' }, { value: 'case', label: 'Brass / Case' }, { value: 'other', label: 'Other' } ]
 const UNITS = [ { value: 'lb', label: 'Pounds (lb)' }, { value: 'kg', label: 'Kilograms (kg)' }, { value: 'gr', label: 'Grains (gr)' }, { value: 'each', label: 'Each / Pieces' }, { value: 'rounds', label: 'Rounds' } ]
@@ -61,7 +63,6 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
   const helpClass = "text-[9px] text-zinc-600 mt-0.5 italic"
   const sectionLabelClass = "text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4 block"
   
-  // NEW: Minimalist Tab Style
   const tabBtnClass = (active) => `pb-2 px-1 text-xs font-bold uppercase tracking-wider transition border-b-2 ${active ? 'border-red-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`
 
   return (
@@ -92,7 +93,8 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
 
       {/* CONTENT */}
       {activeSubTab === 'supply' ? (
-          <SupplyChain />
+          // Use the polished Market component instead of the old SupplyChain
+          <Market />
       ) : (
           <>
             {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}

@@ -1,12 +1,14 @@
 //===============================================================
 //Script Name: RangeLogs.jsx
 //Script Location: src/components/RangeLogs.jsx
-//Date: 12/08/2025
+//Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 4.1.0
-//About: Range Logs. 
-//       - FIX: Restored "New Session" button visibility.
-//       - FIX: Aligned UI with Purchases/Armory Action Bar style.
+//Github: https://github.com/To3Knee/reload-tracker
+//Version: 5.3.2 (Layout & Logic Cleanup)
+//About: Range Logs management.
+//       - FIX: Weather Row layout stabilized (No overlap).
+//       - FIX: Rounds Fired is now editable (Unlocked).
+//       - FIX: SD/ES and Shot Calculator layout conflicts resolved.
 //===============================================================
 
 import { useEffect, useState } from 'react'
@@ -14,7 +16,7 @@ import { getRangeLogs, createRangeLog, updateRangeLog, deleteRangeLog } from '..
 import { getBatches } from '../lib/batches' 
 import { getFirearms } from '../lib/armory'
 import { calculateStatistics } from '../lib/math'
-import { Target, Plus, Wind, Thermometer, ExternalLink, Calendar, MapPin, Printer, Crosshair, Calculator, Trash2, User, Clock } from 'lucide-react'
+import { Target, Plus, Thermometer, ExternalLink, Calendar, MapPin, Printer, Crosshair, Calculator, Trash2, User, Clock } from 'lucide-react'
 import UploadButton from './UploadButton'
 import QRCode from 'qrcode'
 import { HAPTIC } from '../lib/haptics'
@@ -155,6 +157,44 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     setShotString(prev => prev.filter((_, i) => i !== index))
   }
 
+  // --- WEATHER ENGINE ---
+  async function handleAutoWeather() {
+    if (!navigator.geolocation) return alert("Geolocation not supported")
+    HAPTIC.click()
+    
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+            const { latitude, longitude } = pos.coords
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`
+            const res = await fetch(url)
+            if (!res.ok) throw new Error("Weather API Error")
+            const data = await res.json()
+            const cur = data.current
+            
+            // Convert degrees to direction
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+            const windDir = directions[Math.round(cur.wind_direction_10m / 45) % 8]
+            
+            // Format: "10mph NW, 29.92inHg, 45% RH"
+            const desc = `${cur.wind_speed_10m}mph ${windDir}, ${cur.surface_pressure}inHg, ${cur.relative_humidity_2m}% RH`
+            
+            setForm(prev => ({ 
+                ...prev, 
+                temp: Math.round(cur.temperature_2m),
+                weather: desc 
+            }))
+            HAPTIC.success()
+        } catch (e) {
+            console.error(e)
+            alert("Could not fetch weather data.")
+            HAPTIC.error()
+        }
+    }, () => {
+        alert("Location access denied.")
+        HAPTIC.error()
+    })
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
@@ -204,7 +244,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     HAPTIC.click()
     const win = window.open('', '_blank')
     if (!win) { alert('Popup blocked. Please allow popups.'); return }
-    win.document.write('<html><body><p>Generating PDF...</p></body></html>')
+    win.document.write('<html><body><p>Generating Ballistic Certificate...</p></body></html>')
 
     const title = getRecipeDisplay(log)
     const [recipeName, caliber] = title.includes('(') ? title.split('(') : [title, '']
@@ -217,11 +257,54 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     let qrDataUri = ''
     try { qrDataUri = await QRCode.toDataURL(qrUrl, { width: 150, margin: 0, color: { dark: '#000000', light: '#ffffff' } }) } catch (e) {}
 
+    const r = recipes.find(x => String(x.id) === String(log.recipeId)) || {}
+    const bullet = r.bulletName ? `${r.bulletWeightGr || '?'}gr ${r.bulletName}` : 'Unknown Bullet'
+    const powder = r.powderName ? `${r.chargeGrains || '?'}gr ${r.powderName}` : 'Unknown Powder'
+    const primer = r.primerName || 'Unknown Primer'
+    const coal = r.coal ? `COAL: ${r.coal}"` : ''
+
     const firearmLine = log.firearmName ? `<p style="margin-top:4px;"><strong>RIFLE:</strong> ${log.firearmName}</p>` : ''
     const batchLine = log.batchId ? `<p style="margin-top:2px;"><strong>BATCH:</strong> #${log.batchId}</p>` : ''
-    const shotsDisplay = (log.shots && log.shots.length > 0) ? `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;"><span class="stat-label">Shot Data (${log.shots.length})</span><div style="font-size:9px; color:#444; margin-top:4px; font-family:monospace;">${log.shots.join(', ')}</div></div>` : ''
+    const shotsDisplay = (log.shots && log.shots.length > 0) ? `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;"><span class="stat-label">Shot Data (n=${log.shots.length})</span><div style="font-size:9px; color:#444; margin-top:4px; font-family:monospace; word-wrap:break-word;">${log.shots.join(', ')}</div></div>` : ''
 
-    const html = `<!DOCTYPE html><html><head><title>Range Log</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');@page { margin: 0; size: 4in 6in; }*{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }body{ margin:0; padding:0; font-family:'Inter', sans-serif; background:#000; color:#111; }.card{ width:4in; height:6in; display:flex; flex-direction:column; overflow:hidden; position:relative; background:#fff; }.header{ background-color:#0f0f0f !important; color:white !important; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:5px solid #b33c3c !important; }.header-left h1{ font-size:16px; font-weight:900; text-transform:uppercase; margin:0; }.header-left h2{ font-size:11px; font-weight:600; color:#b33c3c !important; margin:2px 0 0 0; text-transform:uppercase; }.header-left p{ font-size:9px; color:#aaa !important; margin:4px 0 0 0; }.header-right{ display:flex; align-items:center; gap:12px; }.logo{ height:40px; width:auto; }.header-qr{ background:white !important; padding:3px; border-radius:3px; display:flex; flex-direction:column; align-items:center; }.qr-img{ width:38px; height:38px; }.qr-label{ font-size:4px; color:black; font-weight:900; text-transform:uppercase; margin-top:1px; }.content{ padding:15px 20px; flex:1; display:flex; flex-direction:column; }.target-container{ width:100%; height:2.2in; background:#fff !important; border-radius:6px; overflow:hidden; margin-bottom:15px; border:1px solid #ddd; }.main-img{ width:100%; height:100%; object-fit:contain; }.no-img{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:10px; font-weight:600; text-transform:uppercase; }.grid-row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px; }.stat-box{ background-color:#f4f4f4 !important; padding:6px 8px; border-radius:4px; border-left:3px solid #ddd !important; }.stat-box.highlight{ border-left-color:#b33c3c !important; background-color:#fff0f0 !important; }.stat-label{ font-size:7px; text-transform:uppercase; color:#666; font-weight:700; display:block; }.stat-val{ font-size:12px; font-weight:800; color:#111; display:block; }.stat-unit{ font-size:8px; font-weight:500; color:#888; margin-left:1px; }.notes-section{ margin-top:8px; background:#fff; border:1px dashed #ccc; padding:10px; border-radius:4px; flex:1; }.notes-label{ font-size:8px; font-weight:900; text-transform:uppercase; color:#b33c3c; margin-bottom:4px; display:block; }.notes-text{ font-size:9px; line-height:1.4; color:#333; }.footer{ padding:10px 20px; background:#f4f4f4 !important; border-top:1px solid #e0e0e0; font-size:8px; color:#888; text-transform:uppercase; letter-spacing:0.1em; display:flex; justify-content:space-between; }/* CLOSE BUTTON */.close-btn{ position:fixed; top:20px; right:20px; z-index:9999; background:rgba(0,0,0,0.8); color:#fff; padding:12px 24px; border-radius:50px; font-family:sans-serif; font-weight:bold; font-size:14px; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); cursor:pointer; backdrop-filter:blur(10px); }@media print{ .close-btn, .print-warning{ display:none !important; } }</style></head><body><button onclick="window.close()" class="close-btn">Done / Close</button><div class="card"><div class="header"><div class="header-left"><h1>${recipeName}</h1><h2>${cleanCaliber}</h2><p>${dateStr} • ${log.location || 'Range'}</p>${firearmLine}${batchLine}</div><div class="header-right"><div class="header-qr"><img src="${qrDataUri}" class="qr-img" /><span class="qr-label">Scan</span></div><img src="${logoUrl}" class="logo" /></div></div><div class="content"><div class="target-container">${log.imageUrl ? `<img src="${log.imageUrl}" class="main-img" />` : '<div class="no-img">No Image</div>'}</div><div class="grid-row"><div class="stat-box highlight"><span class="stat-label">Group Size</span><span class="stat-val">${log.groupSize || '--'}<span class="stat-unit">IN</span></span></div><div class="stat-box"><span class="stat-label">MOA</span><span class="stat-val">${moa}</span></div><div class="stat-box"><span class="stat-label">Distance</span><span class="stat-val">${log.distance || '--'}<span class="stat-unit">YDS</span></span></div></div><div class="grid-row"><div class="stat-box"><span class="stat-label">Avg Velocity</span><span class="stat-val">${log.velocity || '--'}<span class="stat-unit">FPS</span></span></div><div class="stat-box"><span class="stat-label">SD</span><span class="stat-val">${log.sd || '--'}</span></div><div class="stat-box"><span class="stat-label">ES</span><span class="stat-val">${log.es || '--'}</span></div></div><div class="notes-section"><span class="notes-label">Session Notes</span><div class="notes-text">${log.notes || 'No notes recorded.'}${log.weather ? `<br/><br/><strong>Conditions:</strong> ${log.weather} ${log.temp ? `(${log.temp}°F)` : ''}` : ''}</div>${shotsDisplay}</div></div><div class="footer"><span>Log ID: ${log.id}</span><span>Reload Tracker</span></div></div><script>window.onload = () => { setTimeout(() => window.print(), 500); };</script></body></html>`
+    const html = `<!DOCTYPE html><html><head><title>Range Log #${log.id}</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');@page { margin: 0; size: 4in 6in; }*{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }body{ margin:0; padding:0; font-family:'Inter', sans-serif; background:#000; color:#111; }.card{ width:4in; height:6in; display:flex; flex-direction:column; overflow:hidden; position:relative; background:#fff; }.header{ background-color:#0f0f0f !important; color:white !important; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:5px solid #b33c3c !important; }.header-left h1{ font-size:16px; font-weight:900; text-transform:uppercase; margin:0; }.header-left h2{ font-size:11px; font-weight:600; color:#b33c3c !important; margin:2px 0 0 0; text-transform:uppercase; }.header-left p{ font-size:9px; color:#aaa !important; margin:4px 0 0 0; }.header-right{ display:flex; align-items:center; gap:12px; }.logo{ height:40px; width:auto; }.header-qr{ background:white !important; padding:3px; border-radius:3px; display:flex; flex-direction:column; align-items:center; }.qr-img{ width:38px; height:38px; }.qr-label{ font-size:4px; color:black; font-weight:900; text-transform:uppercase; margin-top:1px; }
+    .load-strip { background-color:#f4f4f4 !important; padding:8px 20px; border-bottom:1px solid #e0e0e0; display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; }
+    .load-item { font-size:8px; color:#333; display:flex; flex-direction:column; }
+    .load-label { font-size:6px; font-weight:900; color:#b33c3c; text-transform:uppercase; margin-bottom:1px; }
+    .load-val { font-weight:700; font-family:monospace; font-size:9px; }
+    .content{ padding:15px 20px; flex:1; display:flex; flex-direction:column; }.target-container{ width:100%; height:2.0in; background:#fff !important; border-radius:6px; overflow:hidden; margin-bottom:15px; border:1px solid #ddd; position:relative; }.main-img{ width:100%; height:100%; object-fit:contain; }.no-img{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:10px; font-weight:600; text-transform:uppercase; }.grid-row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px; }.stat-box{ background-color:#f4f4f4 !important; padding:6px 8px; border-radius:4px; border-left:3px solid #ddd !important; }.stat-box.highlight{ border-left-color:#b33c3c !important; background-color:#fff0f0 !important; }.stat-label{ font-size:7px; text-transform:uppercase; color:#666; font-weight:700; display:block; }.stat-val{ font-size:12px; font-weight:800; color:#111; display:block; }.stat-unit{ font-size:8px; font-weight:500; color:#888; margin-left:1px; }.notes-section{ margin-top:8px; background:#fff; border:1px dashed #ccc; padding:10px; border-radius:4px; flex:1; }.notes-label{ font-size:8px; font-weight:900; text-transform:uppercase; color:#b33c3c; margin-bottom:4px; display:block; }.notes-text{ font-size:9px; line-height:1.4; color:#333; }.footer{ padding:10px 20px; background:#f4f4f4 !important; border-top:1px solid #e0e0e0; font-size:8px; color:#888; text-transform:uppercase; letter-spacing:0.1em; display:flex; justify-content:space-between; }/* CLOSE BUTTON */.close-btn{ position:fixed; top:20px; right:20px; z-index:9999; background:rgba(0,0,0,0.8); color:#fff; padding:12px 24px; border-radius:50px; font-family:sans-serif; font-weight:bold; font-size:14px; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); cursor:pointer; backdrop-filter:blur(10px); }@media print{ .close-btn, .print-warning{ display:none !important; } }</style></head><body><button onclick="window.close()" class="close-btn">Done / Close</button>
+    <div class="card">
+        <div class="header">
+            <div class="header-left"><h1>${recipeName}</h1><h2>${cleanCaliber}</h2><p>${dateStr} • ${log.location || 'Range'}</p>${firearmLine}${batchLine}</div>
+            <div class="header-right"><div class="header-qr"><img src="${qrDataUri}" class="qr-img" /><span class="qr-label">Scan</span></div><img src="${logoUrl}" class="logo" /></div>
+        </div>
+        <div class="load-strip">
+            <div class="load-item"><span class="load-label">Bullet</span><span class="load-val">${bullet}</span></div>
+            <div class="load-item"><span class="load-label">Powder</span><span class="load-val">${powder}</span></div>
+            <div class="load-item"><span class="load-label">Primer</span><span class="load-val">${primer}</span></div>
+            ${coal ? `<div class="load-item"><span class="load-label">COAL</span><span class="load-val">${r.coal}"</span></div>` : ''}
+        </div>
+        <div class="content">
+            <div class="target-container">${log.imageUrl ? `<img src="${log.imageUrl}" class="main-img" />` : '<div class="no-img">No Image</div>'}</div>
+            <div class="grid-row">
+                <div class="stat-box highlight"><span class="stat-label">Group Size</span><span class="stat-val">${log.groupSize || '--'}<span class="stat-unit">IN</span></span></div>
+                <div class="stat-box"><span class="stat-label">MOA</span><span class="stat-val">${moa}</span></div>
+                <div class="stat-box"><span class="stat-label">Distance</span><span class="stat-val">${log.distance || '--'}<span class="stat-unit">YDS</span></span></div>
+            </div>
+            <div class="grid-row">
+                <div class="stat-box"><span class="stat-label">Avg Velocity</span><span class="stat-val">${log.velocity || '--'}<span class="stat-unit">FPS</span></span></div>
+                <div class="stat-box"><span class="stat-label">SD</span><span class="stat-val">${log.sd || '--'}</span></div>
+                <div class="stat-box"><span class="stat-label">ES</span><span class="stat-val">${log.es || '--'}</span></div>
+            </div>
+            <div class="notes-section">
+                <span class="notes-label">Session Notes</span>
+                <div class="notes-text">${log.notes || 'No notes recorded.'}${log.weather ? `<br/><br/><strong>Conditions:</strong> ${log.weather} ${log.temp ? `(${log.temp}°F)` : ''}` : ''}</div>
+                ${shotsDisplay}
+            </div>
+        </div>
+        <div class="footer"><span>Log ID: ${log.id}</span><span>Reload Tracker</span></div>
+    </div>
+    <script>window.onload = () => { setTimeout(() => window.print(), 500); };</script></body></html>`
     
     win.document.open()
     win.document.write(html)
@@ -241,7 +324,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
         </div>
       </div>
       
-      {/* UI FIX: Moved "New Session" button here, separated from the Title Block to match Purchases.jsx */}
       <div className="flex justify-end border-b border-zinc-800 pb-2 mb-6">
             {canEdit && !isFormOpen && (
                 <button onClick={handleNewLog} className="px-4 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-700 hover:border-red-500/50 hover:text-white transition flex items-center gap-2">
@@ -288,17 +370,18 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
                         <span className="text-[9px] text-slate-500">{shotString.length} shots recorded</span>
                     </div>
                     <div className="flex gap-2">
-                        <input type="number" className={inputClass} placeholder="Enter velocity (fps)..." value={shotInput} onChange={e => setShotInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addShot())} />
-                        <button type="button" onClick={addShot} className="px-3 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition"><Plus size={14}/></button>
+                        {/* FIX: Replaced w-full with flex-1 to prevent button overlap */}
+                        <input type="number" className={inputClass.replace("w-full", "") + " flex-1 min-w-0"} placeholder="Enter velocity (fps)..." value={shotInput} onChange={e => setShotInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addShot())} />
+                        <button type="button" onClick={addShot} className="px-3 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition flex-shrink-0"><Plus size={14}/></button>
                     </div>
                     {shotString.length > 0 && (<div className="flex flex-wrap gap-2 mt-2 max-h-20 overflow-y-auto custom-scrollbar">{shotString.map((s, i) => (<span key={i} onClick={() => removeShot(i)} className="px-2 py-1 rounded bg-slate-800/50 text-[10px] text-slate-300 border border-slate-700 hover:border-red-500/50 hover:text-red-400 cursor-pointer transition flex items-center gap-1">{s}</span>))}</div>)}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-2">
                     <div>
+                         {/* FIX: Removed 'disabled' attribute and warning text */}
                          <label className={labelClass}>Rounds Fired</label>
-                         <input type="number" className={inputClass} value={form.roundsFired} onChange={e => setForm({...form, roundsFired: e.target.value})} placeholder={editingId ? "No Odometer update" : "Updates Odometer"} disabled={!!editingId} />
-                         {editingId && <p className="text-[9px] text-slate-500 mt-1">Can't edit count on existing log.</p>}
+                         <input type="number" className={inputClass} value={form.roundsFired} onChange={e => setForm({...form, roundsFired: e.target.value})} placeholder="Rounds Fired" />
                     </div>
                     <div><label className={labelClass}>Distance (yds)</label><input type="number" className={inputClass} value={form.distance} onChange={e => setForm({...form, distance: e.target.value})} /></div>
                 </div>
@@ -306,18 +389,39 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
                 <div className="grid grid-cols-3 gap-4">
                     <div><label className={labelClass}>Group (in)</label><input type="number" step="0.01" className={inputClass} value={form.groupSize} onChange={e => setForm({...form, groupSize: e.target.value})} /></div>
                     <div><label className={labelClass}>Avg Velocity</label><input type="number" className={inputClass} value={form.velocity} readOnly placeholder="Auto-calc" /></div>
-                    <div><label className={labelClass}>SD / ES</label><div className="flex gap-1"><input placeholder="SD" className={inputClass} value={form.sd} readOnly /><input placeholder="ES" className={inputClass} value={form.es} readOnly /></div></div>
+                    <div>
+                        <label className={labelClass}>SD / ES</label>
+                        <div className="flex gap-1">
+                            {/* FIX: Replaced w-full with flex-1 to prevent fighting in flex container */}
+                            <input placeholder="SD" className={inputClass.replace("w-full", "") + " flex-1 min-w-0"} value={form.sd} readOnly />
+                            <input placeholder="ES" className={inputClass.replace("w-full", "") + " flex-1 min-w-0"} value={form.es} readOnly />
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-4">
                         <div>
                             <label className={labelClass}>Weather / Temp</label>
-                            <div className="flex gap-2"><input placeholder="Sunny..." className={inputClass} value={form.weather} onChange={e => setForm({...form, weather: e.target.value})} /><input placeholder="°F" className={inputClass} type="number" value={form.temp} onChange={e => setForm({...form, temp: e.target.value})} /></div>
+                            <div className="flex gap-2 items-center">
+                                {/* FIX: Replaced w-full with flex-1. Removed w-full. */}
+                                <input placeholder="Conditions (Auto-fill)" className={inputClass.replace("w-full", "") + " flex-1 min-w-0"} value={form.weather} onChange={e => setForm({...form, weather: e.target.value})} />
+                                <button type="button" onClick={handleAutoWeather} className="w-10 h-[34px] flex-shrink-0 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition shadow-sm" title="Auto-Locate Weather">
+                                    <MapPin size={16}/>
+                                </button>
+                                {/* FIX: Replaced w-full with w-20 fixed width. */}
+                                <input placeholder="°F" className={inputClass.replace("w-full", "") + " w-20 flex-shrink-0 text-center"} type="number" value={form.temp} onChange={e => setForm({...form, temp: e.target.value})} />
+                            </div>
                         </div>
-                        <div className="bg-black/20 rounded-xl p-3 border border-slate-800 flex flex-col justify-between"><label className={labelClass}>Target Image</label><div className="flex-1 flex flex-col justify-center"><UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} /></div></div>
+                        
+                        <div>
+                            <label className={labelClass}>Target Image</label>
+                            <div className="bg-black/20 rounded-xl p-3 border border-slate-800 flex flex-col justify-center h-[100px]">
+                                <UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} />
+                            </div>
+                        </div>
                     </div>
-                    <div><label className={labelClass}>Notes</label><textarea className={inputClass + " h-full min-h-[85px] resize-none"} placeholder="How did it shoot?" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
+                    <div><label className={labelClass}>Notes</label><textarea className={inputClass + " h-full min-h-[120px] resize-none"} placeholder="How did it shoot?" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={handleCancel} className="px-4 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800/60 text-[11px] font-semibold transition">Cancel</button><button type="submit" disabled={loading} className="px-5 py-1.5 rounded-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-[11px] font-semibold shadow-lg shadow-red-900/40 transition">{loading ? 'Saving...' : (editingId ? 'Save Changes' : 'Save Log')}</button></div>

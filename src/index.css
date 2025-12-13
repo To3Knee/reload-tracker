@@ -1,10 +1,11 @@
 /*===============================================================
 Script Name: index.css
 Script Location: src/index.css
-Date: 12/07/2025
+Date: 12/12/2025
 Created By: T03KNEE
-Version: 2.14.1
-About: Global styles. Updated for PWA/iOS Safe Areas.
+Version: 2.15.0 (PTR Update)
+About: Global styles.
+       - ADDED: Pull-to-Refresh animations and overscroll control.
 ===============================================================*/
 
 @tailwind base;
@@ -20,15 +21,14 @@ body {
   background: #000;
   color: #e8e1d4;
   line-height: 1.6;
-  /* MOBILE FIX: Use dynamic viewport height to account for URL bars */
   min-height: 100dvh;
-  /* MOBILE FIX: Ensure content doesn't bleed into the home bar area */
+  /* MOBILE FIX: Prevent browser native pull-to-refresh so ours works */
+  overscroll-behavior-y: contain; 
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Fix input sizes on mobile to prevent zooming */
 input, select, button {
-  /* font-size: 16px !important; Prevent iOS zoom on focus */
+  /* No special rules needed currently */
 }
 
 label {
@@ -61,7 +61,7 @@ h1 {
   filter: drop-shadow(0 0 8px #b33c3c44);
 }
 
-/* Custom Scrollbar for inner containers */
+/* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -75,4 +75,18 @@ h1 {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* PULL TO REFRESH SPINNER */
+.ptr-spinner {
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+.ptr-spinner.refreshing {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

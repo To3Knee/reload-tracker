@@ -3,10 +3,10 @@
 //Script Location: backend/marketService.js
 //Date: 12/11/2025
 //Created By: T03KNEE
-//Version: 5.0.0 (Community Edition)
+//Version: 5.1.0 (Scraper Hardening)
 //About: Scrapes web data.
-//       - FIX: Shared Visibility (Community List).
-//       - FIX: Access Denied Protection.
+//       - FIX: Detects "Access Denied" titles and aborts (No Ghost Cards).
+//       - FIX: Improved AI Prompt for Quantity detection (Better Math).
 //===============================================================
 
 import { query } from './dbClient.js'
@@ -17,7 +17,7 @@ import * as cheerio from 'cheerio'
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 export async function listMarket(userId) {
-    // COMMUNITY CHANGE: Show all recent items, not just user's
+    // Community List: Returns ALL items so everyone can see the supply chain
     const res = await query(
         `SELECT * FROM market_listings ORDER BY last_scraped_at DESC LIMIT 100`
     )
@@ -47,18 +47,17 @@ export async function addListing(item, userId) {
 }
 
 export async function deleteListing(id, userId) {
-    // SECURITY: Only allow deleting your own items
+    // Security: You can only delete your own items
     const res = await query(`DELETE FROM market_listings WHERE id = $1 AND user_id = $2 RETURNING id`, [id, userId])
     if (res.rowCount === 0) {
-        // Silent fail or throw - purely for safety
-        throw new Error("Unauthorized: You can only delete items you tracked.")
+        throw new Error("Unauthorized: You can only delete items you track.")
     }
     return { success: true }
 }
 
 export async function updateListing(id, data, userId) {
     const { name, price, in_stock, notes, qty_per_unit, category, vendor } = data
-    // SECURITY: Only allow editing your own items
+    // Security: You can only update your own items
     const res = await query(
         `UPDATE market_listings 
          SET name = COALESCE($1, name), 
@@ -72,11 +71,15 @@ export async function updateListing(id, data, userId) {
          RETURNING *`,
         [name, price, in_stock, notes, qty_per_unit, category, vendor, id, userId]
     )
+    if (res.rowCount === 0) {
+        throw new Error("Unauthorized or Item Not Found")
+    }
     return res.rows[0]
 }
 
 // --- HYBRID INTELLIGENT SCRAPER ---
 export async function refreshListing(id, userId) {
+    // Community Refresh: Anyone can refresh any item
     const itemRes = await query(`SELECT url FROM market_listings WHERE id = $1`, [id])
     if (itemRes.rows.length === 0) throw new Error("Item not found")
     const url = itemRes.rows[0].url
@@ -102,7 +105,7 @@ export async function refreshListing(id, userId) {
         const response = await fetch(fetchUrl, { headers })
         
         if (!response.ok) {
-            if (response.status === 403) throw new Error("Access Denied (403)");
+            if (response.status === 403) throw new Error("Access Denied (403) - Anti-Bot Blocked");
             throw new Error(`HTTP Error ${response.status}`);
         }
         const html = await response.text()
@@ -111,13 +114,15 @@ export async function refreshListing(id, userId) {
         const $ = cheerio.load(html)
         
         let title = $('meta[property="og:title"]').attr('content') || $('title').text() || 'Unknown Item';
-        
-        // GUARD: Check for "Access Denied" Titles
-        if (title.includes("Access Denied") || title.includes("Just a moment") || title.includes("Attention Required")) {
-            throw new Error("Scraper Blocked (Soft 403)");
-        }
-
         let image = $('meta[property="og:image"]').attr('content');
+        
+        // --- NEW SECURITY CHECK ---
+        const badTitles = ['Access Denied', 'Just a moment', 'Attention Required', 'Security Check', '403 Forbidden', 'Cloudflare'];
+        if (badTitles.some(t => title.includes(t))) {
+            throw new Error("Scraper Blocked (Soft 403) - Page Title indicated block.");
+        }
+        // --------------------------
+
         if (!image) {
             image = $('img[id*="product"], img[class*="product"], img[class*="main"]').first().attr('src');
         }
@@ -126,7 +131,7 @@ export async function refreshListing(id, userId) {
             image = `${u.protocol}//${u.host}${image}`;
         }
 
-        // 3. SMART VENDOR GUESS
+        // 3. GUESS VENDOR
         let vendor = '';
         try {
             const hostname = new URL(url).hostname;
@@ -144,12 +149,15 @@ export async function refreshListing(id, userId) {
         $('script').remove(); $('style').remove(); $('nav').remove(); $('footer').remove(); $('svg').remove();
         const cleanText = $('body').text().replace(/\s+/g, ' ').trim().substring(0, 15000);
 
-        // 5. ASK AI
+        // 5. ASK AI (Enhanced Prompt for Math Accuracy)
         const prompt = `
-            Analyze this product page. Extract:
+            Analyze this product page text. Extract:
             1. PRICE (Number).
             2. IN_STOCK (Boolean).
-            3. QUANTITY (Number of items in this pack). E.g. "1000 primers" = 1000. "8 lbs" = 8. "Box of 20" = 20. Default to 1.
+            3. QUANTITY (Number of items in this pack). 
+               - Look for "Box of 20", "20 Rounds", "500 Count", "1000 primers", "8 lbs".
+               - If it is Ammo, it is almost NEVER 1. Look for 20, 25, 50, or 200.
+               - If uncertain, default to 1.
             4. CATEGORY (String). Strictly one of: "powder", "primer", "bullet", "case", "ammo", "gear", "other".
             
             JSON Format:
@@ -183,7 +191,12 @@ export async function refreshListing(id, userId) {
 
     } catch (err) {
         console.error("Scrape Error:", err);
+        // Mark as error
         await query(`UPDATE market_listings SET status = 'error' WHERE id = $1`, [id]);
-        return { id, status: 'error', name: 'Scrape Failed' };
+        
+        // Return dummy error object
+        return { 
+            id, status: 'error', name: 'Scrape Failed (Access Denied)' 
+        };
     }
 }
