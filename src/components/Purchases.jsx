@@ -3,9 +3,11 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 10.0.1 (Syntax Fix)
+//Version: 10.1.0 (iOS PWA Hardening)
 //About: Manage component LOT purchases.
-//       - FIX: Corrected "Image" icon usage to prevent constructor crash.
+//       - FIX: Added CSS Injection to force video visibility on iOS.
+//       - FIX: Added 3-second timeout to kill black screens automatically.
+//       - UI: Promoted "System Camera" (Take Photo) to a primary action.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -47,7 +49,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   const [cameraLoading, setCameraLoading] = useState(false)
   const [scannerActive, setScannerActive] = useState(false)
   const html5QrCodeRef = useRef(null)
-  const fileInputRef = useRef(null) // For System Camera Fallback
+  const fileInputRef = useRef(null) 
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState(null)
@@ -70,8 +72,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       }
   }
 
-  // --- SCANNER LIFECYCLE ---
-  // Clean up camera when modal closes
+  // Clean up scanner on close
   useEffect(() => {
       if (!showScanner) {
           stopScanner();
@@ -80,7 +81,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
   const startScanner = async () => {
       try {
-          if (html5QrCodeRef.current) return; // Already running
+          if (html5QrCodeRef.current) return;
 
           const scannerId = "reader";
           if (!document.getElementById(scannerId)) return;
@@ -91,7 +92,15 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
-          // DIRECT START: iOS PWA compatible config
+          // 3-SECOND SAFETY TIMEOUT
+          // If camera doesn't start in 3s, abort and show fallback
+          const safetyTimer = setTimeout(() => {
+              if (html5QrCode.isScanning) return;
+              console.warn("Camera start timed out. Falling back.");
+              stopScanner();
+              setError("Camera timed out. Please use 'System Camera' below.");
+          }, 4000);
+
           await html5QrCode.start(
               { facingMode: "environment" }, 
               { 
@@ -103,13 +112,14 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               onScanFailure
           );
           
+          clearTimeout(safetyTimer);
           setScannerActive(true);
           setCameraLoading(false);
 
       } catch (err) {
           console.error("Live Camera Failed:", err);
           
-          // Fallback Attempt
+          // Retry Logic
           try {
               if (html5QrCodeRef.current) {
                   await html5QrCodeRef.current.start(
@@ -124,8 +134,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               }
           } catch(e2) {}
 
-          setError("Live camera failed. Try 'System Camera' below.");
-          setCameraLoading(false);
+          stopScanner();
+          setError("Live camera failed. Try 'System Camera' instead.");
       }
   };
 
@@ -161,23 +171,20 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       if (!e.target.files || e.target.files.length === 0) return;
       
       const file = e.target.files[0];
-      setLoading(true); // Reuse main loading state or add specific one
-      setShowScanner(false); // Close modal since we have the file
+      setLoading(true); 
+      setShowScanner(false); 
 
       try {
-          // Use Html5Qrcode to scan the image file directly
-          const html5QrCode = new Html5Qrcode("reader-hidden"); // Virtual instance
+          const html5QrCode = new Html5Qrcode("reader-hidden"); 
           const decodedText = await html5QrCode.scanFileV2(file, true);
-          
           HAPTIC.success();
           fetchProductData(decodedText);
       } catch (err) {
           console.error("File Scan Failed:", err);
-          setError("Could not read barcode from image. Try again or enter manually.");
+          setError("Could not read barcode from image. Please ensure it's clear and well-lit.");
           HAPTIC.error();
       } finally {
           setLoading(false);
-          // Clear input so same file can be selected again if needed
           e.target.value = ''; 
       }
   }
@@ -254,18 +261,20 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
   return (
     <div className="space-y-6">
+      {/* FORCE VIDEO VISIBILITY ON IOS */}
+      <style>{`
+        #reader video { 
+            object-fit: cover; 
+            width: 100% !important; 
+            height: 100% !important; 
+            border-radius: 0.75rem; 
+        }
+      `}</style>
+
       {/* Hidden container for file-based scanning */}
       <div id="reader-hidden" className="hidden"></div>
       
-      {/* Hidden File Input for System Camera */}
-      <input 
-          type="file" 
-          accept="image/*" 
-          capture="environment" 
-          ref={fileInputRef} 
-          className="hidden" 
-          onChange={handleFileScan} 
-      />
+      <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileScan} />
 
       <div className="flex items-start gap-4">
         <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
@@ -335,7 +344,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                             {/* LIBRARY TARGET */}
                             <div id="reader" className="w-full h-full"></div>
                             
-                            {/* OVERLAY GUIDE (Only when active) */}
                             {scannerActive && !cameraLoading && (
                                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"></div>
                             )}
