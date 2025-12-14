@@ -3,15 +3,15 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/14/2025
 //Created By: T03KNEE
-//Version: 11.5.0 (Powder Math + Decimal Fix)
+//Version: 11.6.0 (Stability Fix)
 //About: Manage component LOT purchases.
-//       - FEATURE: Added "Cost Per Grain" display for Powder (1lb = 7000gr).
-//       - FIX: Forces currency display to always show decimals ($48.00).
+//       - FIX: Removed nested component to stop "Flashing/Reloading" bug.
+//       - FIX: Portal now renders directly for maximum stability.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit } from '../lib/db' // Removed formatCurrency import to use local strict version
+import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit } from '../lib/db'
 import { fetchSettings } from '../lib/settings'
 import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, Camera, Loader2, Image as ImageIcon } from 'lucide-react'
 import { printPurchaseLabel } from '../lib/labels' 
@@ -80,12 +80,31 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       }
   }
 
+  // --- CAMERA LIFECYCLE MANAGEMENT ---
+  useEffect(() => {
+      let timer;
+      if (showScanner) {
+          // Wait for Portal DOM to paint then start
+          timer = setTimeout(() => { 
+              startScanner(); 
+          }, 300);
+      } else {
+          // Cleanup when closed
+          stopScanner();
+      }
+      return () => {
+          clearTimeout(timer);
+          stopScanner();
+      };
+  }, [showScanner]);
+
   // --- CAMERA LOGIC ---
   const startScanner = async () => {
       try {
           if (html5QrCodeRef.current) return;
 
           const scannerId = "reader";
+          // Wait for portal to mount
           if (!document.getElementById(scannerId)) return;
 
           setCameraLoading(true);
@@ -250,55 +269,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   
   const tabBtnClass = (active) => `pb-2 px-1 text-xs font-bold uppercase tracking-wider transition border-b-2 ${active ? 'border-red-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`
 
-  // --- PORTAL COMPONENT ---
-  const ScannerModal = () => {
-      useEffect(() => {
-          const timer = setTimeout(() => { startScanner(); }, 300);
-          return () => { clearTimeout(timer); stopScanner(); };
-      }, []);
-
-      return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
-                <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-20 cursor-pointer"><X size={20} /></button>
-                <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
-                    <ScanBarcode className="text-emerald-500" /> Scanner
-                </h3>
-                
-                <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 flex flex-col items-center justify-center">
-                    {!scannerActive && !cameraLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 z-50 space-y-4">
-                            <button onClick={startScanner} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold shadow-lg transition flex items-center gap-2 cursor-pointer relative z-50">
-                                <Camera size={18} /> Start Live Scanner
-                            </button>
-                            <span className="text-[10px] text-zinc-500 uppercase tracking-widest">- OR -</span>
-                            <button onClick={handleSystemCamera} className="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-full font-bold shadow-lg transition flex items-center gap-2 border border-zinc-600 cursor-pointer relative z-50">
-                                <ImageIcon size={18} /> Use System Camera
-                            </button>
-                        </div>
-                    )}
-                    {cameraLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-40">
-                            <Loader2 className="animate-spin text-emerald-500" size={32} />
-                        </div>
-                    )}
-                    <div id="reader" className="w-full h-full"></div>
-                    <style>{`#reader video { object-fit: cover; width: 100% !important; height: 100% !important; }`}</style>
-                    {scannerActive && !cameraLoading && (
-                        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"></div>
-                    )}
-                </div>
-                
-                <p className="text-center text-[10px] text-zinc-500 mt-4">
-                    {scannerActive ? "Align barcode with red line." : "Select a scanning method."}
-                </p>
-                <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition cursor-pointer">Cancel</button>
-            </div>
-        </div>,
-        document.body
-      );
-  }
-
   return (
     <div className="space-y-6">
       <div id="reader-hidden" className="hidden"></div>
@@ -339,7 +309,47 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           <>
             {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
 
-            {showScanner && <ScannerModal />}
+            {/* SCANNER MODAL (PORTAL) */}
+            {showScanner && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
+                        <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-20 cursor-pointer"><X size={20} /></button>
+                        <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
+                            <ScanBarcode className="text-emerald-500" /> Scanner
+                        </h3>
+                        
+                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 flex flex-col items-center justify-center">
+                            {!scannerActive && !cameraLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 z-50 space-y-4">
+                                    <button onClick={startScanner} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold shadow-lg transition flex items-center gap-2 cursor-pointer relative z-50">
+                                        <Camera size={18} /> Start Live Scanner
+                                    </button>
+                                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest">- OR -</span>
+                                    <button onClick={handleSystemCamera} className="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-full font-bold shadow-lg transition flex items-center gap-2 border border-zinc-600 cursor-pointer relative z-50">
+                                        <ImageIcon size={18} /> Use System Camera
+                                    </button>
+                                </div>
+                            )}
+                            {cameraLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-40">
+                                    <Loader2 className="animate-spin text-emerald-500" size={32} />
+                                </div>
+                            )}
+                            <div id="reader" className="w-full h-full"></div>
+                            <style>{`#reader video { object-fit: cover; width: 100% !important; height: 100% !important; }`}</style>
+                            {scannerActive && !cameraLoading && (
+                                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"></div>
+                            )}
+                        </div>
+                        
+                        <p className="text-center text-[10px] text-zinc-500 mt-4">
+                            {scannerActive ? "Align barcode with red line." : "Select a scanning method."}
+                        </p>
+                        <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition cursor-pointer">Cancel</button>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {isFormOpen && (
                 <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in relative mb-6">
