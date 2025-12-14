@@ -3,17 +3,17 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 10.2.0 (Portal UI Fix)
+//Version: 11.2.0 (Stable Portal)
 //About: Manage component LOT purchases.
-//       - FIX: Uses createPortal to force Scanner Modal to top of screen (fixes scrolling bug).
-//       - LOGIC: Same robust "System Camera" + "Manual Start" logic as v10.1.0.
+//       - FIX: Removed internal component definition to stop flashing.
+//       - FIX: Renders Portal directly in main return for stability.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { createPortal } from 'react-dom' // NEW: Required for Portal
+import { createPortal } from 'react-dom'
 import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit, formatCurrency } from '../lib/db'
 import { fetchSettings } from '../lib/settings'
-import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw, Camera, SwitchCamera, Loader2, Image as ImageIcon } from 'lucide-react'
+import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, Camera, Loader2, Image as ImageIcon } from 'lucide-react'
 import { printPurchaseLabel } from '../lib/labels' 
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
@@ -72,9 +72,20 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       }
   }
 
-  // Clean up scanner on close
+  // --- CAMERA LIFECYCLE ---
   useEffect(() => {
-      if (!showScanner) {
+      let isMounted = true;
+      if (showScanner) {
+          // Wait for Portal DOM to paint
+          const timer = setTimeout(() => { 
+              if (isMounted) startScanner(); 
+          }, 300);
+          return () => {
+              isMounted = false;
+              clearTimeout(timer);
+              stopScanner();
+          };
+      } else {
           stopScanner();
       }
   }, [showScanner]);
@@ -84,7 +95,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           if (html5QrCodeRef.current) return;
 
           const scannerId = "reader";
-          // Wait for Portal to render element
+          // Wait for portal to mount
           if (!document.getElementById(scannerId)) return;
 
           setCameraLoading(true);
@@ -93,12 +104,12 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
+          // Safety Timeout
           const safetyTimer = setTimeout(() => {
               if (html5QrCode.isScanning) return;
-              console.warn("Camera timed out.");
               stopScanner();
               setError("Camera timed out. Use 'System Camera'.");
-          }, 4000);
+          }, 8000);
 
           await html5QrCode.start(
               { facingMode: "environment" }, 
@@ -113,7 +124,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
       } catch (err) {
           console.error("Camera Failed:", err);
-          
+          // Fallback to user cam if environment fails
           try {
               if (html5QrCodeRef.current) {
                   await html5QrCodeRef.current.start(
@@ -129,7 +140,11 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           } catch(e2) {}
 
           stopScanner();
-          setError("Camera failed. Try 'System Camera'.");
+          // Friendly error
+          let msg = "Camera failed. Try 'System Camera'.";
+          if (err.name === 'NotAllowedError') msg = "Camera permission denied.";
+          if (err.name === 'NotFoundError') msg = "No camera found.";
+          setError(msg);
       }
   };
 
@@ -156,11 +171,13 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       }
   };
 
-  const handleSystemCamera = () => { fileInputRef.current?.click(); }
+  // --- HANDLERS ---
+  const handleSystemCamera = () => { 
+      fileInputRef.current?.click(); 
+  }
 
   const handleFileScan = async (e) => {
       if (!e.target.files || e.target.files.length === 0) return;
-      
       const file = e.target.files[0];
       setLoading(true); 
       setShowScanner(false); 
@@ -171,7 +188,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           HAPTIC.success();
           fetchProductData(decodedText);
       } catch (err) {
-          console.error("File Scan Failed:", err);
           setError("Could not read barcode. Try again.");
           HAPTIC.error();
       } finally {
@@ -250,55 +266,9 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   
   const tabBtnClass = (active) => `pb-2 px-1 text-xs font-bold uppercase tracking-wider transition border-b-2 ${active ? 'border-red-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`
 
-  // --- RENDER PORTAL ---
-  const ScannerModal = () => createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
-        <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
-            <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-20"><X size={20} /></button>
-            <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
-                <ScanBarcode className="text-emerald-500" /> Scanner
-            </h3>
-            
-            {/* CAMERA WRAPPER */}
-            <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 flex flex-col items-center justify-center">
-                
-                {!scannerActive && !cameraLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 z-30 space-y-4">
-                        <button onClick={startScanner} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold shadow-lg transition flex items-center gap-2">
-                            <Camera size={18} /> Start Live Scanner
-                        </button>
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest">- OR -</span>
-                        <button onClick={handleSystemCamera} className="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-full font-bold shadow-lg transition flex items-center gap-2 border border-zinc-600">
-                            <ImageIcon size={18} /> Use System Camera
-                        </button>
-                    </div>
-                )}
-
-                {cameraLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
-                        <Loader2 className="animate-spin text-emerald-500" size={32} />
-                    </div>
-                )}
-
-                <div id="reader" className="w-full h-full"></div>
-                
-                {scannerActive && !cameraLoading && (
-                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"></div>
-                )}
-            </div>
-            
-            <p className="text-center text-[10px] text-zinc-500 mt-4">
-                {scannerActive ? "Align barcode with red line." : "Select a scanning method."}
-            </p>
-            <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition">Cancel</button>
-        </div>
-    </div>,
-    document.body
-  );
-
+  // --- RENDER ---
   return (
     <div className="space-y-6">
-      <style>{`#reader video { object-fit: cover; width: 100% !important; height: 100% !important; border-radius: 0.75rem; }`}</style>
       <div id="reader-hidden" className="hidden"></div>
       <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileScan} />
 
@@ -337,8 +307,52 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           <>
             {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
 
-            {/* RENDER MODAL VIA PORTAL */}
-            {showScanner && <ScannerModal />}
+            {/* RENDER MODAL VIA PORTAL TO FIX Z-INDEX/SCROLLING */}
+            {showScanner && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
+                        <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-20 cursor-pointer"><X size={20} /></button>
+                        <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
+                            <ScanBarcode className="text-emerald-500" /> Scanner
+                        </h3>
+                        
+                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 flex flex-col items-center justify-center">
+                            
+                            {/* BUTTONS: Explicitly z-50 and relative to float above any video canvas */}
+                            {!scannerActive && !cameraLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 z-50 space-y-4">
+                                    <button onClick={startScanner} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold shadow-lg transition flex items-center gap-2 cursor-pointer relative z-50">
+                                        <Camera size={18} /> Start Live Scanner
+                                    </button>
+                                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest">- OR -</span>
+                                    <button onClick={handleSystemCamera} className="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-full font-bold shadow-lg transition flex items-center gap-2 border border-zinc-600 cursor-pointer relative z-50">
+                                        <ImageIcon size={18} /> Use System Camera
+                                    </button>
+                                </div>
+                            )}
+
+                            {cameraLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-40">
+                                    <Loader2 className="animate-spin text-emerald-500" size={32} />
+                                </div>
+                            )}
+
+                            <div id="reader" className="w-full h-full"></div>
+                            <style>{`#reader video { object-fit: cover; width: 100% !important; height: 100% !important; }`}</style>
+                            
+                            {scannerActive && !cameraLoading && (
+                                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"></div>
+                            )}
+                        </div>
+                        
+                        <p className="text-center text-[10px] text-zinc-500 mt-4">
+                            {scannerActive ? "Align barcode with red line." : "Select a scanning method."}
+                        </p>
+                        <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition cursor-pointer">Cancel</button>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {isFormOpen && (
                 <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in relative mb-6">
