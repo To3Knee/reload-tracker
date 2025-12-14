@@ -3,17 +3,15 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 9.5.0 (CSS Enforcement Fix)
+//Version: 10.0.1 (Syntax Fix)
 //About: Manage component LOT purchases.
-//       - FIX: Added inline CSS to force video element visibility on iOS.
-//       - FIX: Added resolution constraints to help camera initialize.
-//       - FIX: Added Manual Start button if auto-start hangs.
+//       - FIX: Corrected "Image" icon usage to prevent constructor crash.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit, formatCurrency } from '../lib/db'
 import { fetchSettings } from '../lib/settings'
-import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw, Camera, SwitchCamera, Loader2, Play } from 'lucide-react'
+import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw, Camera, SwitchCamera, Loader2, Image as ImageIcon } from 'lucide-react'
 import { printPurchaseLabel } from '../lib/labels' 
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
@@ -47,8 +45,9 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   const [showScanner, setShowScanner] = useState(false)
   const [scannerEnabled, setScannerEnabled] = useState(false)
   const [cameraLoading, setCameraLoading] = useState(false)
-  const [permissionGranted, setPermissionGranted] = useState(false)
+  const [scannerActive, setScannerActive] = useState(false)
   const html5QrCodeRef = useRef(null)
+  const fileInputRef = useRef(null) // For System Camera Fallback
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState(null)
@@ -71,27 +70,17 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       }
   }
 
-  // --- CAMERA LOGIC ---
+  // --- SCANNER LIFECYCLE ---
+  // Clean up camera when modal closes
   useEffect(() => {
-      let isMounted = true;
-      if (showScanner) {
-          // Attempt auto-start, but UI provides a manual button just in case
-          const timer = setTimeout(() => { 
-              if (isMounted) startScanner(); 
-          }, 500);
-          return () => {
-              isMounted = false;
-              clearTimeout(timer);
-              stopScanner();
-          };
-      } else {
+      if (!showScanner) {
           stopScanner();
       }
   }, [showScanner]);
 
   const startScanner = async () => {
       try {
-          if (html5QrCodeRef.current) return;
+          if (html5QrCodeRef.current) return; // Already running
 
           const scannerId = "reader";
           if (!document.getElementById(scannerId)) return;
@@ -102,31 +91,25 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
-          // CONFIG: iOS Friendly
-          const config = { 
-              fps: 10,
-              videoConstraints: {
-                  facingMode: "environment",
-                  // Providing resolution hints helps WebKit initialize the video sizing correctly
-                  width: { min: 640, ideal: 1280, max: 1920 },
-                  height: { min: 480, ideal: 720, max: 1080 },
-              }
-          };
-
+          // DIRECT START: iOS PWA compatible config
           await html5QrCode.start(
               { facingMode: "environment" }, 
-              config,
+              { 
+                  fps: 10, 
+                  qrbox: { width: 250, height: 250 },
+                  aspectRatio: 1.0 
+              },
               onScanSuccess,
               onScanFailure
           );
           
-          setPermissionGranted(true);
+          setScannerActive(true);
           setCameraLoading(false);
 
       } catch (err) {
-          console.error("Camera Start Failed:", err);
+          console.error("Live Camera Failed:", err);
           
-          // Retry Logic
+          // Fallback Attempt
           try {
               if (html5QrCodeRef.current) {
                   await html5QrCodeRef.current.start(
@@ -135,19 +118,13 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                       onScanSuccess,
                       onScanFailure
                   );
-                  setPermissionGranted(true);
+                  setScannerActive(true);
                   setCameraLoading(false);
                   return;
               }
-          } catch(e2) { }
+          } catch(e2) {}
 
-          let msg = "Could not start camera.";
-          if (err.name === 'NotAllowedError') msg = "Access denied. Please check permissions.";
-          if (err.name === 'NotFoundError') msg = "No camera found.";
-          if (err.name === 'NotReadableError') msg = "Camera busy or not readable.";
-          
-          // Don't close modal, show error inside it so user can retry
-          setError(msg);
+          setError("Live camera failed. Try 'System Camera' below.");
           setCameraLoading(false);
       }
   };
@@ -159,7 +136,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       fetchProductData(decodedText);
   };
 
-  const onScanFailure = (error) => { /* Ignore */ }
+  const onScanFailure = (error) => { /* Ignore frame errors */ }
 
   const stopScanner = async () => {
       if (html5QrCodeRef.current) {
@@ -170,10 +147,40 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               html5QrCodeRef.current.clear();
           } catch (err) { console.warn("Stop warning:", err); }
           html5QrCodeRef.current = null;
+          setScannerActive(false);
           setCameraLoading(false);
-          setPermissionGranted(false);
       }
   };
+
+  // --- SYSTEM CAMERA FALLBACK ---
+  const handleSystemCamera = () => {
+      fileInputRef.current?.click();
+  }
+
+  const handleFileScan = async (e) => {
+      if (!e.target.files || e.target.files.length === 0) return;
+      
+      const file = e.target.files[0];
+      setLoading(true); // Reuse main loading state or add specific one
+      setShowScanner(false); // Close modal since we have the file
+
+      try {
+          // Use Html5Qrcode to scan the image file directly
+          const html5QrCode = new Html5Qrcode("reader-hidden"); // Virtual instance
+          const decodedText = await html5QrCode.scanFileV2(file, true);
+          
+          HAPTIC.success();
+          fetchProductData(decodedText);
+      } catch (err) {
+          console.error("File Scan Failed:", err);
+          setError("Could not read barcode from image. Try again or enter manually.");
+          HAPTIC.error();
+      } finally {
+          setLoading(false);
+          // Clear input so same file can be selected again if needed
+          e.target.value = ''; 
+      }
+  }
 
   async function fetchProductData(code) {
       setLoading(true);
@@ -188,7 +195,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               body: JSON.stringify({ code })
           });
           
-          if (res.status === 404) throw new Error("Product not found in database. Please enter manually.");
+          if (res.status === 404) throw new Error("Product not found. Please enter details manually.");
           if (res.status === 401) throw new Error("Scanner config error. Check Admin Settings.");
           if (!res.ok) throw new Error("Lookup failed.");
 
@@ -202,6 +209,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
           let type = 'other';
           const fullText = (data.category + " " + data.name + " " + data.description).toLowerCase();
+          
           if (fullText.includes('powder') || fullText.includes('propellant')) type = 'powder';
           else if (fullText.includes('bullet') || fullText.includes('projectile') || fullText.includes('head')) type = 'bullet';
           else if (fullText.includes('primer')) type = 'primer';
@@ -216,6 +224,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               qty: prev.qty ? prev.qty : "1", 
               notes: data.description ? data.description.substring(0, 150) + (data.description.length > 150 ? "..." : "") : ""
           }));
+          
           HAPTIC.success();
       } catch (err) {
           setError(err.message);
@@ -245,15 +254,18 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
   return (
     <div className="space-y-6">
-      {/* CSS FIX FOR IOS VIDEO VISIBILITY */}
-      <style>{`
-        #reader video { 
-            object-fit: cover; 
-            width: 100% !important; 
-            height: 100% !important; 
-            border-radius: 0.75rem; 
-        }
-      `}</style>
+      {/* Hidden container for file-based scanning */}
+      <div id="reader-hidden" className="hidden"></div>
+      
+      {/* Hidden File Input for System Camera */}
+      <input 
+          type="file" 
+          accept="image/*" 
+          capture="environment" 
+          ref={fileInputRef} 
+          className="hidden" 
+          onChange={handleFileScan} 
+      />
 
       <div className="flex items-start gap-4">
         <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
@@ -296,36 +308,42 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                     <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center">
                         <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-20"><X size={20} /></button>
                         <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
-                            <ScanBarcode className="text-emerald-500" /> Scanning...
+                            <ScanBarcode className="text-emerald-500" /> Scanner
                         </h3>
                         
                         {/* CAMERA WRAPPER */}
-                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30">
+                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 flex flex-col items-center justify-center">
                             
-                            {/* 1. LIBRARY TARGET */}
-                            <div id="reader" className="w-full h-full"></div>
-
-                            {/* 2. REACT OVERLAYS */}
-                            {cameraLoading && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                                    <Loader2 className="animate-spin text-emerald-500" size={32} />
-                                </div>
-                            )}
-                            
-                            {!cameraLoading && !permissionGranted && !error && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 flex-col gap-2">
-                                    <button onClick={startScanner} className="px-4 py-2 bg-emerald-700 text-white rounded-full flex items-center gap-2 text-xs font-bold shadow-lg animate-pulse">
-                                        <Play size={14} fill="currentColor" /> Tap to Start Camera
+                            {!scannerActive && !cameraLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 z-30 space-y-4">
+                                    <button onClick={startScanner} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold shadow-lg transition flex items-center gap-2">
+                                        <Camera size={18} /> Start Live Scanner
+                                    </button>
+                                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest">- OR -</span>
+                                    <button onClick={handleSystemCamera} className="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-full font-bold shadow-lg transition flex items-center gap-2 border border-zinc-600">
+                                        <ImageIcon size={18} /> Use System Camera
                                     </button>
                                 </div>
                             )}
+
+                            {cameraLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
+                                    <Loader2 className="animate-spin text-emerald-500" size={32} />
+                                </div>
+                            )}
+
+                            {/* LIBRARY TARGET */}
+                            <div id="reader" className="w-full h-full"></div>
                             
-                            {!cameraLoading && permissionGranted && (
+                            {/* OVERLAY GUIDE (Only when active) */}
+                            {scannerActive && !cameraLoading && (
                                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"></div>
                             )}
                         </div>
                         
-                        <p className="text-center text-[10px] text-zinc-500 mt-4">Align barcode with the red line.</p>
+                        <p className="text-center text-[10px] text-zinc-500 mt-4">
+                            {scannerActive ? "Align barcode with red line." : "Select a scanning method."}
+                        </p>
                         <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition">Cancel</button>
                     </div>
                 </div>
