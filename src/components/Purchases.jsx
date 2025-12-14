@@ -3,11 +3,11 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 9.3.0 (Raw Feed Fix)
+//Version: 9.4.0 (Bare Metal Scanner)
 //About: Manage component LOT purchases.
-//       - FIX: Removed 'aspectRatio' (Crucial for iOS).
-//       - FIX: Removed 'qrbox' (Prevents black mask overlay bugs).
-//       - RESULT: Renders raw video feed for maximum compatibility.
+//       - FIX: Removed 'qrbox' causing black overlay on iOS.
+//       - FIX: Removed 'aspectRatio' causing video failure.
+//       - RESULT: Raw, uncropped video feed.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -74,7 +74,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   useEffect(() => {
       let isMounted = true;
       if (showScanner) {
-          // Wait for modal to render
           const timer = setTimeout(() => { 
               if (isMounted) startScanner(); 
           }, 300);
@@ -100,14 +99,16 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
-          // CONFIG: Pure Raw Feed (No cropping, No aspect lock)
+          // CONFIG: BARE METAL
+          // No qrbox (removes black overlay)
+          // No aspectRatio (fixes video size)
           const config = { 
               fps: 10,
-              // qrbox removed: Scans entire frame (More stable on iOS)
-              // aspectRatio removed: Uses native camera ratio (Prevents black screen)
+              videoConstraints: {
+                  facingMode: "environment"
+              }
           };
 
-          // 1. Try Back Camera
           await html5QrCode.start(
               { facingMode: "environment" }, 
               config,
@@ -120,7 +121,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       } catch (err) {
           console.error("Camera Start Failed:", err);
           
-          // 2. Retry with User/Front Camera (Desktop/Fallback)
+          // Fallback: Try User Camera
           try {
               if (html5QrCodeRef.current) {
                   await html5QrCodeRef.current.start(
@@ -132,7 +133,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                   setCameraLoading(false);
                   return;
               }
-          } catch(e2) { /* secondary fail */ }
+          } catch(e2) { }
 
           let msg = "Could not start camera.";
           if (err.name === 'NotAllowedError') msg = "Camera access denied.";
@@ -194,7 +195,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
           let type = 'other';
           const fullText = (data.category + " " + data.name + " " + data.description).toLowerCase();
-          
           if (fullText.includes('powder') || fullText.includes('propellant')) type = 'powder';
           else if (fullText.includes('bullet') || fullText.includes('projectile') || fullText.includes('head')) type = 'bullet';
           else if (fullText.includes('primer')) type = 'primer';
