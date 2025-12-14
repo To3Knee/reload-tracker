@@ -1,12 +1,12 @@
 //===============================================================
 //Script Name: Dashboard.jsx
 //Script Location: src/components/Dashboard.jsx
-//Date: 12/12/2025
+//Date: 12/14/2025
 //Created By: T03KNEE
-//Version: 5.2.1 (ROI Precision Fix)
+//Version: 5.3.0 (Ammo Box Update)
 //About: Live Round Calculator + ROI Engine.
-//       - FIX: Increased ROI Multiplier precision to 2 decimals (e.g. 1.04x instead of 1.0x).
-//       - FIX: This prevents "1.0x Cost" when there is actually a slight cost increase.
+//       - TWEAK: Default Lot Size changed to 20 (Standard Rifle Box).
+//       - FEATURE: Added "Per 20" cost breakdown row.
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -45,7 +45,10 @@ function BreakdownRow({ label, value }) {
 
 export default function Dashboard({ purchases = [], selectedRecipe, onSelectRecipe }) {
   const [chargeGrains, setChargeGrains] = useState('')
-  const [lotSize, setLotSize] = useState(1000)
+  
+  // TWEAK: Default to 20 rounds (Standard Rifle Box) instead of 1000
+  const [lotSize, setLotSize] = useState(20)
+  
   const [caseReuse, setCaseReuse] = useState(5)
   const [caliber, setCaliber] = useState('9mm')
   
@@ -180,6 +183,8 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
       brass: { perRound: brassPerRound },
       total: {
         perRound: totalPerRound,
+        // TWEAK: Added 'per20' calculation
+        per20: totalPerRound * 20,
         per50: totalPerRound * 50,
         per100: totalPerRound * 100,
         per1000: totalPerRound * 1000,
@@ -188,7 +193,6 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
     }
   }, [purchases.length, powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, lotSize, caseReuse])
 
-  // LOGIC FIX: Increased precision for multiplier
   const roiStats = useMemo(() => {
       const factoryCost = Number(manualFactoryCost) || 0
       if (!breakdown || factoryCost <= 0) return null
@@ -206,7 +210,6 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
           label = `${percent.toFixed(0)}%`
       } else {
           const multiplier = factoryCost > 0 ? (handloadCost / factoryCost) : 0
-          // CHANGED: .toFixed(1) -> .toFixed(2) to catch small increases (1.04x vs 1.0x)
           label = `${multiplier.toFixed(2)}x Cost`
       }
       
@@ -528,6 +531,10 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
 
               {/* COST TABLE */}
               <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-slate-400">
+                    <span>Per 20</span>
+                    <span className="font-semibold text-slate-200">{toStandardMoney(breakdown?.total.per20)}</span>
+                </div>
                 <div className="flex justify-between text-slate-400">
                     <span>Per 50</span>
                     <span className="font-semibold text-slate-200">{toStandardMoney(breakdown?.total.per50)}</span>
