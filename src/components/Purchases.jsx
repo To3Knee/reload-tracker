@@ -3,10 +3,10 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 8.2.0 (Final Polish)
+//Version: 8.3.0 (Mobile Camera Fix)
 //About: Manage component LOT purchases.
-//       - FIX: Translated "DOMException" into human-readable "No Camera" error.
-//       - FEATURE: Auto-sets Quantity to "1" on successful scan if empty.
+//       - FIX: Removed aspect ratio constraint to fix "Black Screen" on mobile.
+//       - FIX: Added focusMode constraints for clearer scanning.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -71,16 +71,20 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   // --- CAMERA LOGIC ---
   useEffect(() => {
       if (showScanner) {
-          const timer = setTimeout(() => { startScanner(); }, 100);
-          return () => clearTimeout(timer);
+          // Allow DOM to paint the modal before starting camera
+          const timer = setTimeout(() => { startScanner(); }, 300);
+          return () => {
+              clearTimeout(timer);
+              stopScanner(); 
+          };
       } else {
           stopScanner();
       }
-      return () => { stopScanner(); };
   }, [showScanner]);
 
   const startScanner = async () => {
       try {
+          // Prevent double-init
           if (html5QrCodeRef.current) return;
 
           const scannerId = "reader";
@@ -89,25 +93,35 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
+          // 1. Get Cameras
           const devices = await Html5Qrcode.getCameras();
           if (!devices || devices.length === 0) throw new Error("No cameras detected.");
 
-          const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+          // 2. Config (Mobile Friendly)
+          // REMOVED aspectRatio to prevent black screen on mobile
+          const config = { 
+              fps: 10, 
+              qrbox: { width: 280, height: 280 },
+              videoConstraints: {
+                  focusMode: "continuous" // Helps with barcodes close up
+              }
+          };
 
+          // 3. Start Camera (Try Back Camera first)
           try {
-              await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+              await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, undefined);
           } catch (envError) {
-              console.warn("Environment camera failed, trying default...", envError);
-              await html5QrCode.start(devices[0].id, config, onScanSuccess, () => {});
+              console.warn("Back camera failed, trying default.", envError);
+              // Fallback to first available camera
+              await html5QrCode.start(devices[0].id, config, onScanSuccess, undefined);
           }
 
       } catch (err) {
           console.error("Camera Init Failed:", err);
-          // IMPROVEMENT: Friendly Error Messages
           let msg = "Could not start camera.";
-          if (err.name === 'NotAllowedError') msg = "Camera permission denied.";
-          if (err.name === 'NotFoundError' || err.message.includes("not be found")) msg = "No camera found on this device.";
-          if (err.name === 'NotReadableError') msg = "Camera is in use by another app.";
+          if (err.name === 'NotAllowedError') msg = "Camera permission denied. Please allow access.";
+          if (err.name === 'NotFoundError') msg = "No camera found on this device.";
+          if (err.name === 'NotReadableError') msg = "Camera is busy. Close other apps using camera.";
           
           setError(msg);
           setShowScanner(false);
@@ -129,7 +143,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               }
               html5QrCodeRef.current.clear();
           } catch (err) {
-              console.warn("Scanner stop error", err);
+              console.warn("Scanner stop warning:", err);
           }
           html5QrCodeRef.current = null;
       }
@@ -168,14 +182,12 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           else if (fullText.includes('primer')) type = 'primer';
           else if (fullText.includes('brass') || fullText.includes('case') || fullText.includes('cartridge case')) type = 'case';
 
-          // IMPROVEMENT: Smart Defaults
           setForm(prev => ({
               ...prev,
               brand: data.brand || prev.brand,
               name: name || prev.name,
               componentType: type,
               imageUrl: data.imageUrl || prev.imageUrl,
-              // Default to '1' if empty, otherwise keep user's input
               qty: prev.qty ? prev.qty : "1", 
               notes: data.description ? data.description.substring(0, 150) + (data.description.length > 150 ? "..." : "") : ""
           }));
@@ -252,7 +264,9 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                         <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
                             <ScanBarcode className="text-emerald-500" /> Scanning...
                         </h3>
-                        <div id="reader" className="w-full h-64 bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 relative">
+                        {/* CAMERA VIEWPORT - Removed fixed aspect ratio for mobile compatibility */}
+                        <div id="reader" className="w-full bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 relative min-h-[300px]">
+                            {/* Overlay Guide */}
                             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10"></div>
                         </div>
                         <p className="text-center text-[10px] text-zinc-500 mt-4">Align barcode within the frame.</p>
@@ -266,6 +280,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                     <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={18} /></button>
                     <span className={sectionLabelClass}>{editingId ? 'EDIT PURCHASE' : 'ADD PURCHASE'}</span>
                     
+                    {/* VISUAL CUE FOR SCAN SUCCESS */}
                     {form.brand && !editingId && form.imageUrl && (
                         <div className="mb-4 text-[10px] text-emerald-400 flex items-center gap-1.5 bg-emerald-900/20 px-3 py-2 rounded-lg border border-emerald-900/50 animate-in fade-in slide-in-from-top-2">
                             <Sparkles size={10} /> Product data retrieved from barcode scan.
