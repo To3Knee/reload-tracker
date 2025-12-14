@@ -1,13 +1,13 @@
 //===============================================================
 //Script Name: Recipes.jsx
 //Script Location: src/components/Recipes.jsx
-//Date: 12/12/2025
+//Date: 12/14/2025
 //Created By: T03KNEE
-//Version: 6.4.1 (Fix ReferenceError)
+//Version: 12.6.0 (Logo & Field Fix)
 //About: Manage recipes. 
-//       - FIX: Defined 'guessCaseLength' and 'guessBulletLength' helpers 
-//              at the top level to prevent ReferenceErrors.
-//       - FIX: Visualizer logic now properly uses smart defaults.
+//       - FIX: Restored missing "Zero Distance" and "Group Size" inputs.
+//       - FIX: Increased PDF Logo size significantly (30px -> 75px).
+//       - UI: Organized inputs into "Geometry & Ballistics".
 //===============================================================
 
 import { useEffect, useState, useMemo } from 'react'
@@ -27,6 +27,8 @@ import { HAPTIC } from '../lib/haptics'
 import { calculateCostPerUnit } from '../lib/math'
 import { calculateStability, parseTwistRate, guessDiameter } from '../lib/ballistics'
 import { CartridgeVisualizer } from './CartridgeVisualizer'
+import QRCode from 'qrcode'
+import { Html5Qrcode } from 'html5-qrcode'
 
 const PROFILE_TYPES = [
   { value: 'range', label: 'Range / Plinking' },
@@ -68,21 +70,16 @@ function FieldLabel({ label, help }) {
     )
 }
 
-// --- SMART GEOMETRY HELPERS (Must be defined before component) ---
-
+// --- SMART GEOMETRY HELPERS ---
 function guessCaseLength(caliber) {
     if (!caliber) return 2.035 
-    const c = caliber.toLowerCase().replace(/\s+/g, '') // Strip spaces
-    
-    // Pistol
+    const c = caliber.toLowerCase().replace(/\s+/g, '') 
     if (c.includes('9mm') || c.includes('380') || c.includes('makarov')) return 0.754
     if (c.includes('40s&w') || c.includes('40sw')) return 0.850
     if (c.includes('45acp') || c.includes('45auto')) return 0.898
     if (c.includes('10mm')) return 0.992
     if (c.includes('38spl') || c.includes('38special')) return 1.155
     if (c.includes('357mag')) return 1.290
-    
-    // Rifle
     if (c.includes('300blk') || c.includes('blackout')) return 1.368
     if (c.includes('7.62x39')) return 1.524
     if (c.includes('223') || c.includes('5.56')) return 1.760
@@ -91,23 +88,18 @@ function guessCaseLength(caliber) {
     if (c.includes('30-06')) return 2.494
     if (c.includes('300win')) return 2.620
     if (c.includes('338lap')) return 2.724
-    
-    return 2.015 // Default Rifle
+    return 2.015 
 }
 
 function getCaliberDefaults(input) {
     if (!input) return null
     const c = input.toLowerCase().replace(/\s+/g, '') 
-
-    // PISTOL
     if (c.includes('9mm') || c.includes('380') || c.includes('makarov')) return { coal: 1.169, bulletLength: 0.600, caseCapacity: 13.0 }
     if (c.includes('40s&w') || c.includes('40sw')) return { coal: 1.135, bulletLength: 0.620, caseCapacity: 19.0 }
     if (c.includes('45acp') || c.includes('45auto')) return { coal: 1.275, bulletLength: 0.680, caseCapacity: 25.0 }
     if (c.includes('10mm')) return { coal: 1.260, bulletLength: 0.650, caseCapacity: 24.0 }
     if (c.includes('357mag')) return { coal: 1.590, bulletLength: 0.700, caseCapacity: 26.0 }
     if (c.includes('38spl')) return { coal: 1.550, bulletLength: 0.680, caseCapacity: 23.0 }
-
-    // RIFLE
     if (c.includes('300blk') || c.includes('blackout')) return { coal: 2.260, bulletLength: 1.300, caseCapacity: 24.0 }
     if (c.includes('223') || c.includes('5.56')) return { coal: 2.260, bulletLength: 0.900, caseCapacity: 28.0 }
     if (c.includes('308') || c.includes('7.62x51')) return { coal: 2.800, bulletLength: 1.200, caseCapacity: 56.0 }
@@ -115,11 +107,9 @@ function getCaliberDefaults(input) {
     if (c.includes('30-06')) return { coal: 3.340, bulletLength: 1.250, caseCapacity: 68.0 }
     if (c.includes('300win')) return { coal: 3.340, bulletLength: 1.400, caseCapacity: 90.0 }
     if (c.includes('338lap')) return { coal: 3.680, bulletLength: 1.700, caseCapacity: 114.0 }
-
     return null
 }
 
-// --- LOCAL API HELPER ---
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 async function apiDeleteRecipe(id, cascade = false) {
     const res = await fetch(`${API_BASE}/recipes/${id}${cascade ? '?cascade=true' : ''}`, {
@@ -144,13 +134,11 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   const [editingRecipe, setEditingRecipe] = useState(null)
   const [archivingId, setArchivingId] = useState(null)
   
-  // DELETE STATES
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [conflictModalOpen, setConflictModalOpen] = useState(false)
   const [recipeToDelete, setRecipeToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Visualizer / Stability
   const [selectedFirearmId, setSelectedFirearmId] = useState('')
   const [showStabilityHelp, setShowStabilityHelp] = useState(false)
 
@@ -159,7 +147,6 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   const [batchForm, setBatchForm] = useState({ rounds: '', powderLotId: '', bulletLotId: '', primerLotId: '', caseLotId: '', notes: '' })
   const [batchSubmitting, setBatchSubmitting] = useState(false)
 
-  // --- SMART SORT INVENTORY ---
   const activePurchases = useMemo(() => purchases.filter(p => p.status !== 'depleted'), [purchases])
   
   const getSmartList = (type, currentCaliber) => {
@@ -185,11 +172,8 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
 
   useEffect(() => { loadData() }, [])
 
-  // --- AUTO-FILL EFFECT ---
-  // When caliber changes (and isn't editing an existing recipe), attempt to fill defaults
   useEffect(() => {
       if (editingRecipe || !form.caliber) return
-      
       const defaults = getCaliberDefaults(form.caliber)
       if (defaults) {
           setForm(prev => ({
@@ -308,40 +292,110 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     downloadExcel(dataToExport, columns, `reload-tracker-recipes-${filenameSuffix}-${timestamp}`);
   }
 
-  function handleExportPdf(recipe) {
-    if (!recipe) return; HAPTIC.click();
+  // --- PDF GENERATOR (Professional Design + QR Code + Restored Theme + Big Logo) ---
+  async function handleExportPdf(recipe) {
+    if (!recipe) return; 
+    HAPTIC.click();
+    
+    let qrImg = '';
+    try {
+        const appUrl = window.location.origin;
+        const qrUrl = `${appUrl}?recipeId=${recipe.id}`;
+        qrImg = await QRCode.toDataURL(qrUrl, { margin: 0, width: 80 });
+    } catch(e) { console.warn("QR Gen Failed", e); }
+
     const win = window.open('', '_blank');
     if (!win) { setError('Pop-up blocked. Please allow popups.'); return; }
-    win.document.write('<html><body><p>Generating PDF...</p></body></html>');
+    win.document.write('<html><body><p>Generating Data Sheet...</p></body></html>');
 
     setTimeout(() => {
       try {
           const resolve = (lotId, type) => { if (!lotId) return '---'; const p = purchases.find(i => String(i.id) === String(lotId)); return p ? `${p.brand || ''} ${p.name || type}`.trim() : `Lot #${lotId}`; }
-          const powderName = recipe.powderName || resolve(recipe.powderLotId, 'Powder'); const bulletName = recipe.bulletName || resolve(recipe.bulletLotId, 'Bullet');
-          const primerName = recipe.primerName || resolve(recipe.primerLotId, 'Primer'); const caseName = recipe.caseName || resolve(recipe.caseLotId, 'Brass');
-          const logoUrl = `${window.location.origin}/logo.png`; const name = recipe.name || 'Untitled'; const caliber = recipe.caliber || 'Unknown'; const source = recipe.source || ''; const charge = recipe.chargeGrains ? `${recipe.chargeGrains} gr` : '---';
           
+          const powderName = recipe.powderName || resolve(recipe.powderLotId, 'Powder'); 
+          const bulletName = recipe.bulletName || resolve(recipe.bulletLotId, 'Bullet');
+          const primerName = recipe.primerName || resolve(recipe.primerLotId, 'Primer'); 
+          const caseName = recipe.caseName || resolve(recipe.caseLotId, 'Brass');
+          
+          const logoUrl = `${window.location.origin}/logo.png`; 
+          const name = recipe.name || 'Untitled'; 
+          const caliber = recipe.caliber || 'Unknown';
+          const date = new Date().toLocaleDateString();
+
           const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${name}</title><style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-          @page{margin:0;size:6in auto}
-          body{margin:0;padding:0;font-family:'Inter',sans-serif;background:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#111}
-          .card{width:6in;min-height:4in;height:auto;background:#fdfbf7;position:relative;display:flex;flex-direction:column;overflow:visible}
+          @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700;900&display=swap');
+          @page{margin:0.25in;size:letter portrait}
+          body{margin:0;padding:20px;font-family:'Inter',sans-serif;background:#000;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+          .card{width:6in;min-height:4in;height:auto;background:#fdfbf7;position:relative;display:flex;flex-direction:column;overflow:visible;box-sizing:border-box}
+          
           .header{background:#111;color:#fff;padding:.8rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid #b33c3c}
           .header-text h1{margin:0;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
           .header-text h2{margin:2px 0 0 0;font-size:11px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:.2em}
-          .logo{width:110px;height:auto}
-          .content{padding:.8rem 2rem;flex:1;display:flex;gap:1.5rem}
-          .main-specs{flex:1;display:flex;flex-direction:column;gap:8px}
-          .stat-row{display:flex;flex-direction:column;border-bottom:1px solid #e5e5e5;padding-bottom:3px}
+          .header-right { display: flex; align-items: center; gap: 15px; }
+          
+          /* FIX: Logo size increased to 75px */
+          .logo{height:75px;width:auto}
+          .qr{height:40px;width:40px;background:white;padding:2px;border-radius:2px}
+          
+          .content{padding:1.5rem 2rem;flex:1}
+          
+          .section-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+          
+          .stat-row{display:flex;flex-direction:column;border-bottom:1px solid #e5e5e5;padding-bottom:4px;margin-bottom:4px}
           .stat-row:last-child{border-bottom:none}
           .stat-label{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-bottom:1px}
-          .stat-value{font-size:11px;font-weight:700;color:#000;line-height:1.2;text-align:left}
-          .notes-section{flex:1.3;background:#f5f5f5;border-radius:8px;padding:.75rem;border:1px solid #ddd;display:flex;flex-direction:column}
+          .stat-value{font-size:11px;font-weight:700;color:#000;font-family:'JetBrains Mono',monospace}
+          
+          .warning-text{color:#b33c3c}
+
+          .worksheet{margin-top:20px;border:1px solid #ddd;border-radius:4px;padding:10px;background:#fff}
+          .worksheet-title{font-size:10px;font-weight:700;color:#b33c3c;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:block}
+          .ws-table{width:100%;border-collapse:collapse}
+          .ws-table th{text-align:left;font-size:8px;color:#666;border-bottom:1px solid #000;padding:4px}
+          .ws-table td{border-bottom:1px dashed #ccc;height:25px}
+
+          .notes-section{background:#f5f5f5;border-radius:8px;padding:1rem;border:1px solid #ddd;margin-top:20px}
           .notes-label{font-size:9px;font-weight:700;color:#b33c3c;text-transform:uppercase;letter-spacing:.15em;margin-bottom:.25rem;display:block}
-          .notes-body{font-size:10px;line-height:1.3;color:#333;flex:1;white-space:pre-wrap}
-          .footer{padding:.3rem 2rem;background:#e5e5e5;text-align:center;font-size:8px;color:#666;text-transform:uppercase;letter-spacing:.1em;margin-top:auto}
+          .notes-body{font-size:10px;line-height:1.4;color:#333;white-space:pre-wrap}
+
+          .footer{padding:.5rem 2rem;background:#e5e5e5;text-align:center;font-size:8px;color:#666;text-transform:uppercase;letter-spacing:.1em;margin-top:auto}
           .close-btn{position:fixed;top:10px;right:10px;z-index:9999;background:rgba(0,0,0,.8);color:#fff;padding:12px 24px;border-radius:50px;font-family:sans-serif;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 15px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);cursor:pointer;backdrop-filter:blur(10px)}
-          @media print{.close-btn{display:none!important}}</style></head><body><button onclick="window.close()" class="close-btn">Done / Close</button><div class="card"><div class="header"><div class="header-text"><h1>${name}</h1><h2>${caliber}</h2></div><img src="${logoUrl}" class="logo" alt="Reload Tracker"/></div><div class="content"><div class="main-specs"><div class="stat-row"><span class="stat-label">Bullet</span><span class="stat-value">${bulletName}</span></div><div class="stat-row"><span class="stat-label">Powder</span><span class="stat-value">${powderName}</span></div><div class="stat-row"><span class="stat-label">Charge</span><span class="stat-value">${charge}</span></div><div class="stat-row"><span class="stat-label">COAL / Cap</span><span class="stat-value">${recipe.coal||'--'}" / ${recipe.caseCapacity||'--'} gr</span></div><div class="stat-row"><span class="stat-label">Brass</span><span class="stat-value">${caseName}</span></div></div><div class="notes-section"><span class="notes-label">Load Notes</span><div class="notes-body">${recipe.notes||'No specific load notes.'}</div></div></div><div class="footer">Generated by Reload Tracker • Safety First • Verify All Loads</div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);</script></body></html>`;
+          @media print{.close-btn{display:none!important}}</style></head><body><button onclick="window.close()" class="close-btn">Close X</button><div class="card"><div class="header"><div class="header-text"><h1>${name}</h1><h2>${caliber} • ${date}</h2></div><div class="header-right">${qrImg ? `<img src="${qrImg}" class="qr"/>` : ''}<img src="${logoUrl}" class="logo" alt="Reload Tracker"/></div></div><div class="content">
+          
+          <div class="section-grid">
+            <div>
+                <div class="stat-row"><span class="stat-label">Bullet</span><span class="stat-value">${bulletName}</span></div>
+                <div class="stat-row"><span class="stat-label">Powder</span><span class="stat-value">${powderName}</span></div>
+                <div class="stat-row"><span class="stat-label">Charge Wt</span><span class="stat-value">${recipe.chargeGrains ? recipe.chargeGrains + ' gr' : '---'}</span></div>
+                <div class="stat-row"><span class="stat-label">Primer</span><span class="stat-value warning-text">${primerName}</span></div>
+                <div class="stat-row"><span class="stat-label">Brass</span><span class="stat-value">${caseName}</span></div>
+            </div>
+            <div>
+                <div class="stat-row"><span class="stat-label">C.O.A.L.</span><span class="stat-value">${recipe.coal ? recipe.coal + '"' : '---'}</span></div>
+                <div class="stat-row"><span class="stat-label">Target Vel</span><span class="stat-value">${recipe.muzzleVelocityFps ? recipe.muzzleVelocityFps + ' fps' : '---'}</span></div>
+                <div class="stat-row"><span class="stat-label">Intended Zero</span><span class="stat-value">${recipe.zeroDistanceYards ? recipe.zeroDistanceYards + ' yds' : '---'}</span></div>
+                <div class="stat-row"><span class="stat-label">Case Cap</span><span class="stat-value">${recipe.caseCapacity ? recipe.caseCapacity + ' gr H2O' : '---'}</span></div>
+            </div>
+          </div>
+
+          <div class="worksheet">
+            <span class="worksheet-title">Range Results (Write-In)</span>
+            <table class="ws-table">
+                <thead><tr><th width="25%">Date / Temp</th><th width="20%">Avg Vel</th><th width="15%">SD</th><th width="15%">ES</th><th>Group Size</th></tr></thead>
+                <tbody>
+                    <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+          </div>
+
+          <div class="notes-section">
+            <span class="notes-label">Load Notes</span>
+            <div class="notes-body">${recipe.notes || 'No specific notes.'}</div>
+          </div>
+
+          </div><div class="footer">GENERATED BY RELOAD TRACKER • SAFETY FIRST • VERIFY ALL LOADS</div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);</script></body></html>`;
           
           win.document.open(); win.document.write(html); win.document.close();
       } catch (e) { setError(`Failed to generate PDF: ${e.message}`); }
@@ -422,9 +476,11 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
                     <div><FieldLabel label="Caliber" help="The cartridge type." /><input className={inputClass} placeholder="9mm, .223..." value={form.caliber} onChange={e => updateField('caliber', e.target.value)} /></div>
                     <div><FieldLabel label="Profile Type" help="Categorizes the load." /><select className={inputClass} value={form.profileType} onChange={e => updateField('profileType', e.target.value)}>{PROFILE_TYPES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select></div>
                     
-                    <div className="md:col-span-2 pt-2 border-t border-slate-800/50"><p className="text-[10px] uppercase text-slate-500 tracking-[0.2em]">Geometry & Safety</p></div>
+                    <div className="md:col-span-2 pt-2 border-t border-slate-800/50"><p className="text-[10px] uppercase text-slate-500 tracking-[0.2em]">Geometry & Ballistics</p></div>
                     <div><FieldLabel label="C.O.A.L (in)" help="Cartridge Overall Length." /><input type="number" step="0.001" className={inputClass} placeholder="2.800" value={form.coal} onChange={e => updateField('coal', e.target.value)} /></div>
                     <div><FieldLabel label="Case Vol (gr H2O)" help="Internal capacity." /><input type="number" step="0.1" className={inputClass} placeholder="56.0" value={form.caseCapacity} onChange={e => updateField('caseCapacity', e.target.value)} /></div>
+                    <div><FieldLabel label="Intended Zero (yds)" help="Distance aimed for." /><input type="number" className={inputClass} placeholder="100" value={form.zeroDistanceYards} onChange={e => updateField('zeroDistanceYards', e.target.value)} /></div>
+                    <div><FieldLabel label="Est. Group (in)" help="Expected accuracy." /><input type="number" step="0.1" className={inputClass} placeholder="1.0" value={form.groupSizeInches} onChange={e => updateField('groupSizeInches', e.target.value)} /></div>
                 </div>
 
                 {/* STABILITY ANALYSIS CARD */}

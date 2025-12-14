@@ -1,36 +1,52 @@
 -- ===============================================================
--- Script: schema_gold_master.sql (v8.0 - Final Consolidated)
--- Date: 12/14/2025
--- Purpose: The Definitive Source of Truth. Matches Production (main).
---          Includes: Blueprints, Configs, Market, Gear, and Decimal Math Fixes.
+-- Script: reset_data_keep_users.sql
+-- Purpose: "Factory Reset" for Data, but keeps Users & logins.
+--          1. Wipes all user-generated content (Inventory, Logs, etc.)
+--          2. Applies the Gold Master v8.0 Schema (Math/Column Fixes).
+-- Use Case: Cleaning up a mess without forcing everyone to re-register.
 -- ===============================================================
 
 BEGIN;
 
--- 1. USERS
-CREATE TABLE IF NOT EXISTS "users" (
-    "id" bigserial PRIMARY KEY,
-    "first_name" text NOT NULL,
-    "last_name" text NOT NULL,
-    "username" text NOT NULL UNIQUE,
-    "email" text NOT NULL UNIQUE,
-    "phone" text,
-    "password_hash" text NOT NULL,
-    "role" text DEFAULT 'shooter' NOT NULL,
-    "is_active" boolean DEFAULT true NOT NULL,
-    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-    "last_login_at" timestamp with time zone
-);
+-- ---------------------------------------------------------------
+-- 1. THE PURGE (Wipe Data, Keep Users)
+-- ---------------------------------------------------------------
+DO $$
+DECLARE
+    -- List of tables to wipe (Order matters slightly for foreign keys, but CASCADE handles it)
+    -- NOTE: We are NOT wiping 'users'.
+    tables text[] := ARRAY[
+        'range_logs', 'batches', 'configs', 'blueprints', 
+        'recipes', 'purchases', 'firearms', 'sessions', 
+        'reference_components', 'sources',
+        'gear', 'firearm_gear', 'market_listings',
+        'settings' -- Remove this line if you want to keep API Keys/Settings
+    ];
+    t text;
+BEGIN
+    FOREACH t IN ARRAY tables LOOP
+        IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = t) THEN
+            EXECUTE 'TRUNCATE TABLE ' || quote_ident(t) || ' RESTART IDENTITY CASCADE;';
+            RAISE NOTICE 'Wiped table: %', t;
+        END IF;
+    END LOOP;
+END $$;
 
--- 2. SETTINGS
+
+-- ---------------------------------------------------------------
+-- 2. SCHEMA REPAIR (Apply Gold Master v8.0 Structure)
+-- ---------------------------------------------------------------
+-- This ensures that even if you wipe the data, the table structure 
+-- is upgraded to support the new features (Decimals, Images, etc).
+
+-- 2a. SETTINGS
 CREATE TABLE IF NOT EXISTS "settings" (
     "key" text PRIMARY KEY,
     "value" text NOT NULL,
     "updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 3. FIREARMS
+-- 2b. FIREARMS
 CREATE TABLE IF NOT EXISTS "firearms" (
     "id" serial PRIMARY KEY,
     "user_id" integer REFERENCES "users"("id") ON DELETE CASCADE,
@@ -47,7 +63,7 @@ CREATE TABLE IF NOT EXISTS "firearms" (
     "updated_at" timestamp with time zone DEFAULT now()
 );
 
--- 4. GEAR
+-- 2c. GEAR
 CREATE TABLE IF NOT EXISTS "gear" (
     "id" bigserial PRIMARY KEY,
     "user_id" bigint REFERENCES "users"("id") ON DELETE CASCADE,
@@ -66,15 +82,7 @@ CREATE TABLE IF NOT EXISTS "gear" (
     "updated_at" timestamp with time zone DEFAULT now()
 );
 
--- 5. FIREARM_GEAR (Link Table)
-CREATE TABLE IF NOT EXISTS "firearm_gear" (
-    "firearm_id" integer REFERENCES "firearms"("id") ON DELETE CASCADE,
-    "gear_id" bigint REFERENCES "gear"("id") ON DELETE CASCADE,
-    PRIMARY KEY ("firearm_id", "gear_id")
-);
-
--- 6. PURCHASES (Inventory)
--- FIX: Using numeric(10,4) for accurate money/weight math
+-- 2d. PURCHASES (With Decimal Fix)
 CREATE TABLE IF NOT EXISTS "purchases" (
     "id" bigserial PRIMARY KEY,
     "user_id" bigint REFERENCES "users"("id") ON DELETE CASCADE,
@@ -102,27 +110,7 @@ CREATE TABLE IF NOT EXISTS "purchases" (
     "updated_by_user_id" bigint REFERENCES "users"("id") ON DELETE SET NULL
 );
 
--- 7. MARKET LISTINGS
-CREATE TABLE IF NOT EXISTS "market_listings" (
-    "id" bigserial PRIMARY KEY,
-    "user_id" bigint REFERENCES "users"("id") ON DELETE SET NULL,
-    "url" text NOT NULL UNIQUE,
-    "name" text,
-    "category" text,
-    "vendor" text,
-    "qty_per_unit" numeric(10, 2) DEFAULT 1,
-    "unit_type" text DEFAULT 'ea',
-    "price" numeric(10, 2) DEFAULT 0,
-    "currency" text DEFAULT 'USD',
-    "in_stock" boolean DEFAULT false,
-    "image_url" text,
-    "last_scraped_at" timestamp with time zone DEFAULT now(),
-    "created_at" timestamp with time zone DEFAULT now(),
-    "status" text DEFAULT 'active',
-    "notes" text
-);
-
--- 8. RECIPES
+-- 2e. RECIPES
 CREATE TABLE IF NOT EXISTS "recipes" (
     "id" bigserial PRIMARY KEY,
     "name" text NOT NULL,
@@ -154,7 +142,7 @@ CREATE TABLE IF NOT EXISTS "recipes" (
     "updated_by_user_id" bigint REFERENCES "users"("id") ON DELETE SET NULL
 );
 
--- 9. BATCHES
+-- 2f. BATCHES
 CREATE TABLE IF NOT EXISTS "batches" (
     "id" bigserial PRIMARY KEY,
     "recipe_id" bigint NOT NULL REFERENCES "recipes"("id") ON DELETE CASCADE,
@@ -171,7 +159,7 @@ CREATE TABLE IF NOT EXISTS "batches" (
     "updated_at" timestamp with time zone DEFAULT now()
 );
 
--- 10. RANGE LOGS
+-- 2g. RANGE LOGS
 CREATE TABLE IF NOT EXISTS "range_logs" (
     "id" bigserial PRIMARY KEY,
     "recipe_id" bigint NOT NULL REFERENCES "recipes"("id") ON DELETE SET NULL,
@@ -196,100 +184,48 @@ CREATE TABLE IF NOT EXISTS "range_logs" (
     "updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 11. BLUEPRINTS (Missing in v6)
-CREATE TABLE IF NOT EXISTS "blueprints" (
-    "id" bigserial PRIMARY KEY,
-    "user_id" bigint REFERENCES "users"("id") ON DELETE CASCADE,
-    "name" text NOT NULL,
-    "caliber" text NOT NULL,
-    "goal" text,
-    "host_firearm" text,
-    "design_notes" text,
-    "powder_snapshot" jsonb,
-    "bullet_snapshot" jsonb,
-    "primer_snapshot" jsonb,
-    "case_snapshot" jsonb,
-    "configuration" jsonb DEFAULT '{}',
-    "simulated_results" jsonb,
-    "cbto_inches" numeric(6, 4),
-    "coal_inches" numeric(6, 4),
-    "case_capacity_gr_h2o" numeric(6, 2),
-    "trim_length_inches" numeric(6, 4),
-    "jump_inches" numeric(6, 4),
-    "neck_tension_inches" numeric(6, 4),
-    "primer_depth_inches" numeric(6, 4),
-    "is_favorite" boolean DEFAULT false,
-    "created_at" timestamp with time zone DEFAULT now(),
-    "updated_at" timestamp with time zone DEFAULT now()
-);
-
--- 12. CONFIGS (Missing in v6)
-CREATE TABLE IF NOT EXISTS "configs" (
-    "id" bigserial PRIMARY KEY,
-    "name" text NOT NULL,
-    "caliber" text NOT NULL,
-    "charge_grains" numeric(10, 4),
-    "brass_reuse" integer,
-    "lot_size" integer,
-    "recipe_id" bigint REFERENCES "recipes"("id") ON DELETE SET NULL,
-    "cost_per_round" numeric(18, 6),
-    "cost_per_50" numeric(18, 6),
-    "cost_per_100" numeric(18, 6),
-    "cost_per_1000" numeric(18, 6),
-    "cost_for_lot" numeric(18, 6),
-    "cost_json" jsonb,
-    "powder_lot_id" text,
-    "bullet_lot_id" text,
-    "primer_lot_id" text,
-    "case_lot_id" text,
-    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
-
--- 13. REFERENCE COMPONENTS (Missing in v6)
-CREATE TABLE IF NOT EXISTS "reference_components" (
-    "id" text PRIMARY KEY,
-    "type" text NOT NULL,
-    "brand" text NOT NULL,
-    "name" text NOT NULL,
-    "sku" text,
-    "specs" jsonb DEFAULT '{}',
-    "source" text,
-    "verified" boolean DEFAULT true,
-    "created_at" timestamp with time zone DEFAULT now()
-);
-
--- 14. SOURCES (Missing in v6)
-CREATE TABLE IF NOT EXISTS "sources" (
+-- 2h. MARKET & EXTRAS
+CREATE TABLE IF NOT EXISTS "market_listings" (
     "id" bigserial PRIMARY KEY,
     "user_id" bigint REFERENCES "users"("id") ON DELETE SET NULL,
-    "title" text NOT NULL,
-    "author" text,
-    "type" text NOT NULL,
-    "description" text,
-    "url" text,
-    "is_verified" boolean DEFAULT false,
+    "url" text NOT NULL UNIQUE,
+    "name" text,
+    "category" text,
+    "vendor" text,
+    "qty_per_unit" numeric(10, 2) DEFAULT 1,
+    "unit_type" text DEFAULT 'ea',
+    "price" numeric(10, 2) DEFAULT 0,
+    "currency" text DEFAULT 'USD',
+    "in_stock" boolean DEFAULT false,
+    "image_url" text,
+    "last_scraped_at" timestamp with time zone DEFAULT now(),
     "created_at" timestamp with time zone DEFAULT now(),
-    "updated_at" timestamp with time zone DEFAULT now()
+    "status" text DEFAULT 'active',
+    "notes" text
 );
 
--- 15. SESSIONS
-CREATE TABLE IF NOT EXISTS "sessions" (
-    "id" bigserial PRIMARY KEY,
-    "user_id" bigint NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
-    "token" text NOT NULL UNIQUE,
-    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-    "expires_at" timestamp with time zone NOT NULL,
-    "revoked_at" timestamp with time zone
+CREATE TABLE IF NOT EXISTS "firearm_gear" (
+    "firearm_id" integer REFERENCES "firearms"("id") ON DELETE CASCADE,
+    "gear_id" bigint REFERENCES "gear"("id") ON DELETE CASCADE,
+    PRIMARY KEY ("firearm_id", "gear_id")
 );
 
--- 16. INDEXES
-CREATE INDEX IF NOT EXISTS idx_batches_date ON batches (load_date);
-CREATE INDEX IF NOT EXISTS idx_purchases_status ON purchases (status);
-CREATE INDEX IF NOT EXISTS idx_range_logs_date ON range_logs (date);
-CREATE INDEX IF NOT EXISTS idx_recipes_caliber ON recipes (caliber);
-CREATE INDEX IF NOT EXISTS idx_firearms_user ON firearms (user_id);
-CREATE INDEX IF NOT EXISTS idx_market_category ON market_listings (category);
-CREATE INDEX IF NOT EXISTS idx_firearm_gear_fid ON firearm_gear (firearm_id);
+-- ---------------------------------------------------------------
+-- 3. FINAL COLUMN PATCH (Just in case table existed but was old)
+-- ---------------------------------------------------------------
+DO $$ 
+BEGIN 
+    -- Ensure Purchases uses DECIMAL for math
+    ALTER TABLE "purchases" ALTER COLUMN "qty" TYPE numeric(10, 4);
+    ALTER TABLE "purchases" ALTER COLUMN "price" TYPE numeric(10, 4);
+    ALTER TABLE "purchases" ALTER COLUMN "shipping" TYPE numeric(10, 4);
+    ALTER TABLE "purchases" ALTER COLUMN "tax" TYPE numeric(10, 4);
+    
+    -- Ensure Images/Shots exist
+    ALTER TABLE "firearms" ADD COLUMN IF NOT EXISTS "image_url" text;
+    ALTER TABLE "purchases" ADD COLUMN IF NOT EXISTS "image_url" text;
+    ALTER TABLE "range_logs" ADD COLUMN IF NOT EXISTS "image_url" text;
+    ALTER TABLE "range_logs" ADD COLUMN IF NOT EXISTS "shots" jsonb DEFAULT '[]'::jsonb;
+END $$;
 
 COMMIT;
