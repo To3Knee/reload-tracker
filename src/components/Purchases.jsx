@@ -3,10 +3,10 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 8.3.0 (Mobile Camera Fix)
+//Version: 8.3.0 (iOS Visibility Fix)
 //About: Manage component LOT purchases.
-//       - FIX: Removed aspect ratio constraint to fix "Black Screen" on mobile.
-//       - FIX: Added focusMode constraints for clearer scanning.
+//       - FIX: Removed aspect ratio constraint so camera feed is visible on mobile.
+//       - FIX: Added continuous focus mode.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -97,8 +97,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           const devices = await Html5Qrcode.getCameras();
           if (!devices || devices.length === 0) throw new Error("No cameras detected.");
 
-          // 2. Config (Mobile Friendly)
-          // REMOVED aspectRatio to prevent black screen on mobile
+          // 2. Config (Mobile Friendly - NO ASPECT RATIO)
           const config = { 
               fps: 10, 
               qrbox: { width: 280, height: 280 },
@@ -264,12 +263,12 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                         <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
                             <ScanBarcode className="text-emerald-500" /> Scanning...
                         </h3>
-                        {/* CAMERA VIEWPORT - Removed fixed aspect ratio for mobile compatibility */}
+                        {/* CAMERA VIEWPORT - Full visibility on mobile */}
                         <div id="reader" className="w-full bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 relative min-h-[300px]">
                             {/* Overlay Guide */}
-                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10"></div>
+                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
                         </div>
-                        <p className="text-center text-[10px] text-zinc-500 mt-4">Align barcode within the frame.</p>
+                        <p className="text-center text-[10px] text-zinc-500 mt-4">Align barcode with the red line.</p>
                         <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition">Cancel</button>
                     </div>
                 </div>
@@ -280,7 +279,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                     <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={18} /></button>
                     <span className={sectionLabelClass}>{editingId ? 'EDIT PURCHASE' : 'ADD PURCHASE'}</span>
                     
-                    {/* VISUAL CUE FOR SCAN SUCCESS */}
                     {form.brand && !editingId && form.imageUrl && (
                         <div className="mb-4 text-[10px] text-emerald-400 flex items-center gap-1.5 bg-emerald-900/20 px-3 py-2 rounded-lg border border-emerald-900/50 animate-in fade-in slide-in-from-top-2">
                             <Sparkles size={10} /> Product data retrieved from barcode scan.
