@@ -3,16 +3,16 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 8.4.0 (Camera Switcher)
+//Version: 9.1.0 (React DOM Fix)
 //About: Manage component LOT purchases.
-//       - FIX: Added "Switch Camera" button to solve "Black Screen" on multi-lens phones.
-//       - FIX: Removed 'focusMode' constraint which causes failures on some iOS versions.
+//       - FIX: Moved React overlays OUTSIDE the scanner div to prevent "Node.removeChild" crashes.
+//       - FIX: Improved error handling when camera is missing.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit, formatCurrency } from '../lib/db'
 import { fetchSettings } from '../lib/settings'
-import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw, Camera, SwitchCamera } from 'lucide-react'
+import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw, Camera, SwitchCamera, Loader2 } from 'lucide-react'
 import { printPurchaseLabel } from '../lib/labels' 
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
@@ -45,8 +45,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   // SCANNER STATE
   const [showScanner, setShowScanner] = useState(false)
   const [scannerEnabled, setScannerEnabled] = useState(false)
-  const [activeCameraId, setActiveCameraId] = useState(null)
-  const [cameras, setCameras] = useState([])
+  const [cameraLoading, setCameraLoading] = useState(false) 
   const html5QrCodeRef = useRef(null)
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -72,86 +71,75 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
   // --- CAMERA LOGIC ---
   useEffect(() => {
+      let isMounted = true;
       if (showScanner) {
-          const timer = setTimeout(() => { initScanner(); }, 300);
-          return () => { clearTimeout(timer); stopScanner(); };
+          // Allow modal to paint before starting camera
+          const timer = setTimeout(() => { 
+              if (isMounted) startScanner(); 
+          }, 300);
+          return () => {
+              isMounted = false;
+              clearTimeout(timer);
+              stopScanner();
+          };
       } else {
           stopScanner();
       }
   }, [showScanner]);
 
-  const initScanner = async () => {
+  const startScanner = async () => {
       try {
           if (html5QrCodeRef.current) return;
 
           const scannerId = "reader";
           if (!document.getElementById(scannerId)) return;
 
+          setCameraLoading(true);
+
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
-          // 1. Get List of Cameras
-          const devices = await Html5Qrcode.getCameras();
-          if (!devices || devices.length === 0) throw new Error("No cameras detected.");
+          // DIRECT START: Ask for environment (back) camera
+          await html5QrCode.start(
+              { facingMode: "environment" }, 
+              { 
+                  fps: 10, 
+                  qrbox: { width: 250, height: 250 },
+                  aspectRatio: 1.0 
+              },
+              onScanSuccess,
+              onScanFailure
+          );
           
-          setCameras(devices); // Save list for switching
-
-          // 2. Pick Initial Camera (Prefer Last one - usually Back Camera on Android/iOS)
-          // Using facingMode: "environment" is unreliable on multi-lens phones.
-          const initialCamId = devices[devices.length - 1].id; 
-          
-          await startStream(initialCamId);
+          setCameraLoading(false);
 
       } catch (err) {
-          console.error("Camera Init Failed:", err);
+          console.error("Camera Start Failed:", err);
+          
+          // Retry with default camera (for desktop/webcam support)
+          try {
+              if (html5QrCodeRef.current) {
+                  await html5QrCodeRef.current.start(
+                      { facingMode: "user" }, 
+                      { fps: 10, qrbox: { width: 250, height: 250 } },
+                      onScanSuccess,
+                      onScanFailure
+                  );
+                  setCameraLoading(false);
+                  return;
+              }
+          } catch(e2) { /* secondary fail */ }
+
           let msg = "Could not start camera.";
-          if (err.name === 'NotAllowedError') msg = "Camera permission denied.";
+          if (err.name === 'NotAllowedError') msg = "Camera access denied.";
           if (err.name === 'NotFoundError') msg = "No camera found.";
+          if (err.name === 'NotReadableError') msg = "Camera is busy.";
+          
           setError(msg);
+          setCameraLoading(false);
           setShowScanner(false);
       }
   };
-
-  const startStream = async (cameraId) => {
-      if (!html5QrCodeRef.current) return;
-      
-      try {
-          // If already scanning, stop first
-          if (html5QrCodeRef.current.isScanning) {
-              await html5QrCodeRef.current.stop();
-          }
-
-          // Mobile-friendly config (No Aspect Ratio, No strict constraints)
-          const config = { 
-              fps: 10, 
-              qrbox: { width: 280, height: 280 }
-          };
-
-          await html5QrCodeRef.current.start(
-              cameraId, 
-              config, 
-              onScanSuccess, 
-              undefined
-          );
-          setActiveCameraId(cameraId);
-          
-      } catch (err) {
-          console.warn("Stream Start Error:", err);
-          setError("Failed to start video stream. Try switching cameras.");
-      }
-  }
-
-  const cycleCamera = async () => {
-      if (cameras.length < 2) return;
-      HAPTIC.click();
-      
-      // Find current index
-      const currentIndex = cameras.findIndex(c => c.id === activeCameraId);
-      const nextIndex = (currentIndex + 1) % cameras.length;
-      const nextCamId = cameras[nextIndex].id;
-      
-      await startStream(nextCamId);
-  }
 
   const onScanSuccess = (decodedText) => {
       HAPTIC.success();
@@ -159,6 +147,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       setShowScanner(false);
       fetchProductData(decodedText);
   };
+
+  const onScanFailure = (error) => { /* Ignore frame errors */ }
 
   const stopScanner = async () => {
       if (html5QrCodeRef.current) {
@@ -169,6 +159,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               html5QrCodeRef.current.clear();
           } catch (err) { console.warn("Stop warning:", err); }
           html5QrCodeRef.current = null;
+          setCameraLoading(false);
       }
   };
 
@@ -185,8 +176,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               body: JSON.stringify({ code })
           });
           
-          if (res.status === 404) throw new Error("Product not found in database. Please enter manually.");
-          if (res.status === 401) throw new Error("Scanner not configured. Check Admin Settings.");
+          if (res.status === 404) throw new Error("Product not found. Please enter details manually.");
+          if (res.status === 401) throw new Error("Scanner config error. Check Admin Settings.");
           if (!res.ok) throw new Error("Lookup failed.");
 
           const json = await res.json();
@@ -199,7 +190,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
           let type = 'other';
           const fullText = (data.category + " " + data.name + " " + data.description).toLowerCase();
-          
           if (fullText.includes('powder') || fullText.includes('propellant')) type = 'powder';
           else if (fullText.includes('bullet') || fullText.includes('projectile') || fullText.includes('head')) type = 'bullet';
           else if (fullText.includes('primer')) type = 'primer';
@@ -214,7 +204,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               qty: prev.qty ? prev.qty : "1", 
               notes: data.description ? data.description.substring(0, 150) + (data.description.length > 150 ? "..." : "") : ""
           }));
-          
           HAPTIC.success();
       } catch (err) {
           setError(err.message);
@@ -288,20 +277,25 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                             <ScanBarcode className="text-emerald-500" /> Scanning...
                         </h3>
                         
-                        {/* CAMERA FEED */}
-                        <div id="reader" className="w-full bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 relative min-h-[300px]">
-                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
+                        {/* CAMERA WRAPPER: RELATIVE POSITIONING PARENT */}
+                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30">
+                            
+                            {/* 1. THE SCANNER DIV (EMPTY FOR LIBRARY) */}
+                            <div id="reader" className="w-full h-full"></div>
+
+                            {/* 2. REACT OVERLAYS (ABSOLUTE ON TOP) */}
+                            {cameraLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
+                                    <Loader2 className="animate-spin text-emerald-500" size={32} />
+                                </div>
+                            )}
+                            
+                            {!cameraLoading && (
+                                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"></div>
+                            )}
                         </div>
                         
                         <p className="text-center text-[10px] text-zinc-500 mt-4">Align barcode with the red line.</p>
-                        
-                        {/* CAMERA SWITCHER */}
-                        {cameras.length > 1 && (
-                            <button onClick={cycleCamera} className="mt-4 px-4 py-2 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 text-[10px] font-bold hover:text-white hover:bg-zinc-700 transition flex items-center gap-2">
-                                <SwitchCamera size={12} /> Switch Camera
-                            </button>
-                        )}
-                        
                         <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition">Cancel</button>
                     </div>
                 </div>
