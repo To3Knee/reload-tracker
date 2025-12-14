@@ -1,21 +1,23 @@
 //===============================================================
 //Script Name: Purchases.jsx
 //Script Location: src/components/Purchases.jsx
-//Date: 12/12/2025
+//Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 3.2.1 (Syntax Fix)
+//Version: 8.2.0 (Final Polish)
 //About: Manage component LOT purchases.
-//       - FIX: Resolved corrupted file ending (SyntaxError).
-//       - FIX: Maintained mobile text alignment polish.
+//       - FIX: Translated "DOMException" into human-readable "No Camera" error.
+//       - FEATURE: Auto-sets Quantity to "1" on successful scan if empty.
 //===============================================================
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit, formatCurrency } from '../lib/db'
-import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package } from 'lucide-react'
+import { fetchSettings } from '../lib/settings'
+import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw } from 'lucide-react'
 import { printPurchaseLabel } from '../lib/labels' 
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
 import { Market } from './Market'
+import { Html5Qrcode } from 'html5-qrcode'
 
 const COMPONENT_TYPES = [ { value: 'powder', label: 'Powder' }, { value: 'bullet', label: 'Bullet / Projectile' }, { value: 'primer', label: 'Primer' }, { value: 'case', label: 'Brass / Case' }, { value: 'other', label: 'Other' } ]
 const UNITS = [ { value: 'lb', label: 'Pounds (lb)' }, { value: 'kg', label: 'Kilograms (kg)' }, { value: 'gr', label: 'Grains (gr)' }, { value: 'each', label: 'Each / Pieces' }, { value: 'rounds', label: 'Rounds' } ]
@@ -30,7 +32,7 @@ const getLocalDate = () => {
 
 const DEFAULT_FORM = { componentType: 'powder', caliber: '', brand: '', name: '', typeDetail: '', lotId: '', qty: '', unit: 'lb', price: '', shipping: '', tax: '', vendor: '', date: getLocalDate(), notes: '', url: '', imageUrl: '', status: 'active', caseCondition: '' }
 
-export function Purchases({ onChanged, canEdit = true, highlightId }) {
+export function Purchases({ onChanged, canEdit = false, highlightId }) {
   const [activeSubTab, setActiveSubTab] = useState('inventory') 
   const [purchases, setPurchases] = useState([])
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -39,12 +41,153 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [form, setForm] = useState(DEFAULT_FORM)
   const [error, setError] = useState(null)
+  
+  // SCANNER STATE
+  const [showScanner, setShowScanner] = useState(false)
+  const [scannerEnabled, setScannerEnabled] = useState(false)
+  const html5QrCodeRef = useRef(null)
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { 
+      loadData();
+      checkScannerConfig();
+  }, [])
+
   useEffect(() => { if (highlightId && purchases.length > 0) { const targetId = String(highlightId); setTimeout(() => { const el = document.getElementById(`purchase-${targetId}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }) }, 600) } }, [highlightId, purchases])
+
+  async function checkScannerConfig() {
+      try {
+          const settings = await fetchSettings();
+          const isEnabled = String(settings.barcode_enabled).toLowerCase().trim() === 'true';
+          setScannerEnabled(isEnabled);
+      } catch (e) {
+          setScannerEnabled(false);
+      }
+  }
+
+  // --- CAMERA LOGIC ---
+  useEffect(() => {
+      if (showScanner) {
+          const timer = setTimeout(() => { startScanner(); }, 100);
+          return () => clearTimeout(timer);
+      } else {
+          stopScanner();
+      }
+      return () => { stopScanner(); };
+  }, [showScanner]);
+
+  const startScanner = async () => {
+      try {
+          if (html5QrCodeRef.current) return;
+
+          const scannerId = "reader";
+          if (!document.getElementById(scannerId)) return;
+
+          const html5QrCode = new Html5Qrcode(scannerId);
+          html5QrCodeRef.current = html5QrCode;
+
+          const devices = await Html5Qrcode.getCameras();
+          if (!devices || devices.length === 0) throw new Error("No cameras detected.");
+
+          const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+
+          try {
+              await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+          } catch (envError) {
+              console.warn("Environment camera failed, trying default...", envError);
+              await html5QrCode.start(devices[0].id, config, onScanSuccess, () => {});
+          }
+
+      } catch (err) {
+          console.error("Camera Init Failed:", err);
+          // IMPROVEMENT: Friendly Error Messages
+          let msg = "Could not start camera.";
+          if (err.name === 'NotAllowedError') msg = "Camera permission denied.";
+          if (err.name === 'NotFoundError' || err.message.includes("not be found")) msg = "No camera found on this device.";
+          if (err.name === 'NotReadableError') msg = "Camera is in use by another app.";
+          
+          setError(msg);
+          setShowScanner(false);
+      }
+  };
+
+  const onScanSuccess = (decodedText) => {
+      HAPTIC.success();
+      stopScanner();
+      setShowScanner(false);
+      fetchProductData(decodedText);
+  };
+
+  const stopScanner = async () => {
+      if (html5QrCodeRef.current) {
+          try {
+              if (html5QrCodeRef.current.isScanning) {
+                  await html5QrCodeRef.current.stop();
+              }
+              html5QrCodeRef.current.clear();
+          } catch (err) {
+              console.warn("Scanner stop error", err);
+          }
+          html5QrCodeRef.current = null;
+      }
+  };
+
+  async function fetchProductData(code) {
+      setLoading(true);
+      setError(null);
+      if (!isFormOpen) handleAddNew();
+
+      try {
+          const res = await fetch('/api/scan', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ code })
+          });
+          
+          if (res.status === 404) throw new Error("Product not found in database. Please enter manually.");
+          if (res.status === 401) throw new Error("Scanner not configured or API Key invalid. Check Admin Settings.");
+          if (!res.ok) throw new Error("Lookup failed.");
+
+          const json = await res.json();
+          const data = json.data;
+
+          let name = data.name || "";
+          if (data.brand && name.toLowerCase().startsWith(data.brand.toLowerCase())) {
+              name = name.slice(data.brand.length).trim();
+          }
+
+          let type = 'other';
+          const fullText = (data.category + " " + data.name + " " + data.description).toLowerCase();
+          
+          if (fullText.includes('powder') || fullText.includes('propellant')) type = 'powder';
+          else if (fullText.includes('bullet') || fullText.includes('projectile') || fullText.includes('head')) type = 'bullet';
+          else if (fullText.includes('primer')) type = 'primer';
+          else if (fullText.includes('brass') || fullText.includes('case') || fullText.includes('cartridge case')) type = 'case';
+
+          // IMPROVEMENT: Smart Defaults
+          setForm(prev => ({
+              ...prev,
+              brand: data.brand || prev.brand,
+              name: name || prev.name,
+              componentType: type,
+              imageUrl: data.imageUrl || prev.imageUrl,
+              // Default to '1' if empty, otherwise keep user's input
+              qty: prev.qty ? prev.qty : "1", 
+              notes: data.description ? data.description.substring(0, 150) + (data.description.length > 150 ? "..." : "") : ""
+          }));
+          
+          HAPTIC.success();
+      } catch (err) {
+          setError(err.message);
+          HAPTIC.error();
+      } finally {
+          setLoading(false);
+      }
+  }
 
   async function loadData() { try { const data = await getAllPurchases(); setPurchases(data); if (onChanged) onChanged(); } catch (err) { console.error("Failed to load purchases", err); setError("Failed to sync inventory data."); } }
   function handleAddNew() { setEditingId(null); setForm(DEFAULT_FORM); setError(null); setIsFormOpen(true); HAPTIC.click(); }
@@ -82,9 +225,16 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
           </div>
 
           {activeSubTab === 'inventory' && canEdit && !isFormOpen && (
-              <button onClick={handleAddNew} className="mb-2 px-4 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-700 hover:border-red-500/50 hover:text-white transition flex items-center gap-2">
-                  <Plus size={12} /> New Lot
-              </button>
+              <div className="flex gap-2 mb-2">
+                  {scannerEnabled && canEdit && (
+                      <button onClick={() => { setShowScanner(true); HAPTIC.click(); }} className="px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-700 hover:border-emerald-500/50 hover:text-white transition flex items-center gap-2">
+                          <ScanBarcode size={14} /> Scan Barcode
+                      </button>
+                  )}
+                  <button onClick={handleAddNew} className="px-4 py-1.5 rounded-full bg-red-700 border border-red-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-red-600 transition flex items-center gap-2">
+                      <Plus size={12} /> New Lot
+                  </button>
+              </div>
           )}
       </div>
 
@@ -94,10 +244,34 @@ export function Purchases({ onChanged, canEdit = true, highlightId }) {
           <>
             {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
 
+            {/* SCANNER MODAL */}
+            {showScanner && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
+                    <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center">
+                        <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-10"><X size={20} /></button>
+                        <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
+                            <ScanBarcode className="text-emerald-500" /> Scanning...
+                        </h3>
+                        <div id="reader" className="w-full h-64 bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 relative">
+                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10"></div>
+                        </div>
+                        <p className="text-center text-[10px] text-zinc-500 mt-4">Align barcode within the frame.</p>
+                        <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition">Cancel</button>
+                    </div>
+                </div>
+            )}
+
             {isFormOpen && (
                 <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in relative mb-6">
                     <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={18} /></button>
                     <span className={sectionLabelClass}>{editingId ? 'EDIT PURCHASE' : 'ADD PURCHASE'}</span>
+                    
+                    {form.brand && !editingId && form.imageUrl && (
+                        <div className="mb-4 text-[10px] text-emerald-400 flex items-center gap-1.5 bg-emerald-900/20 px-3 py-2 rounded-lg border border-emerald-900/50 animate-in fade-in slide-in-from-top-2">
+                            <Sparkles size={10} /> Product data retrieved from barcode scan.
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><div><label className={labelClass}>Type</label><select className={inputClass} value={form.componentType} onChange={e => setForm({...form, componentType: e.target.value})}>{COMPONENT_TYPES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div><div><label className={labelClass}>Date</label><input type="date" className={inputClass} value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div><div className="md:col-span-2"><label className={labelClass}>Vendor</label><input className={inputClass} value={form.vendor} onChange={e => setForm({...form, vendor: e.target.value})} placeholder="e.g. Brownells, Local Shop" /><p className={helpClass}>Where did you buy this?</p></div></div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><div><label className={labelClass}>Brand</label><input className={inputClass} value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} placeholder="e.g. CCI" /></div><div className="md:col-span-2"><label className={labelClass}>Product Name</label><input className={inputClass} value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. #400 Small Rifle" /></div><div><label className={labelClass}>Lot #</label><input className={inputClass} value={form.lotId} onChange={e => setForm({...form, lotId: e.target.value})} placeholder="Auto-generated if empty" /><p className={helpClass}>Found on the box/jug.</p></div></div>

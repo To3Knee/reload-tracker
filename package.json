@@ -12,6 +12,7 @@
     "cheerio": "^1.1.2",
     "exceljs": "^4.4.0",
     "got-scraping": "^4.1.2",
+    "html5-qrcode": "^2.3.8",
     "idb": "^8.0.0",
     "lucide-react": "^0.447.0",
     "pg": "^8.16.3",

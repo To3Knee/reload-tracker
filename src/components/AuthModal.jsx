@@ -1,14 +1,15 @@
 //===============================================================
 //Script Name: AuthModal.jsx
 //Script Location: src/components/AuthModal.jsx
-//Date: 12/10/2025
+//Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 6.0.0 (Corrected Admin)
+//Version: 6.1.0 (Scanner Tab Added)
 //About: Login/Admin Modal.
+//       - FEATURE: Added 'Scanner' tab to integrate BarcodeSettings.
 //===============================================================
 
 import { useEffect, useState } from 'react'
-import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, ChevronDown, Eye, EyeOff, Ban, Trash2, Power, Save, Key, Terminal, Play, CheckCircle, Database, Zap } from 'lucide-react'
+import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, ChevronDown, Eye, EyeOff, Ban, Trash2, Power, Save, Key, Terminal, Play, CheckCircle, Database, Zap, ScanBarcode } from 'lucide-react'
 import {
   ROLE_ADMIN,
   ROLE_SHOOTER,
@@ -22,6 +23,8 @@ import {
 } from '../lib/auth'
 import { fetchSettings, saveSetting } from '../lib/settings'
 import logo from '../assets/logo.png' 
+// NEW IMPORT
+import { BarcodeSettings } from './BarcodeSettings'
 
 const PasswordInput = ({ value, onChange, show, onToggle, placeholder = "Password" }) => (
   <div className="relative">
@@ -63,7 +66,16 @@ export default function AuthModal({
   const [showResetPass, setShowResetPass] = useState(false)
   
   // CONFIG STATE
-  const [systemSettings, setSystemSettings] = useState({ ai_enabled: 'false', ai_model: 'google/gemini-2.0-flash-exp:free', hasAiKey: false })
+  const [systemSettings, setSystemSettings] = useState({ 
+      ai_enabled: 'false', 
+      ai_model: 'google/gemini-2.0-flash-exp:free', 
+      hasAiKey: false,
+      // Barcode defaults
+      barcode_enabled: 'false',
+      barcode_provider: 'go-upc',
+      barcode_api_key: '',
+      barcode_custom_url: ''
+  })
   const [aiModel, setAiModel] = useState('google/gemini-2.0-flash-exp:free')
   const [customModel, setCustomModel] = useState('') 
   const [apiKeyOverride, setApiKeyOverride] = useState('')
@@ -74,6 +86,8 @@ export default function AuthModal({
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  
+  // TAB STATE
   const [activeTab, setActiveTab] = useState('manage') 
   const isAdmin = currentUser?.role === ROLE_ADMIN
 
@@ -91,7 +105,9 @@ export default function AuthModal({
   async function loadSettings() { 
       try { 
           const data = await fetchSettings(); 
-          setSystemSettings(data); 
+          setSystemSettings(prev => ({ ...prev, ...data })); // Merge new data
+          
+          // AI Setup
           const presets = [
               'google/gemini-2.0-flash-exp:free', 
               'meta-llama/llama-3.3-70b-instruct:free',
@@ -138,6 +154,26 @@ export default function AuthModal({
       finally { setBusy(false) } 
   }
 
+  // Generic Save Handler for Child Components (BarcodeSettings)
+  async function handleGenericSave(updates) {
+      setBusy(true);
+      try {
+          // Iterate and save each setting
+          for (const [key, value] of Object.entries(updates)) {
+              await saveSetting(key, value);
+          }
+          // Update local state to reflect changes immediately
+          setSystemSettings(prev => ({ ...prev, ...updates }));
+          setStatusMessage("Settings saved successfully.");
+      } catch (err) {
+          console.error(err);
+          setErrorMessage("Failed to save settings.");
+          throw err;
+      } finally {
+          setBusy(false);
+      }
+  }
+
   async function testAiConnection() {
       setBusy(true);
       clearMessages();
@@ -151,12 +187,6 @@ export default function AuthModal({
           
           if(!res.ok) {
               const errData = await res.json();
-              if(errData.error && errData.error.includes("429")) {
-                  throw new Error(`Connected! But Model is Busy (Rate Limit). Try switching models.`);
-              }
-              if(errData.error && errData.error.includes("404")) {
-                  throw new Error(`Model Not Found (404). Please select a different one.`);
-              }
               throw new Error(errData.error || "Connection Failed");
           }
           setStatusMessage(`Success! Connected to ${finalModel}`);
@@ -237,7 +267,9 @@ export default function AuthModal({
                 <div className="flex gap-2 overflow-x-auto min-w-0 pr-2 custom-scrollbar">
                     <button onClick={() => setActiveTab('manage')} className={tabBtnClass(activeTab === 'manage')}><Users size={12} className="inline mr-1"/> Users</button>
                     <button onClick={() => setActiveTab('reset')} className={tabBtnClass(activeTab === 'reset')}><Lock size={12} className="inline mr-1"/> Security</button>
-                    <button onClick={() => setActiveTab('config')} className={tabBtnClass(activeTab === 'config')}><Settings size={12} className="inline mr-1"/> Config</button>
+                    <button onClick={() => setActiveTab('config')} className={tabBtnClass(activeTab === 'config')}><Bot size={12} className="inline mr-1"/> AI Config</button>
+                    {/* NEW SCANNER TAB */}
+                    <button onClick={() => setActiveTab('scanner')} className={tabBtnClass(activeTab === 'scanner')}><ScanBarcode size={12} className="inline mr-1"/> Scanner</button>
                     <button onClick={() => setActiveTab('console')} className={tabBtnClass(activeTab === 'console')}><Terminal size={12} className="inline mr-1"/> Console</button>
                 </div>
                 {canClose && (<button onClick={onClose} className="p-2 bg-zinc-900 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-700 transition flex-shrink-0 ml-2" title="Close Panel"><X size={16} /></button>)}
@@ -276,7 +308,7 @@ export default function AuthModal({
                   </div>
               )}
 
-              {/* 3. CONFIG TAB */}
+              {/* 3. AI CONFIG TAB */}
               {activeTab === 'config' && (
                   <div className="space-y-6">
                      <div className="bg-zinc-900/30 rounded-xl p-4 border border-zinc-800/60">
@@ -322,7 +354,15 @@ export default function AuthModal({
                   </div>
               )}
 
-              {/* 4. SQL CONSOLE */}
+              {/* 4. NEW SCANNER TAB */}
+              {activeTab === 'scanner' && (
+                  <BarcodeSettings 
+                      settings={systemSettings} 
+                      onSave={handleGenericSave} 
+                  />
+              )}
+
+              {/* 5. SQL CONSOLE */}
               {activeTab === 'console' && (
                   <div className="space-y-4 h-full flex flex-col">
                       <div className="bg-amber-900/10 border border-amber-900/30 p-3 rounded-lg flex items-start gap-3">
