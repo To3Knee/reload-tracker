@@ -3,17 +3,17 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 9.4.0 (Bare Metal Scanner)
+//Version: 9.5.0 (CSS Enforcement Fix)
 //About: Manage component LOT purchases.
-//       - FIX: Removed 'qrbox' causing black overlay on iOS.
-//       - FIX: Removed 'aspectRatio' causing video failure.
-//       - RESULT: Raw, uncropped video feed.
+//       - FIX: Added inline CSS to force video element visibility on iOS.
+//       - FIX: Added resolution constraints to help camera initialize.
+//       - FIX: Added Manual Start button if auto-start hangs.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit, formatCurrency } from '../lib/db'
 import { fetchSettings } from '../lib/settings'
-import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw, Camera, SwitchCamera, Loader2 } from 'lucide-react'
+import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw, Camera, SwitchCamera, Loader2, Play } from 'lucide-react'
 import { printPurchaseLabel } from '../lib/labels' 
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
@@ -46,7 +46,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   // SCANNER STATE
   const [showScanner, setShowScanner] = useState(false)
   const [scannerEnabled, setScannerEnabled] = useState(false)
-  const [cameraLoading, setCameraLoading] = useState(false) 
+  const [cameraLoading, setCameraLoading] = useState(false)
+  const [permissionGranted, setPermissionGranted] = useState(false)
   const html5QrCodeRef = useRef(null)
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -74,9 +75,10 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   useEffect(() => {
       let isMounted = true;
       if (showScanner) {
+          // Attempt auto-start, but UI provides a manual button just in case
           const timer = setTimeout(() => { 
               if (isMounted) startScanner(); 
-          }, 300);
+          }, 500);
           return () => {
               isMounted = false;
               clearTimeout(timer);
@@ -95,17 +97,19 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           if (!document.getElementById(scannerId)) return;
 
           setCameraLoading(true);
+          setError(null);
 
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
-          // CONFIG: BARE METAL
-          // No qrbox (removes black overlay)
-          // No aspectRatio (fixes video size)
+          // CONFIG: iOS Friendly
           const config = { 
               fps: 10,
               videoConstraints: {
-                  facingMode: "environment"
+                  facingMode: "environment",
+                  // Providing resolution hints helps WebKit initialize the video sizing correctly
+                  width: { min: 640, ideal: 1280, max: 1920 },
+                  height: { min: 480, ideal: 720, max: 1080 },
               }
           };
 
@@ -116,12 +120,13 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               onScanFailure
           );
           
+          setPermissionGranted(true);
           setCameraLoading(false);
 
       } catch (err) {
           console.error("Camera Start Failed:", err);
           
-          // Fallback: Try User Camera
+          // Retry Logic
           try {
               if (html5QrCodeRef.current) {
                   await html5QrCodeRef.current.start(
@@ -130,19 +135,20 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                       onScanSuccess,
                       onScanFailure
                   );
+                  setPermissionGranted(true);
                   setCameraLoading(false);
                   return;
               }
           } catch(e2) { }
 
           let msg = "Could not start camera.";
-          if (err.name === 'NotAllowedError') msg = "Camera access denied.";
+          if (err.name === 'NotAllowedError') msg = "Access denied. Please check permissions.";
           if (err.name === 'NotFoundError') msg = "No camera found.";
-          if (err.name === 'NotReadableError') msg = "Camera is busy.";
+          if (err.name === 'NotReadableError') msg = "Camera busy or not readable.";
           
+          // Don't close modal, show error inside it so user can retry
           setError(msg);
           setCameraLoading(false);
-          setShowScanner(false);
       }
   };
 
@@ -153,7 +159,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       fetchProductData(decodedText);
   };
 
-  const onScanFailure = (error) => { /* Ignore frame errors */ }
+  const onScanFailure = (error) => { /* Ignore */ }
 
   const stopScanner = async () => {
       if (html5QrCodeRef.current) {
@@ -165,6 +171,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           } catch (err) { console.warn("Stop warning:", err); }
           html5QrCodeRef.current = null;
           setCameraLoading(false);
+          setPermissionGranted(false);
       }
   };
 
@@ -181,7 +188,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               body: JSON.stringify({ code })
           });
           
-          if (res.status === 404) throw new Error("Product not found. Please enter details manually.");
+          if (res.status === 404) throw new Error("Product not found in database. Please enter manually.");
           if (res.status === 401) throw new Error("Scanner config error. Check Admin Settings.");
           if (!res.ok) throw new Error("Lookup failed.");
 
@@ -238,6 +245,16 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
   return (
     <div className="space-y-6">
+      {/* CSS FIX FOR IOS VIDEO VISIBILITY */}
+      <style>{`
+        #reader video { 
+            object-fit: cover; 
+            width: 100% !important; 
+            height: 100% !important; 
+            border-radius: 0.75rem; 
+        }
+      `}</style>
+
       <div className="flex items-start gap-4">
         <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
         <div><span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Supply Chain</span><h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">PURCHASES</h2></div>
@@ -283,7 +300,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                         </h3>
                         
                         {/* CAMERA WRAPPER */}
-                        <div className="relative w-full h-[300px] bg-transparent rounded-xl overflow-hidden border-2 border-emerald-500/30">
+                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30">
                             
                             {/* 1. LIBRARY TARGET */}
                             <div id="reader" className="w-full h-full"></div>
@@ -295,7 +312,15 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                                 </div>
                             )}
                             
-                            {!cameraLoading && (
+                            {!cameraLoading && !permissionGranted && !error && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 flex-col gap-2">
+                                    <button onClick={startScanner} className="px-4 py-2 bg-emerald-700 text-white rounded-full flex items-center gap-2 text-xs font-bold shadow-lg animate-pulse">
+                                        <Play size={14} fill="currentColor" /> Tap to Start Camera
+                                    </button>
+                                </div>
+                            )}
+                            
+                            {!cameraLoading && permissionGranted && (
                                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"></div>
                             )}
                         </div>
