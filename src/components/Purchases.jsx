@@ -1,17 +1,17 @@
 //===============================================================
 //Script Name: Purchases.jsx
 //Script Location: src/components/Purchases.jsx
-//Date: 12/13/2025
+//Date: 12/14/2025
 //Created By: T03KNEE
-//Version: 11.3.0 (Math Type Fix)
+//Version: 11.5.0 (Powder Math + Decimal Fix)
 //About: Manage component LOT purchases.
-//       - FIX: Forces inputs to Numbers to prevent string concatenation bugs (e.g., "40"+"8" = "408").
-//       - FIX: Restored Portal and Camera logic from v11.0.2.
+//       - FEATURE: Added "Cost Per Grain" display for Powder (1lb = 7000gr).
+//       - FIX: Forces currency display to always show decimals ($48.00).
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit, formatCurrency } from '../lib/db'
+import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit } from '../lib/db' // Removed formatCurrency import to use local strict version
 import { fetchSettings } from '../lib/settings'
 import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, Camera, Loader2, Image as ImageIcon } from 'lucide-react'
 import { printPurchaseLabel } from '../lib/labels' 
@@ -32,6 +32,14 @@ const getLocalDate = () => {
 }
 
 const DEFAULT_FORM = { componentType: 'powder', caliber: '', brand: '', name: '', typeDetail: '', lotId: '', qty: '', unit: 'lb', price: '', shipping: '', tax: '', vendor: '', date: getLocalDate(), notes: '', url: '', imageUrl: '', status: 'active', caseCondition: '' }
+
+// STRICT FORMATTER: Forces 2 decimals always, 4 if < $1.00
+const formatMoney = (val) => {
+    const num = Number(val);
+    if (isNaN(num)) return '$0.00';
+    if (num < 1 && num > 0) return '$' + num.toFixed(4);
+    return '$' + num.toFixed(2);
+}
 
 export function Purchases({ onChanged, canEdit = false, highlightId }) {
   const [activeSubTab, setActiveSubTab] = useState('inventory') 
@@ -147,6 +155,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       }
   };
 
+  // --- HANDLERS ---
   const handleSystemCamera = () => { fileInputRef.current?.click(); }
 
   const handleFileScan = async (e) => {
@@ -226,10 +235,10 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   function handleEdit(item) { setEditingId(item.id); setForm({ componentType: item.componentType || 'powder', date: item.purchaseDate ? item.purchaseDate.substring(0, 10) : getLocalDate(), vendor: item.vendor || '', brand: item.brand || '', name: item.name || '', typeDetail: item.typeDetail || '', lotId: item.lotId || '', qty: item.qty != null ? String(item.qty) : '', unit: item.unit || '', price: item.price != null ? String(item.price) : '', shipping: item.shipping != null ? String(item.shipping) : '', tax: item.tax != null ? String(item.tax) : '', notes: item.notes || '', status: item.status || 'active', url: item.url || '', imageUrl: item.imageUrl || '', caseCondition: item.caseCondition || '' }); setError(null); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); HAPTIC.click(); }
   function promptDelete(item) { if (!canEdit) return; setItemToDelete(item); setDeleteModalOpen(true); HAPTIC.click(); }
   async function executeDelete() { if (!itemToDelete) return; setIsDeleting(true); try { await deletePurchase(itemToDelete.id); HAPTIC.success(); loadData(); setDeleteModalOpen(false); setItemToDelete(null); } catch (err) { setError(`Failed to delete: ${err.message}`); HAPTIC.error(); setDeleteModalOpen(false); } finally { setIsDeleting(false); } }
-  async function handleSubmit(e) { e.preventDefault(); setLoading(true); setError(null); try { const payload = { ...form, id: editingId, qty: Number(form.qty), price: Number(form.price), shipping: Number(form.shipping), tax: Number(form.tax), purchaseDate: form.date }; await addPurchase(payload); HAPTIC.success(); setIsFormOpen(false); loadData(); } catch (err) { setError(`Failed to save: ${err.message}`); HAPTIC.error(); } finally { setLoading(false); } }
+  async function handleSubmit(e) { e.preventDefault(); setLoading(true); setError(null); try { const payload = { ...form, id: editingId, qty: parseFloat(form.qty), price: parseFloat(form.price), shipping: parseFloat(form.shipping), tax: parseFloat(form.tax), purchaseDate: form.date }; await addPurchase(payload); HAPTIC.success(); setIsFormOpen(false); loadData(); } catch (err) { setError(`Failed to save: ${err.message}`); HAPTIC.error(); } finally { setLoading(false); } }
 
-  // FIX: Force inputs to Numbers to avoid string concatenation bugs
-  const liveUnitCost = calculatePerUnit(Number(form.price)||0, Number(form.shipping)||0, Number(form.tax)||0, Number(form.qty)||0)
+  const safeFloat = (val) => { const num = parseFloat(val); return isNaN(num) ? 0 : num; }
+  const liveUnitCost = calculatePerUnit(safeFloat(form.price), safeFloat(form.shipping), safeFloat(form.tax), safeFloat(form.qty));
   
   const filteredPurchases = purchases.filter(p => { const term = searchTerm.toLowerCase(); return `${p.brand} ${p.name} ${p.lotId} ${p.vendor} ${p.componentType}`.toLowerCase().includes(term) })
   const lotsByType = useMemo(() => { const groups = { powder: [], bullet: [], primer: [], case: [], other: [] }; for (const p of filteredPurchases) { const type = groups[p.componentType] ? p.componentType : 'other'; groups[type].push(p); } return groups; }, [filteredPurchases])
@@ -347,7 +356,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><div><label className={labelClass}>Type</label><select className={inputClass} value={form.componentType} onChange={e => setForm({...form, componentType: e.target.value})}>{COMPONENT_TYPES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div><div><label className={labelClass}>Date</label><input type="date" className={inputClass} value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div><div className="md:col-span-2"><label className={labelClass}>Vendor</label><input className={inputClass} value={form.vendor} onChange={e => setForm({...form, vendor: e.target.value})} placeholder="e.g. Brownells, Local Shop" /><p className={helpClass}>Where did you buy this?</p></div></div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><div><label className={labelClass}>Brand</label><input className={inputClass} value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} placeholder="e.g. CCI" /></div><div className="md:col-span-2"><label className={labelClass}>Product Name</label><input className={inputClass} value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. #400 Small Rifle" /></div><div><label className={labelClass}>Lot #</label><input className={inputClass} value={form.lotId} onChange={e => setForm({...form, lotId: e.target.value})} placeholder="Auto-generated if empty" /><p className={helpClass}>Found on the box/jug.</p></div></div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><div><label className={labelClass}>Caliber (Opt)</label><input className={inputClass} value={form.caliber} onChange={e => setForm({...form, caliber: e.target.value})} placeholder="Specific cal?" /></div><div className="md:col-span-2"><label className={labelClass}>Type Details (Opt)</label><input className={inputClass} value={form.typeDetail} onChange={e => setForm({...form, typeDetail: e.target.value})} placeholder="e.g. Match, Magnum, Extruded" /><p className={helpClass}>Extra details (e.g. 'Match Grade' or 'Spherical')</p></div><div><label className={labelClass}>Condition</label><select className={inputClass} value={form.caseCondition} onChange={e => setForm({...form, caseCondition: e.target.value})}><option value="">N/A</option>{CASE_CONDITIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div></div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-zinc-800 bg-black/20 p-3 rounded-xl"><div><label className={labelClass}>Quantity</label><input type="number" step="0.01" className={inputClass} value={form.qty} onChange={e => setForm({...form, qty: e.target.value})} placeholder="e.g. 1000" /></div><div><label className={labelClass}>Unit</label><select className={inputClass} value={form.unit} onChange={e => setForm({...form, unit: e.target.value})}>{UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}</select></div><div><label className={labelClass}>Total Price</label><input type="number" step="0.01" className={inputClass} value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="0.00" /><p className={helpClass}>Price for the whole lot</p></div><div><label className={labelClass}>Tax/Ship</label><div className="flex gap-1"><input type="number" step="0.01" className={inputClass} placeholder="Ship" value={form.shipping} onChange={e => setForm({...form, shipping: e.target.value})} /><input type="number" step="0.01" className={inputClass} placeholder="Tax" value={form.tax} onChange={e => setForm({...form, tax: e.target.value})} /></div></div><div className="col-span-2 md:col-span-4 flex justify-end mt-1"><span className="text-[10px] text-zinc-400">Calculated Unit Cost: <span className="text-emerald-400 font-mono font-bold">{formatCurrency(liveUnitCost)} / {form.unit || 'unit'}</span></span></div></div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-zinc-800 bg-black/20 p-3 rounded-xl"><div><label className={labelClass}>Quantity</label><input type="number" step="0.01" className={inputClass} value={form.qty} onChange={e => setForm({...form, qty: e.target.value})} placeholder="e.g. 1000" /></div><div><label className={labelClass}>Unit</label><select className={inputClass} value={form.unit} onChange={e => setForm({...form, unit: e.target.value})}>{UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}</select></div><div><label className={labelClass}>Total Price</label><input type="number" step="0.01" className={inputClass} value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="0.00" /><p className={helpClass}>Price for the whole lot</p></div><div><label className={labelClass}>Tax/Ship</label><div className="flex gap-1"><input type="number" step="0.01" className={inputClass} placeholder="Ship" value={form.shipping} onChange={e => setForm({...form, shipping: e.target.value})} /><input type="number" step="0.01" className={inputClass} placeholder="Tax" value={form.tax} onChange={e => setForm({...form, tax: e.target.value})} /></div></div><div className="col-span-2 md:col-span-4 flex justify-end mt-1"><span className="text-[10px] text-zinc-400">Calculated Unit Cost: <span className="text-emerald-400 font-mono font-bold">{formatMoney(liveUnitCost)} / {form.unit || 'unit'}</span></span></div></div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="bg-black/20 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between"><label className={labelClass}>Reference Photo</label><div className="flex-1 flex flex-col justify-center"><UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} /></div></div><div className="space-y-3"><div><label className={labelClass}>Product URL</label><input className={inputClass} value={form.url} onChange={e => setForm({...form, url: e.target.value})} placeholder="https://..." /></div><div><label className={labelClass}>Notes</label><textarea className={inputClass + " h-20 resize-none"} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Performance notes, where stored, etc." /></div><div><label className={labelClass}>Status</label><select className={inputClass} value={form.status} onChange={e => setForm({...form, status: e.target.value})}><option value="active">Active</option><option value="depleted">Depleted</option></select></div></div></div>
                         <div className="pt-2 flex justify-end gap-3"><button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-full border border-zinc-700 text-zinc-400 hover:text-white text-xs font-bold transition">Cancel</button><button type="submit" disabled={loading} className="px-6 py-2 rounded-full bg-red-700 hover:bg-red-600 text-white text-xs font-bold transition">{loading ? 'Saving...' : 'Save Record'}</button></div>
                     </form>
@@ -365,11 +374,15 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                         <h3 className="text-sm font-semibold text-zinc-200 mb-2 uppercase tracking-wider border-b border-zinc-800 pb-1 inline-block pr-4">{type.label}</h3>
                         <div className="grid md:grid-cols-2 gap-3">
                             {lots.map(p => {
-                                // FIX: Force database values to Numbers for calculation
                                 const unitCost = calculatePerUnit(Number(p.price)||0, Number(p.shipping)||0, Number(p.tax)||0, Number(p.qty)||1)
                                 const isHighlighted = String(highlightId) === String(p.id)
                                 const depleted = p.status === 'depleted'
                                 const attribution = p.updatedByUsername ? `Updated by ${p.updatedByUsername}` : p.createdByUsername ? `Added by ${p.createdByUsername}` : null
+                                
+                                // SMART POWDER MATH
+                                const isPowder = p.componentType === 'powder' && p.unit === 'lb';
+                                const grainCost = isPowder ? (unitCost / 7000) : 0;
+
                                 return (
                                     <div id={`purchase-${p.id}`} key={p.id} className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl bg-black/20 border transition ${isHighlighted ? 'border-emerald-500 ring-1 ring-emerald-500/50 shadow-lg shadow-emerald-900/20' : 'border-zinc-800 hover:border-zinc-700'}`}>
                                         <div className="flex-1 flex gap-4">
@@ -381,9 +394,17 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                                                 {attribution && (<div className="mt-2 flex items-center gap-2"><span className="flex items-center gap-1 text-[9px] text-zinc-500 px-2 py-0.5 bg-black/20 rounded-full border border-zinc-800">{p.updatedByUsername ? <Clock size={10}/> : <User size={10}/>} {attribution}</span></div>)}
                                             </div>
                                         </div>
-                                        {/* FIX: Improved Alignment (Left on Mobile, Right on Desktop) */}
                                         <div className="mt-3 md:mt-0 flex flex-wrap items-center justify-between md:justify-end gap-x-6 gap-y-4">
-                                            <div className="text-left md:text-right flex flex-col justify-center"><span className="text-sm font-bold text-zinc-200 leading-none">{p.qty} <span className="text-xs font-normal text-zinc-500">{p.unit}</span></span><span className="text-xs font-bold text-emerald-400 mt-1">{formatCurrency(unitCost)} <span className="text-[10px] font-normal text-emerald-600/80">/ unit</span></span></div>
+                                            <div className="text-left md:text-right flex flex-col justify-center">
+                                                <span className="text-sm font-bold text-zinc-200 leading-none">{p.qty} <span className="text-xs font-normal text-zinc-500">{p.unit}</span></span>
+                                                <span className="text-xs font-bold text-emerald-400 mt-1">{formatMoney(unitCost)} <span className="text-[10px] font-normal text-emerald-600/80">/ unit</span></span>
+                                                {/* SMART POWDER BADGE */}
+                                                {isPowder && (
+                                                    <span className="block text-[9px] text-zinc-500 mt-0.5 font-mono">
+                                                        (${grainCost.toFixed(4)}/gr)
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="flex flex-col items-end gap-2 min-w-[70px]">{canEdit && (<><button onClick={() => handleEdit(p)} className="px-3 py-1 rounded-full bg-black/60 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Edit size={12} /> Edit</button><button onClick={() => promptDelete(p)} className="px-3 py-1 rounded-full bg-black/60 border border-red-900/40 text-red-400 hover:text-red-300 hover:bg-red-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Trash2 size={12} /> Remove</button></>)}<button onClick={() => { HAPTIC.click(); printPurchaseLabel(p); }} className="px-3 py-1 rounded-full bg-black/60 border border-emerald-900/40 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Printer size={12} /> Label</button></div>
                                         </div>
                                     </div>
