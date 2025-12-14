@@ -3,10 +3,11 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 9.1.0 (React DOM Fix)
+//Version: 9.1.0 (Direct Camera Engine)
 //About: Manage component LOT purchases.
-//       - FIX: Moved React overlays OUTSIDE the scanner div to prevent "Node.removeChild" crashes.
-//       - FIX: Improved error handling when camera is missing.
+//       - FIX: Replaced "Scanner Widget" with "Direct Camera" to fix iOS Black Screen.
+//       - FIX: Moved overlays outside the scanner div to prevent React crashes.
+//       - FEATURE: Auto-starts camera immediately when modal opens.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -17,6 +18,7 @@ import { printPurchaseLabel } from '../lib/labels'
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
 import { Market } from './Market'
+// CRITICAL: Import the Class, not the Scanner Widget
 import { Html5Qrcode } from 'html5-qrcode'
 
 const COMPONENT_TYPES = [ { value: 'powder', label: 'Powder' }, { value: 'bullet', label: 'Bullet / Projectile' }, { value: 'primer', label: 'Primer' }, { value: 'case', label: 'Brass / Case' }, { value: 'other', label: 'Other' } ]
@@ -73,7 +75,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   useEffect(() => {
       let isMounted = true;
       if (showScanner) {
-          // Allow modal to paint before starting camera
+          // Wait for modal to render before grabbing the ID
           const timer = setTimeout(() => { 
               if (isMounted) startScanner(); 
           }, 300);
@@ -105,7 +107,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
               { 
                   fps: 10, 
                   qrbox: { width: 250, height: 250 },
-                  aspectRatio: 1.0 
+                  // NO aspectRatio here to prevent iOS black bars
               },
               onScanSuccess,
               onScanFailure
@@ -268,24 +270,24 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           <>
             {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
 
-            {/* SCANNER MODAL */}
+            {/* SCANNER MODAL (Fixed React Conflict) */}
             {showScanner && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
                     <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center">
-                        <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-10"><X size={20} /></button>
+                        <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-20"><X size={20} /></button>
                         <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
                             <ScanBarcode className="text-emerald-500" /> Scanning...
                         </h3>
                         
-                        {/* CAMERA WRAPPER: RELATIVE POSITIONING PARENT */}
-                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30">
+                        {/* WRAPPER: Decouples React UI from Library DOM */}
+                        <div className="relative w-full h-[300px] bg-transparent rounded-xl overflow-hidden border-2 border-emerald-500/30">
                             
-                            {/* 1. THE SCANNER DIV (EMPTY FOR LIBRARY) */}
+                            {/* 1. LIBRARY TARGET (Empty, Owned by Library) */}
                             <div id="reader" className="w-full h-full"></div>
 
-                            {/* 2. REACT OVERLAYS (ABSOLUTE ON TOP) */}
+                            {/* 2. REACT OVERLAYS (Visuals Only) */}
                             {cameraLoading && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
                                     <Loader2 className="animate-spin text-emerald-500" size={32} />
                                 </div>
                             )}
