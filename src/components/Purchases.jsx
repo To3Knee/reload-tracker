@@ -3,11 +3,11 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 9.1.0 (Direct Camera Engine)
+//Version: 9.3.0 (Raw Feed Fix)
 //About: Manage component LOT purchases.
-//       - FIX: Replaced "Scanner Widget" with "Direct Camera" to fix iOS Black Screen.
-//       - FIX: Moved overlays outside the scanner div to prevent React crashes.
-//       - FEATURE: Auto-starts camera immediately when modal opens.
+//       - FIX: Removed 'aspectRatio' (Crucial for iOS).
+//       - FIX: Removed 'qrbox' (Prevents black mask overlay bugs).
+//       - RESULT: Renders raw video feed for maximum compatibility.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -18,7 +18,6 @@ import { printPurchaseLabel } from '../lib/labels'
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
 import { Market } from './Market'
-// CRITICAL: Import the Class, not the Scanner Widget
 import { Html5Qrcode } from 'html5-qrcode'
 
 const COMPONENT_TYPES = [ { value: 'powder', label: 'Powder' }, { value: 'bullet', label: 'Bullet / Projectile' }, { value: 'primer', label: 'Primer' }, { value: 'case', label: 'Brass / Case' }, { value: 'other', label: 'Other' } ]
@@ -75,7 +74,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   useEffect(() => {
       let isMounted = true;
       if (showScanner) {
-          // Wait for modal to render before grabbing the ID
+          // Wait for modal to render
           const timer = setTimeout(() => { 
               if (isMounted) startScanner(); 
           }, 300);
@@ -101,14 +100,17 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
-          // DIRECT START: Ask for environment (back) camera
+          // CONFIG: Pure Raw Feed (No cropping, No aspect lock)
+          const config = { 
+              fps: 10,
+              // qrbox removed: Scans entire frame (More stable on iOS)
+              // aspectRatio removed: Uses native camera ratio (Prevents black screen)
+          };
+
+          // 1. Try Back Camera
           await html5QrCode.start(
               { facingMode: "environment" }, 
-              { 
-                  fps: 10, 
-                  qrbox: { width: 250, height: 250 },
-                  // NO aspectRatio here to prevent iOS black bars
-              },
+              config,
               onScanSuccess,
               onScanFailure
           );
@@ -118,12 +120,12 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
       } catch (err) {
           console.error("Camera Start Failed:", err);
           
-          // Retry with default camera (for desktop/webcam support)
+          // 2. Retry with User/Front Camera (Desktop/Fallback)
           try {
               if (html5QrCodeRef.current) {
                   await html5QrCodeRef.current.start(
                       { facingMode: "user" }, 
-                      { fps: 10, qrbox: { width: 250, height: 250 } },
+                      { fps: 10 },
                       onScanSuccess,
                       onScanFailure
                   );
@@ -192,6 +194,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
 
           let type = 'other';
           const fullText = (data.category + " " + data.name + " " + data.description).toLowerCase();
+          
           if (fullText.includes('powder') || fullText.includes('propellant')) type = 'powder';
           else if (fullText.includes('bullet') || fullText.includes('projectile') || fullText.includes('head')) type = 'bullet';
           else if (fullText.includes('primer')) type = 'primer';
@@ -270,7 +273,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           <>
             {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
 
-            {/* SCANNER MODAL (Fixed React Conflict) */}
+            {/* SCANNER MODAL */}
             {showScanner && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
                     <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center">
@@ -279,13 +282,13 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                             <ScanBarcode className="text-emerald-500" /> Scanning...
                         </h3>
                         
-                        {/* WRAPPER: Decouples React UI from Library DOM */}
+                        {/* CAMERA WRAPPER */}
                         <div className="relative w-full h-[300px] bg-transparent rounded-xl overflow-hidden border-2 border-emerald-500/30">
                             
-                            {/* 1. LIBRARY TARGET (Empty, Owned by Library) */}
+                            {/* 1. LIBRARY TARGET */}
                             <div id="reader" className="w-full h-full"></div>
 
-                            {/* 2. REACT OVERLAYS (Visuals Only) */}
+                            {/* 2. REACT OVERLAYS */}
                             {cameraLoading && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
                                     <Loader2 className="animate-spin text-emerald-500" size={32} />
