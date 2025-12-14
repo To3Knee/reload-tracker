@@ -3,16 +3,16 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/13/2025
 //Created By: T03KNEE
-//Version: 8.3.0 (iOS Visibility Fix)
+//Version: 8.4.0 (Camera Switcher)
 //About: Manage component LOT purchases.
-//       - FIX: Removed aspect ratio constraint so camera feed is visible on mobile.
-//       - FIX: Added continuous focus mode.
+//       - FIX: Added "Switch Camera" button to solve "Black Screen" on multi-lens phones.
+//       - FIX: Removed 'focusMode' constraint which causes failures on some iOS versions.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit, formatCurrency } from '../lib/db'
 import { fetchSettings } from '../lib/settings'
-import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw } from 'lucide-react'
+import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, RefreshCw, Camera, SwitchCamera } from 'lucide-react'
 import { printPurchaseLabel } from '../lib/labels' 
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
@@ -45,6 +45,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   // SCANNER STATE
   const [showScanner, setShowScanner] = useState(false)
   const [scannerEnabled, setScannerEnabled] = useState(false)
+  const [activeCameraId, setActiveCameraId] = useState(null)
+  const [cameras, setCameras] = useState([])
   const html5QrCodeRef = useRef(null)
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -71,20 +73,15 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
   // --- CAMERA LOGIC ---
   useEffect(() => {
       if (showScanner) {
-          // Allow DOM to paint the modal before starting camera
-          const timer = setTimeout(() => { startScanner(); }, 300);
-          return () => {
-              clearTimeout(timer);
-              stopScanner(); 
-          };
+          const timer = setTimeout(() => { initScanner(); }, 300);
+          return () => { clearTimeout(timer); stopScanner(); };
       } else {
           stopScanner();
       }
   }, [showScanner]);
 
-  const startScanner = async () => {
+  const initScanner = async () => {
       try {
-          // Prevent double-init
           if (html5QrCodeRef.current) return;
 
           const scannerId = "reader";
@@ -93,39 +90,68 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
-          // 1. Get Cameras
+          // 1. Get List of Cameras
           const devices = await Html5Qrcode.getCameras();
           if (!devices || devices.length === 0) throw new Error("No cameras detected.");
+          
+          setCameras(devices); // Save list for switching
 
-          // 2. Config (Mobile Friendly - NO ASPECT RATIO)
-          const config = { 
-              fps: 10, 
-              qrbox: { width: 280, height: 280 },
-              videoConstraints: {
-                  focusMode: "continuous" // Helps with barcodes close up
-              }
-          };
-
-          // 3. Start Camera (Try Back Camera first)
-          try {
-              await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, undefined);
-          } catch (envError) {
-              console.warn("Back camera failed, trying default.", envError);
-              // Fallback to first available camera
-              await html5QrCode.start(devices[0].id, config, onScanSuccess, undefined);
-          }
+          // 2. Pick Initial Camera (Prefer Last one - usually Back Camera on Android/iOS)
+          // Using facingMode: "environment" is unreliable on multi-lens phones.
+          const initialCamId = devices[devices.length - 1].id; 
+          
+          await startStream(initialCamId);
 
       } catch (err) {
           console.error("Camera Init Failed:", err);
           let msg = "Could not start camera.";
-          if (err.name === 'NotAllowedError') msg = "Camera permission denied. Please allow access.";
-          if (err.name === 'NotFoundError') msg = "No camera found on this device.";
-          if (err.name === 'NotReadableError') msg = "Camera is busy. Close other apps using camera.";
-          
+          if (err.name === 'NotAllowedError') msg = "Camera permission denied.";
+          if (err.name === 'NotFoundError') msg = "No camera found.";
           setError(msg);
           setShowScanner(false);
       }
   };
+
+  const startStream = async (cameraId) => {
+      if (!html5QrCodeRef.current) return;
+      
+      try {
+          // If already scanning, stop first
+          if (html5QrCodeRef.current.isScanning) {
+              await html5QrCodeRef.current.stop();
+          }
+
+          // Mobile-friendly config (No Aspect Ratio, No strict constraints)
+          const config = { 
+              fps: 10, 
+              qrbox: { width: 280, height: 280 }
+          };
+
+          await html5QrCodeRef.current.start(
+              cameraId, 
+              config, 
+              onScanSuccess, 
+              undefined
+          );
+          setActiveCameraId(cameraId);
+          
+      } catch (err) {
+          console.warn("Stream Start Error:", err);
+          setError("Failed to start video stream. Try switching cameras.");
+      }
+  }
+
+  const cycleCamera = async () => {
+      if (cameras.length < 2) return;
+      HAPTIC.click();
+      
+      // Find current index
+      const currentIndex = cameras.findIndex(c => c.id === activeCameraId);
+      const nextIndex = (currentIndex + 1) % cameras.length;
+      const nextCamId = cameras[nextIndex].id;
+      
+      await startStream(nextCamId);
+  }
 
   const onScanSuccess = (decodedText) => {
       HAPTIC.success();
@@ -141,9 +167,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                   await html5QrCodeRef.current.stop();
               }
               html5QrCodeRef.current.clear();
-          } catch (err) {
-              console.warn("Scanner stop warning:", err);
-          }
+          } catch (err) { console.warn("Stop warning:", err); }
           html5QrCodeRef.current = null;
       }
   };
@@ -162,7 +186,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           });
           
           if (res.status === 404) throw new Error("Product not found in database. Please enter manually.");
-          if (res.status === 401) throw new Error("Scanner not configured or API Key invalid. Check Admin Settings.");
+          if (res.status === 401) throw new Error("Scanner not configured. Check Admin Settings.");
           if (!res.ok) throw new Error("Lookup failed.");
 
           const json = await res.json();
@@ -263,12 +287,21 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
                         <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
                             <ScanBarcode className="text-emerald-500" /> Scanning...
                         </h3>
-                        {/* CAMERA VIEWPORT - Full visibility on mobile */}
+                        
+                        {/* CAMERA FEED */}
                         <div id="reader" className="w-full bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 relative min-h-[300px]">
-                            {/* Overlay Guide */}
                             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
                         </div>
+                        
                         <p className="text-center text-[10px] text-zinc-500 mt-4">Align barcode with the red line.</p>
+                        
+                        {/* CAMERA SWITCHER */}
+                        {cameras.length > 1 && (
+                            <button onClick={cycleCamera} className="mt-4 px-4 py-2 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 text-[10px] font-bold hover:text-white hover:bg-zinc-700 transition flex items-center gap-2">
+                                <SwitchCamera size={12} /> Switch Camera
+                            </button>
+                        )}
+                        
                         <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition">Cancel</button>
                     </div>
                 </div>
