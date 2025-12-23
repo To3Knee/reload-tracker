@@ -3,11 +3,11 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/14/2025
 //Created By: T03KNEE
-//Version: 12.1.0 (Human Logic + Hints)
+//Version: 12.2.0 (Market Auth Wired)
 //About: Manage component LOT purchases.
 //       - FEATURE: Added 'Info' icons and helper text for Lot #.
 //       - FEATURE: Dynamic Labels (Weight vs Count).
-//       - FIX: Merged stability fixes (no flashing) with new UI logic.
+//       - FIX: Passing user prop to Market component.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -42,7 +42,8 @@ const formatMoney = (val) => {
     return '$' + num.toFixed(2);
 }
 
-export function Purchases({ onChanged, canEdit = false, highlightId }) {
+// FIX: Added 'user' to props
+export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   const [activeSubTab, setActiveSubTab] = useState('inventory') 
   const [purchases, setPurchases] = useState([])
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -293,7 +294,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId }) {
           )}
       </div>
 
-      {activeSubTab === 'supply' ? ( <Market /> ) : (
+      {/* FIX: Passing 'user' prop down to Market */}
+      {activeSubTab === 'supply' ? ( <Market user={user} /> ) : (
           <>
             {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
 

@@ -1,11 +1,11 @@
 //===============================================================
 //Script Name: App.jsx
 //Script Location: src/App.jsx
-//Date: 12/12/2025
+//Date: 12/19/2025
 //Created By: T03KNEE
-//Version: 3.9.1
+//Version: 4.1.0 (Auth Prop Fix)
 //About: Root shell. 
-//       - FIX: Spinner z-index set to 60 to appear above Navbar (z-50).
+//       - FIX: Passing 'currentUser' to Purchases component so Market Watch works.
 //===============================================================
 
 import { useEffect, useState, useRef } from 'react'
@@ -207,7 +207,10 @@ export default function App() {
 
         {activeTab === 'calculator' && <Dashboard purchases={purchases} selectedRecipe={selectedRecipe} onSelectRecipe={handleUseRecipe} canEdit={!!isAdmin} />}
         {activeTab === 'armory' && <Armory canEdit={!!isAdmin} />}
-        {activeTab === 'purchases' && <Purchases onChanged={refreshAllData} canEdit={!!isAdmin} highlightId={scannedId} />}
+        
+        {/* FIX: Passed currentUser to Purchases */}
+        {activeTab === 'purchases' && <Purchases onChanged={refreshAllData} canEdit={!!isAdmin} highlightId={scannedId} user={currentUser} />}
+        
         {activeTab === 'inventory' && <Inventory purchases={purchases} selectedRecipe={selectedRecipe} />}
         {activeTab === 'recipes' && <Recipes onUseRecipe={handleUseRecipe} canEdit={!!isAdmin} purchases={purchases} />}
         {activeTab === 'batches' && <Batches highlightId={scannedId} />}
