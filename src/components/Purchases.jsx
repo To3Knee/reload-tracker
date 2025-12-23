@@ -1,13 +1,13 @@
 //===============================================================
 //Script Name: Purchases.jsx
 //Script Location: src/components/Purchases.jsx
-//Date: 12/14/2025
+//Date: 12/23/2025
 //Created By: T03KNEE
-//Version: 12.2.0 (Market Auth Wired)
+//Version: 23.0.0 (Unified Scanner UI)
 //About: Manage component LOT purchases.
-//       - FEATURE: Added 'Info' icons and helper text for Lot #.
-//       - FEATURE: Dynamic Labels (Weight vs Count).
-//       - FIX: Passing user prop to Market component.
+//       - UI FIX: Restored "Scanner Modal" to offer both Live & System Camera options.
+//       - LOGIC: Merged the robust "5-Pass" file scanner with the Live Scanner UI.
+//       - FEATURE: Clicking "Scan Barcode" now opens a menu, not just the file picker.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -19,7 +19,7 @@ import { printPurchaseLabel } from '../lib/labels'
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
 import { Market } from './Market'
-import { Html5Qrcode } from 'html5-qrcode'
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 
 const COMPONENT_TYPES = [ { value: 'powder', label: 'Powder' }, { value: 'bullet', label: 'Bullet / Projectile' }, { value: 'primer', label: 'Primer' }, { value: 'case', label: 'Brass / Case' }, { value: 'other', label: 'Other' } ]
 const UNITS = [ { value: 'lb', label: 'Pounds (lb)' }, { value: 'kg', label: 'Kilograms (kg)' }, { value: 'gr', label: 'Grains (gr)' }, { value: 'each', label: 'Each / Pieces' }, { value: 'rounds', label: 'Rounds' } ]
@@ -42,7 +42,6 @@ const formatMoney = (val) => {
     return '$' + num.toFixed(2);
 }
 
-// FIX: Added 'user' to props
 export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   const [activeSubTab, setActiveSubTab] = useState('inventory') 
   const [purchases, setPurchases] = useState([])
@@ -52,6 +51,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [form, setForm] = useState(DEFAULT_FORM)
   const [error, setError] = useState(null)
+  const [scanStatus, setScanStatus] = useState('') 
   
   // SCANNER STATE
   const [showScanner, setShowScanner] = useState(false)
@@ -77,6 +77,16 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
   useEffect(() => { if (highlightId && purchases.length > 0) { const targetId = String(highlightId); setTimeout(() => { const el = document.getElementById(`purchase-${targetId}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }) }, 600) } }, [highlightId, purchases])
 
+  // --- CLEANUP ON UNMOUNT ---
+  useEffect(() => {
+      return () => {
+          if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+              html5QrCodeRef.current.stop().catch(err => console.warn("Scanner stop error", err));
+              html5QrCodeRef.current.clear();
+          }
+      }
+  }, [])
+
   async function checkScannerConfig() {
       try {
           const settings = await fetchSettings();
@@ -87,73 +97,49 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       }
   }
 
-  // --- CAMERA LIFECYCLE ---
-  useEffect(() => {
-      let timer;
-      if (showScanner) {
-          timer = setTimeout(() => { startScanner(); }, 300);
-      } else {
-          stopScanner();
-      }
-      return () => { clearTimeout(timer); stopScanner(); };
-  }, [showScanner]);
-
+  // --- LIVE SCANNER LOGIC ---
   const startScanner = async () => {
       try {
-          if (html5QrCodeRef.current) return;
-          const scannerId = "reader";
-          if (!document.getElementById(scannerId)) return;
+          // If already running, don't restart
+          if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) return;
 
           setCameraLoading(true);
           setError(null);
 
+          const scannerId = "reader";
+          // Ensure DOM is ready
+          if (!document.getElementById(scannerId)) {
+              console.error("Scanner element not found");
+              return;
+          }
+
           const html5QrCode = new Html5Qrcode(scannerId);
           html5QrCodeRef.current = html5QrCode;
 
-          const safetyTimer = setTimeout(() => {
-              if (html5QrCode.isScanning) return;
-              stopScanner();
-              setError("Camera timed out. Use 'System Camera'.");
-          }, 5000);
-
+          const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+          
           await html5QrCode.start(
               { facingMode: "environment" }, 
-              { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-              onScanSuccess,
-              onScanFailure
+              config,
+              (decodedText) => {
+                  // SUCCESS
+                  HAPTIC.success();
+                  stopScanner(); // Stop camera
+                  setShowScanner(false); // Close modal
+                  fetchProductData(decodedText); // Lookup
+              },
+              (errorMessage) => { /* Ignore frame errors */ }
           );
           
-          clearTimeout(safetyTimer);
           setScannerActive(true);
           setCameraLoading(false);
       } catch (err) {
-          console.error("Camera Failed:", err);
-          try {
-              if (html5QrCodeRef.current) {
-                  await html5QrCodeRef.current.start(
-                      { facingMode: "user" }, 
-                      { fps: 10 },
-                      onScanSuccess,
-                      onScanFailure
-                  );
-                  setScannerActive(true);
-                  setCameraLoading(false);
-                  return;
-              }
-          } catch(e2) {}
-          stopScanner();
-          setError("Camera failed. Try 'System Camera'.");
+          console.error("Camera Start Failed:", err);
+          setCameraLoading(false);
+          setScannerActive(false);
+          setError("Camera failed. Please try 'System Camera' button instead.");
       }
   };
-
-  const onScanSuccess = (decodedText) => {
-      HAPTIC.success();
-      stopScanner();
-      setShowScanner(false);
-      fetchProductData(decodedText);
-  };
-
-  const onScanFailure = (error) => { /* Ignore */ }
 
   const stopScanner = async () => {
       if (html5QrCodeRef.current) {
@@ -165,27 +151,196 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
           } catch (err) { console.warn("Stop warning:", err); }
           html5QrCodeRef.current = null;
           setScannerActive(false);
-          setCameraLoading(false);
       }
   };
 
-  const handleSystemCamera = () => { fileInputRef.current?.click(); }
+  // --- SYSTEM CAMERA (FILE) LOGIC ---
+  const handleSystemCamera = () => { 
+      // Stop live scanner if active to free up camera resource
+      stopScanner();
+      fileInputRef.current?.click(); 
+  }
 
+  // --- HELPER: ROBUST IMAGE PROCESSOR ---
+  const processImageFile = (file, options = {}) => {
+      const { rotation = 0, contrastStretch = false, invert = false, resizeTo = 1500, padding = 100 } = options;
+
+      return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+              let width = img.width;
+              let height = img.height;
+              
+              // 1. Resize (Maintain Aspect Ratio)
+              // Increased to 1500px for better detail on high-res photos
+              const maxDim = Math.max(width, height);
+              if (resizeTo > 0) {
+                  if (maxDim > resizeTo) {
+                      const scale = resizeTo / maxDim;
+                      width *= scale;
+                      height *= scale;
+                  } else if (maxDim < 600) {
+                      const scale = 1000 / maxDim; 
+                      width *= scale;
+                      height *= scale;
+                  }
+              }
+
+              // 2. Setup Canvas
+              const canvas = document.createElement('canvas');
+              let finalW = width + (padding * 2);
+              let finalH = height + (padding * 2);
+              
+              if (rotation === 90 || rotation === 270) {
+                  canvas.width = finalH;
+                  canvas.height = finalW;
+              } else {
+                  canvas.width = finalW;
+                  canvas.height = finalH;
+              }
+              
+              const ctx = canvas.getContext('2d');
+
+              // 3. Fill White (Quiet Zone)
+              ctx.fillStyle = "#FFFFFF";
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+              // 4. Draw & Rotate
+              ctx.save();
+              ctx.translate(canvas.width / 2, canvas.height / 2);
+              ctx.rotate((rotation * Math.PI) / 180);
+              ctx.drawImage(img, -width / 2, -height / 2, width, height);
+              ctx.restore();
+
+              // 5. Apply Filters
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const data = imageData.data;
+              
+              let min = 255, max = 0;
+              if (contrastStretch) {
+                  for (let i = 0; i < data.length; i += 4) {
+                      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                      if (gray < min) min = gray;
+                      if (gray > max) max = gray;
+                  }
+              }
+
+              for (let i = 0; i < data.length; i += 4) {
+                  let gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                  if (contrastStretch && max > min) gray = ((gray - min) / (max - min)) * 255;
+                  if (invert) gray = 255 - gray;
+                  data[i] = gray;     
+                  data[i + 1] = gray; 
+                  data[i + 2] = gray; 
+              }
+              ctx.putImageData(imageData, 0, 0);
+
+              // 6. Output PNG
+              canvas.toBlob((blob) => {
+                  if (blob) resolve(new File([blob], "scan.png", { type: "image/png" }));
+                  else reject(new Error("Processing failed"));
+              }, 'image/png');
+          };
+          img.onerror = reject;
+          img.src = URL.createObjectURL(file);
+      });
+  };
+
+  // --- FILE SCAN HANDLER (5-PASS STRATEGY) ---
   const handleFileScan = async (e) => {
       if (!e.target.files || e.target.files.length === 0) return;
-      const file = e.target.files[0];
+      const originalFile = e.target.files[0];
       setLoading(true); 
-      setShowScanner(false); 
+      setError(null);
+      
+      // Close modal if open, to show loading state on main screen
+      setShowScanner(false);
+      setScanStatus("Scanning...");
+
+      let foundCode = null;
+      let html5QrCode = null;
+
+      const formats = [
+          Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.ITF, Html5QrcodeSupportedFormats.RSS_14
+      ];
+
+      const attemptScan = async (fileToScan, useRendered, config) => {
+          try {
+              if (html5QrCode) { try { await html5QrCode.clear(); } catch(e) {} }
+              html5QrCode = new Html5Qrcode("reader-hidden", config);
+              return await html5QrCode.scanFileV2(fileToScan, useRendered);
+          } catch (err) { return null; }
+      };
+
       try {
-          const html5QrCode = new Html5Qrcode("reader-hidden"); 
-          const decodedText = await html5QrCode.scanFileV2(file, true);
-          HAPTIC.success();
-          fetchProductData(decodedText);
+          // PASS 1: NATIVE HARDWARE
+          console.log("Pass 1: Native...");
+          foundCode = await attemptScan(originalFile, true, { 
+              experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+              formatsToSupport: formats, verbose: false 
+          });
+
+          // PASS 2: RAW SOFTWARE (True Raw)
+          if (!foundCode) {
+              console.log("Pass 2: True Raw...");
+              setScanStatus("Deep Scan...");
+              foundCode = await attemptScan(originalFile, false, { // False = Raw Buffer
+                  experimentalFeatures: { useBarCodeDetectorIfSupported: false },
+                  formatsToSupport: formats, verbose: false 
+              });
+          }
+
+          // PASS 3: PROCESSED STANDARD
+          if (!foundCode) {
+              console.log("Pass 3: Standard...");
+              setScanStatus("Enhancing...");
+              const p3 = await processImageFile(originalFile, { padding: 80 });
+              foundCode = await attemptScan(p3, true, { 
+                  experimentalFeatures: { useBarCodeDetectorIfSupported: false },
+                  formatsToSupport: formats, verbose: false 
+              });
+          }
+
+          // PASS 4: ROTATED (90 Deg)
+          if (!foundCode) {
+              console.log("Pass 4: Rotated...");
+              setScanStatus("Rotating...");
+              const p4 = await processImageFile(originalFile, { rotation: 90, padding: 80 });
+              foundCode = await attemptScan(p4, true, { 
+                  experimentalFeatures: { useBarCodeDetectorIfSupported: false },
+                  formatsToSupport: formats, verbose: false 
+              });
+          }
+
+          // PASS 5: GLARE/SHADOW FIX
+          if (!foundCode) {
+              console.log("Pass 5: Glare/Shadow Fix...");
+              setScanStatus("Advanced Scan...");
+              const p5 = await processImageFile(originalFile, { contrastStretch: true, padding: 80 });
+              foundCode = await attemptScan(p5, true, { 
+                  experimentalFeatures: { useBarCodeDetectorIfSupported: false },
+                  formatsToSupport: formats, verbose: false 
+              });
+          }
+
+          if (foundCode) {
+              HAPTIC.success();
+              fetchProductData(foundCode);
+          } else {
+              throw new Error("NotFound");
+          }
+
       } catch (err) {
-          setError("Could not read barcode. Try again.");
+          console.error("All scans failed");
+          setError("No barcode detected. Try taking a photo closer to the label or reducing glare.");
           HAPTIC.error();
       } finally {
+          if (html5QrCode) { try { await html5QrCode.clear(); } catch(e) {} }
           setLoading(false);
+          setScanStatus("");
           e.target.value = ''; 
       }
   }
@@ -193,6 +348,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   async function fetchProductData(code) {
       setLoading(true);
       setError(null);
+      setScanStatus("Searching...");
       if (!isFormOpen) handleAddNew();
       try {
           const res = await fetch('/api/scan', {
@@ -209,7 +365,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
           const json = await res.json();
           const data = json.data;
 
-          // AUTO-DETECT TYPE
           let type = 'other';
           const fullText = (data.category + " " + data.name + " " + data.description).toLowerCase();
           if (fullText.includes('powder') || fullText.includes('propellant')) type = 'powder';
@@ -229,7 +384,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               name: name,
               componentType: type,
               imageUrl: data.imageUrl || prev.imageUrl,
-              // Smart Unit Defaulting
               unit: type === 'powder' ? 'lb' : type === 'primer' ? 'each' : 'each',
               notes: data.description ? data.description.substring(0, 150) + "..." : ""
           }));
@@ -240,6 +394,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
           HAPTIC.error();
       } finally {
           setLoading(false);
+          setScanStatus("");
       }
   }
 
@@ -262,7 +417,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   const sectionLabelClass = "text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4 block"
   const tabBtnClass = (active) => `pb-2 px-1 text-xs font-bold uppercase tracking-wider transition border-b-2 ${active ? 'border-red-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`
 
-  // --- SMART PRICING HELPER ---
   const getSmartPrice = (type, unitCost) => {
       if (type === 'primer') return { label: 'Cost / 1k', val: unitCost * 1000 };
       if (type === 'bullet' || type === 'case') return { label: 'Cost / 100', val: unitCost * 100 };
@@ -273,14 +427,19 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
   return (
     <div className="space-y-6">
-      <div id="reader-hidden" className="hidden"></div>
+      {/* HIDDEN READER (Invisible but Renderable) */}
+      <div id="reader-hidden" className="fixed top-0 left-0 w-px h-px opacity-0 overflow-hidden pointer-events-none"></div>
+      
+      {/* FILE INPUT (System Camera Trigger) */}
       <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileScan} />
 
+      {/* HEADER */}
       <div className="flex items-start gap-4">
         <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
         <div><span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Supply Chain</span><h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">PURCHASES</h2></div>
       </div>
 
+      {/* TOOLBAR */}
       <div className="flex flex-wrap items-end justify-between border-b border-zinc-800 gap-4">
           <div className="flex gap-6">
             <button onClick={() => setActiveSubTab('inventory')} className={tabBtnClass(activeSubTab === 'inventory')}><Package size={14} className="inline mr-2 mb-0.5"/>Inventory</button>
@@ -288,33 +447,75 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
           </div>
           {activeSubTab === 'inventory' && canEdit && !isFormOpen && (
               <div className="flex gap-2 mb-2">
-                  {scannerEnabled && canEdit && <button onClick={() => { setShowScanner(true); HAPTIC.click(); }} className="px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-700 hover:border-emerald-500/50 hover:text-white transition flex items-center gap-2"><ScanBarcode size={14} /> Scan Barcode</button>}
+                  {scannerEnabled && canEdit && (
+                    <button onClick={() => { setShowScanner(true); HAPTIC.click(); }} className="px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-700 hover:border-emerald-500/50 hover:text-white transition flex items-center gap-2">
+                      <ScanBarcode size={14} /> Scan Barcode
+                    </button>
+                  )}
                   <button onClick={handleAddNew} className="px-4 py-1.5 rounded-full bg-red-700 border border-red-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-red-600 transition flex items-center gap-2"><Plus size={12} /> New Lot</button>
               </div>
           )}
       </div>
 
-      {/* FIX: Passing 'user' prop down to Market */}
       {activeSubTab === 'supply' ? ( <Market user={user} /> ) : (
           <>
             {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
+            
+            {loading && scanStatus && (
+               <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl p-3 animate-in fade-in">
+                   <Loader2 size={16} className="text-red-500 animate-spin" />
+                   <span className="text-xs text-zinc-300 font-mono">{scanStatus}</span>
+               </div>
+            )}
 
+            {/* UNIFIED SCANNER MODAL (Replaces separate ScannerModal file) */}
             {showScanner && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
                     <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
-                        <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-20 cursor-pointer"><X size={20} /></button>
+                        <button onClick={() => { stopScanner(); setShowScanner(false); }} className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-black/50 p-2 rounded-full z-20 cursor-pointer"><X size={20} /></button>
                         <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2"><ScanBarcode className="text-emerald-500" /> Scanner</h3>
-                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 flex flex-col items-center justify-center">
-                            {!scannerActive && !cameraLoading && (<div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 z-50 space-y-4"><button onClick={startScanner} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold shadow-lg transition flex items-center gap-2 cursor-pointer relative z-50"><Camera size={18} /> Start Live Scanner</button><span className="text-[10px] text-zinc-500 uppercase tracking-widest">- OR -</span><button onClick={handleSystemCamera} className="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-full font-bold shadow-lg transition flex items-center gap-2 border border-zinc-600 cursor-pointer relative z-50"><ImageIcon size={18} /> Use System Camera</button></div>)}
-                            {cameraLoading && <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-40"><Loader2 className="animate-spin text-emerald-500" size={32} /></div>}
+                        
+                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 flex flex-col items-center justify-center group">
+                            {/* OVERLAY UI */}
+                            {!scannerActive && !cameraLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 z-50 space-y-4 animate-in fade-in">
+                                    <button onClick={startScanner} className="w-48 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-lg transition flex items-center justify-center gap-2 cursor-pointer relative z-50">
+                                        <Camera size={18} /> Live Camera
+                                    </button>
+                                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">- OR -</span>
+                                    <button onClick={handleSystemCamera} className="w-48 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl font-bold shadow-lg transition flex items-center justify-center gap-2 border border-zinc-700 cursor-pointer relative z-50">
+                                        <ImageIcon size={18} /> Photo / File
+                                    </button>
+                                </div>
+                            )}
+                            
+                            {/* LOADING SPINNER */}
+                            {cameraLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-40">
+                                    <Loader2 className="animate-spin text-emerald-500 mb-2" size={32} />
+                                    <span className="text-xs text-zinc-400">Starting Camera...</span>
+                                </div>
+                            )}
+
+                            {/* LIVE READER ELEMENT */}
                             <div id="reader" className="w-full h-full"></div>
-                            <style>{`#reader video { object-fit: cover; width: 100% !important; height: 100% !important; }`}</style>
-                            {scannerActive && !cameraLoading && <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"></div>}
+                            
+                            {/* SCANNING LINE ANIMATION */}
+                            {scannerActive && !cameraLoading && (
+                                <div className="absolute top-0 left-0 w-full h-0.5 bg-red-500/80 z-10 shadow-[0_0_15px_rgba(239,68,68,1)] animate-[scan_2s_infinite]"></div>
+                            )}
+                            <style>{`
+                                @keyframes scan { 0% { top: 10%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 90%; opacity: 0; } }
+                                #reader video { object-fit: cover; width: 100% !important; height: 100% !important; }
+                            `}</style>
                         </div>
-                        <p className="text-center text-[10px] text-zinc-500 mt-4">{scannerActive ? "Align barcode with red line." : "Select a scanning method."}</p>
-                        <button onClick={() => setShowScanner(false)} className="mt-4 px-6 py-2 rounded-full border border-zinc-700 text-zinc-400 text-xs font-bold hover:text-white transition cursor-pointer">Cancel</button>
+
+                        <p className="text-center text-[10px] text-zinc-500 mt-4 h-4">
+                            {scannerActive ? "Point camera at barcode." : "Choose scanning method."}
+                        </p>
                     </div>
-                </div>, document.body
+                </div>, 
+                document.body
             )}
 
             {isFormOpen && (
@@ -392,7 +593,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                                 const depleted = p.status === 'depleted'
                                 const attribution = p.updatedByUsername ? `Updated by ${p.updatedByUsername}` : p.createdByUsername ? `Added by ${p.createdByUsername}` : null
                                 
-                                // SMART DISPLAY LOGIC
                                 const smartPrice = getSmartPrice(p.componentType, unitCost);
                                 const isPowder = p.componentType === 'powder' && p.unit === 'lb';
                                 const grainCost = isPowder ? (unitCost / 7000) : 0;
