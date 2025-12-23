@@ -3,12 +3,12 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/23/2025
 //Created By: T03KNEE
-//Version: 26.0.0 (Strict Payload Validation)
+//Version: 28.0.0 (DB Constraint Fix)
 //About: Manage component LOT purchases.
-//       - CRITICAL FIX: 'handleSubmit' now enforces strict data types for the backend.
-//       - FIX: Dates are converted to ISO strings to prevent DB crashes.
-//       - FIX: Empty numbers are forced to 0.00.
-//       - DEBUG: Adds console logging of the payload for troubleshooting.
+//       - CRITICAL FIX: 'handleSubmit' auto-generates a unique Lot ID if left blank.
+//                       (Fixes "Internal Server Error" due to UNIQUE/NOT NULL DB constraints).
+//       - FIX: Formats dates to YYYY-MM-DD strings (safer for Postgres 'date' columns).
+//       - UI: Hybrid Scanner (Live Modal + System File Picker).
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -368,21 +368,29 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   function promptDelete(item) { if (!canEdit) return; setItemToDelete(item); setDeleteModalOpen(true); HAPTIC.click(); }
   async function executeDelete() { if (!itemToDelete) return; setIsDeleting(true); try { await deletePurchase(itemToDelete.id); HAPTIC.success(); loadData(); setDeleteModalOpen(false); setItemToDelete(null); } catch (err) { setError(`Failed to delete: ${err.message}`); HAPTIC.error(); setDeleteModalOpen(false); } finally { setIsDeleting(false); } }
   
-  // --- SUBMIT HANDLER: BULLETPROOF PAYLOAD ---
-  // Converts all fields to safe types to prevent DB crashing
+  // --- SUBMIT HANDLER: BULLETPROOF PAYLOAD + AUTO LOT ID ---
   async function handleSubmit(e) { 
       e.preventDefault(); 
       setLoading(true); 
       setError(null); 
       
       try { 
-          // 1. Sanitize Date (Postgres expects ISO)
+          // 1. DATE FIX: Postgres expects YYYY-MM-DD for 'date' columns
           const dateObj = new Date(form.date);
-          const validDate = !isNaN(dateObj.getTime()) ? dateObj.toISOString() : new Date().toISOString();
+          const validDate = !isNaN(dateObj.getTime()) ? form.date : new Date().toISOString().split('T')[0];
 
-          // 2. Construct Strict Payload
+          // 2. AUTO-GENERATE LOT ID if blank (Satisfies UNIQUE/NOT NULL DB Constraint)
+          let finalLotId = String(form.lotId || '').trim();
+          if (!finalLotId) {
+              const uniqueSuffix = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+              finalLotId = `AUTO-${uniqueSuffix}`; 
+          }
+
+          // 3. Construct Strict Payload
           const payload = { 
-              id: editingId, // Can be null for new items
+              // Removed ID if null to prevent auto-increment crash
+              ...(editingId && { id: editingId }),
+              
               componentType: String(form.componentType || 'powder'),
               
               // Numbers: Force to 0 if empty/invalid
@@ -395,7 +403,9 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               brand: String(form.brand || '').trim(),
               name: String(form.name || '').trim(),
               vendor: String(form.vendor || '').trim(),
-              lotId: String(form.lotId || '').trim(), // Send empty string if blank
+              
+              lotId: finalLotId, // Uses Auto-Gen ID if user didn't type one
+              
               typeDetail: String(form.typeDetail || '').trim(),
               caliber: String(form.caliber || '').trim(),
               unit: String(form.unit || 'lb'),
@@ -405,11 +415,10 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               status: String(form.status || 'active'),
               caseCondition: String(form.caseCondition || ''),
               
-              // Date
               purchaseDate: validDate
           }; 
           
-          console.log("Submitting Payload:", payload); // Debug for you
+          console.log("Submitting Payload:", payload); 
 
           await addPurchase(payload); 
           HAPTIC.success(); 
@@ -417,7 +426,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
           loadData(); 
       } catch (err) { 
           console.error("Save Error:", err);
-          setError(`Failed to save: ${err.message}`); 
+          const msg = err.body ? JSON.stringify(err.body) : err.message;
+          setError(`Failed to save: ${msg}`); 
           HAPTIC.error(); 
       } finally { 
           setLoading(false); 
