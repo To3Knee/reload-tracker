@@ -3,11 +3,12 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/23/2025
 //Created By: T03KNEE
-//Version: 23.0.0 (Unified Scanner UI)
+//Version: 25.0.0 (The Hybrid Solution)
 //About: Manage component LOT purchases.
-//       - UI FIX: Restored "Scanner Modal" to offer both Live & System Camera options.
-//       - LOGIC: Merged the robust "5-Pass" file scanner with the Live Scanner UI.
-//       - FEATURE: Clicking "Scan Barcode" now opens a menu, not just the file picker.
+//       - FEATURE: Restored "Live Camera" Modal. This is the primary way to scan.
+//       - FALLBACK: "System Camera" button remains for file uploads.
+//       - LOGIC: Uses robust 5-Pass strategy for files.
+//       - FIX: Includes the 'NaN' save fix so database doesn't crash on empty fields.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -77,7 +78,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
   useEffect(() => { if (highlightId && purchases.length > 0) { const targetId = String(highlightId); setTimeout(() => { const el = document.getElementById(`purchase-${targetId}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }) }, 600) } }, [highlightId, purchases])
 
-  // --- CLEANUP ON UNMOUNT ---
+  // CLEANUP
   useEffect(() => {
       return () => {
           if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
@@ -97,47 +98,45 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       }
   }
 
-  // --- LIVE SCANNER LOGIC ---
+  // --- LIVE SCANNER (VIDEO) ---
   const startScanner = async () => {
       try {
-          // If already running, don't restart
           if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) return;
 
           setCameraLoading(true);
           setError(null);
 
           const scannerId = "reader";
-          // Ensure DOM is ready
-          if (!document.getElementById(scannerId)) {
-              console.error("Scanner element not found");
-              return;
-          }
+          // We wait for DOM to render the modal
+          setTimeout(async () => {
+            if (!document.getElementById(scannerId)) return;
 
-          const html5QrCode = new Html5Qrcode(scannerId);
-          html5QrCodeRef.current = html5QrCode;
+            const html5QrCode = new Html5Qrcode(scannerId);
+            html5QrCodeRef.current = html5QrCode;
 
-          const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
-          
-          await html5QrCode.start(
-              { facingMode: "environment" }, 
-              config,
-              (decodedText) => {
-                  // SUCCESS
-                  HAPTIC.success();
-                  stopScanner(); // Stop camera
-                  setShowScanner(false); // Close modal
-                  fetchProductData(decodedText); // Lookup
-              },
-              (errorMessage) => { /* Ignore frame errors */ }
-          );
-          
-          setScannerActive(true);
-          setCameraLoading(false);
+            // Square QR box for UI guide
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+            
+            await html5QrCode.start(
+                { facingMode: "environment" }, 
+                config,
+                (decodedText) => {
+                    HAPTIC.success();
+                    stopScanner();
+                    setShowScanner(false);
+                    fetchProductData(decodedText);
+                },
+                (errorMessage) => { /* Ignore frame errors */ }
+            );
+            setScannerActive(true);
+            setCameraLoading(false);
+          }, 100);
+
       } catch (err) {
           console.error("Camera Start Failed:", err);
           setCameraLoading(false);
           setScannerActive(false);
-          setError("Camera failed. Please try 'System Camera' button instead.");
+          setError("Camera failed. Please check permissions or use 'Photo File'.");
       }
   };
 
@@ -154,16 +153,14 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       }
   };
 
-  // --- SYSTEM CAMERA (FILE) LOGIC ---
   const handleSystemCamera = () => { 
-      // Stop live scanner if active to free up camera resource
       stopScanner();
       fileInputRef.current?.click(); 
   }
 
-  // --- HELPER: ROBUST IMAGE PROCESSOR ---
+  // --- HELPER: ROBUST IMAGE PROCESSOR (For Files) ---
   const processImageFile = (file, options = {}) => {
-      const { rotation = 0, contrastStretch = false, invert = false, resizeTo = 1500, padding = 100 } = options;
+      const { rotation = 0, contrastStretch = false, invert = false, resizeTo = 1200, padding = 100 } = options;
 
       return new Promise((resolve, reject) => {
           const img = new Image();
@@ -171,8 +168,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               let width = img.width;
               let height = img.height;
               
-              // 1. Resize (Maintain Aspect Ratio)
-              // Increased to 1500px for better detail on high-res photos
               const maxDim = Math.max(width, height);
               if (resizeTo > 0) {
                   if (maxDim > resizeTo) {
@@ -186,7 +181,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                   }
               }
 
-              // 2. Setup Canvas
               const canvas = document.createElement('canvas');
               let finalW = width + (padding * 2);
               let finalH = height + (padding * 2);
@@ -200,19 +194,15 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               }
               
               const ctx = canvas.getContext('2d');
-
-              // 3. Fill White (Quiet Zone)
               ctx.fillStyle = "#FFFFFF";
               ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-              // 4. Draw & Rotate
               ctx.save();
               ctx.translate(canvas.width / 2, canvas.height / 2);
               ctx.rotate((rotation * Math.PI) / 180);
               ctx.drawImage(img, -width / 2, -height / 2, width, height);
               ctx.restore();
 
-              // 5. Apply Filters
               const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
               const data = imageData.data;
               
@@ -235,7 +225,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               }
               ctx.putImageData(imageData, 0, 0);
 
-              // 6. Output PNG
               canvas.toBlob((blob) => {
                   if (blob) resolve(new File([blob], "scan.png", { type: "image/png" }));
                   else reject(new Error("Processing failed"));
@@ -246,15 +235,13 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       });
   };
 
-  // --- FILE SCAN HANDLER (5-PASS STRATEGY) ---
+  // --- FILE SCAN HANDLER ---
   const handleFileScan = async (e) => {
       if (!e.target.files || e.target.files.length === 0) return;
       const originalFile = e.target.files[0];
       setLoading(true); 
       setError(null);
-      
-      // Close modal if open, to show loading state on main screen
-      setShowScanner(false);
+      setShowScanner(false); // Close modal
       setScanStatus("Scanning...");
 
       let foundCode = null;
@@ -263,8 +250,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       const formats = [
           Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.ITF, Html5QrcodeSupportedFormats.RSS_14
+          Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_39
       ];
 
       const attemptScan = async (fileToScan, useRendered, config) => {
@@ -276,54 +262,34 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       };
 
       try {
-          // PASS 1: NATIVE HARDWARE
-          console.log("Pass 1: Native...");
-          foundCode = await attemptScan(originalFile, true, { 
-              experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-              formatsToSupport: formats, verbose: false 
-          });
+          // PASS 1: NATIVE
+          foundCode = await attemptScan(originalFile, true, { experimentalFeatures: { useBarCodeDetectorIfSupported: true }, formatsToSupport: formats, verbose: false });
 
-          // PASS 2: RAW SOFTWARE (True Raw)
+          // PASS 2: RAW
           if (!foundCode) {
-              console.log("Pass 2: True Raw...");
               setScanStatus("Deep Scan...");
-              foundCode = await attemptScan(originalFile, false, { // False = Raw Buffer
-                  experimentalFeatures: { useBarCodeDetectorIfSupported: false },
-                  formatsToSupport: formats, verbose: false 
-              });
+              foundCode = await attemptScan(originalFile, false, { experimentalFeatures: { useBarCodeDetectorIfSupported: false }, formatsToSupport: formats, verbose: false });
           }
 
-          // PASS 3: PROCESSED STANDARD
+          // PASS 3: PROCESSED
           if (!foundCode) {
-              console.log("Pass 3: Standard...");
               setScanStatus("Enhancing...");
               const p3 = await processImageFile(originalFile, { padding: 80 });
-              foundCode = await attemptScan(p3, true, { 
-                  experimentalFeatures: { useBarCodeDetectorIfSupported: false },
-                  formatsToSupport: formats, verbose: false 
-              });
+              foundCode = await attemptScan(p3, true, { experimentalFeatures: { useBarCodeDetectorIfSupported: false }, formatsToSupport: formats, verbose: false });
           }
 
-          // PASS 4: ROTATED (90 Deg)
+          // PASS 4: ROTATED
           if (!foundCode) {
-              console.log("Pass 4: Rotated...");
               setScanStatus("Rotating...");
               const p4 = await processImageFile(originalFile, { rotation: 90, padding: 80 });
-              foundCode = await attemptScan(p4, true, { 
-                  experimentalFeatures: { useBarCodeDetectorIfSupported: false },
-                  formatsToSupport: formats, verbose: false 
-              });
+              foundCode = await attemptScan(p4, true, { experimentalFeatures: { useBarCodeDetectorIfSupported: false }, formatsToSupport: formats, verbose: false });
           }
 
-          // PASS 5: GLARE/SHADOW FIX
+          // PASS 5: GLARE FIX
           if (!foundCode) {
-              console.log("Pass 5: Glare/Shadow Fix...");
-              setScanStatus("Advanced Scan...");
+              setScanStatus("De-glaring...");
               const p5 = await processImageFile(originalFile, { contrastStretch: true, padding: 80 });
-              foundCode = await attemptScan(p5, true, { 
-                  experimentalFeatures: { useBarCodeDetectorIfSupported: false },
-                  formatsToSupport: formats, verbose: false 
-              });
+              foundCode = await attemptScan(p5, true, { experimentalFeatures: { useBarCodeDetectorIfSupported: false }, formatsToSupport: formats, verbose: false });
           }
 
           if (foundCode) {
@@ -335,7 +301,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
       } catch (err) {
           console.error("All scans failed");
-          setError("No barcode detected. Try taking a photo closer to the label or reducing glare.");
+          setError("No barcode detected. Please try 'Live Camera' mode for better results.");
           HAPTIC.error();
       } finally {
           if (html5QrCode) { try { await html5QrCode.clear(); } catch(e) {} }
@@ -403,7 +369,9 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   function handleEdit(item) { setEditingId(item.id); setForm({ componentType: item.componentType || 'powder', date: item.purchaseDate ? item.purchaseDate.substring(0, 10) : getLocalDate(), vendor: item.vendor || '', brand: item.brand || '', name: item.name || '', typeDetail: item.typeDetail || '', lotId: item.lotId || '', qty: item.qty != null ? String(item.qty) : '', unit: item.unit || '', price: item.price != null ? String(item.price) : '', shipping: item.shipping != null ? String(item.shipping) : '', tax: item.tax != null ? String(item.tax) : '', notes: item.notes || '', status: item.status || 'active', url: item.url || '', imageUrl: item.imageUrl || '', caseCondition: item.caseCondition || '' }); setError(null); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); HAPTIC.click(); }
   function promptDelete(item) { if (!canEdit) return; setItemToDelete(item); setDeleteModalOpen(true); HAPTIC.click(); }
   async function executeDelete() { if (!itemToDelete) return; setIsDeleting(true); try { await deletePurchase(itemToDelete.id); HAPTIC.success(); loadData(); setDeleteModalOpen(false); setItemToDelete(null); } catch (err) { setError(`Failed to delete: ${err.message}`); HAPTIC.error(); setDeleteModalOpen(false); } finally { setIsDeleting(false); } }
-  async function handleSubmit(e) { e.preventDefault(); setLoading(true); setError(null); try { const payload = { ...form, id: editingId, qty: parseFloat(form.qty), price: parseFloat(form.price), shipping: parseFloat(form.shipping), tax: parseFloat(form.tax), purchaseDate: form.date }; await addPurchase(payload); HAPTIC.success(); setIsFormOpen(false); loadData(); } catch (err) { setError(`Failed to save: ${err.message}`); HAPTIC.error(); } finally { setLoading(false); } }
+  
+  // --- SUBMIT HANDLER (Fixes 500 Error) ---
+  async function handleSubmit(e) { e.preventDefault(); setLoading(true); setError(null); try { const payload = { ...form, id: editingId, qty: Number(form.qty) || 0, price: Number(form.price) || 0, shipping: Number(form.shipping) || 0, tax: Number(form.tax) || 0, lotId: form.lotId || "", vendor: form.vendor || "", purchaseDate: form.date }; await addPurchase(payload); HAPTIC.success(); setIsFormOpen(false); loadData(); } catch (err) { setError(`Failed to save: ${err.message}`); HAPTIC.error(); } finally { setLoading(false); } }
 
   const safeFloat = (val) => { const num = parseFloat(val); return isNaN(num) ? 0 : num; }
   const liveUnitCost = calculatePerUnit(safeFloat(form.price), safeFloat(form.shipping), safeFloat(form.tax), safeFloat(form.qty));
@@ -468,7 +436,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                </div>
             )}
 
-            {/* UNIFIED SCANNER MODAL (Replaces separate ScannerModal file) */}
+            {/* UNIFIED SCANNER MODAL */}
             {showScanner && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
                     <div className="bg-[#0f0f10] border border-zinc-800 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
@@ -518,6 +486,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                 document.body
             )}
 
+            {/* FORM AND INVENTORY LIST */}
             {isFormOpen && (
                 <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in relative mb-6">
                     <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={18} /></button>
@@ -542,7 +511,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                             <div><label className={labelClass}>Lot #</label><input className={inputClass} value={form.lotId} onChange={e => setForm({...form, lotId: e.target.value})} placeholder="Batch Code" /><p className={helpClass} title="Manufacturing Lot ID found on box/jug."><Info size={10}/> On box sticker</p></div>
                         </div>
 
-                        {/* DYNAMIC FIELDS: Hide irrelevant options */}
                         {(showCaliber || showCondition) && (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-1">
                                 {showCaliber && <div><label className={labelClass}>Caliber</label><input className={inputClass} value={form.caliber} onChange={e => setForm({...form, caliber: e.target.value})} placeholder="e.g. 9mm" /></div>}
@@ -611,14 +579,10 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                                         <div className="mt-3 md:mt-0 flex flex-wrap items-center justify-between md:justify-end gap-x-6 gap-y-4">
                                             <div className="text-left md:text-right flex flex-col justify-center">
                                                 <span className="text-sm font-bold text-zinc-200 leading-none">{p.qty} <span className="text-xs font-normal text-zinc-500">{p.unit}</span></span>
-                                                
-                                                {/* SMART PRICE DISPLAY */}
                                                 <span className="text-xs font-bold text-emerald-400 mt-1">
                                                     {formatMoney(smartPrice.val)} 
                                                     <span className="text-[10px] font-normal text-emerald-600/80"> / {smartPrice.label.split(' / ')[1]}</span>
                                                 </span>
-                                                
-                                                {/* POWDER GRAIN COST */}
                                                 {isPowder && (<span className="block text-[9px] text-zinc-500 mt-0.5 font-mono">(${grainCost.toFixed(4)}/gr)</span>)}
                                             </div>
                                             <div className="flex flex-col items-end gap-2 min-w-[70px]">{canEdit && (<><button onClick={() => handleEdit(p)} className="px-3 py-1 rounded-full bg-black/60 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Edit size={12} /> Edit</button><button onClick={() => promptDelete(p)} className="px-3 py-1 rounded-full bg-black/60 border border-red-900/40 text-red-400 hover:text-red-300 hover:bg-red-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Trash2 size={12} /> Remove</button></>)}<button onClick={() => { HAPTIC.click(); printPurchaseLabel(p); }} className="px-3 py-1 rounded-full bg-black/60 border border-emerald-900/40 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Printer size={12} /> Label</button></div>
