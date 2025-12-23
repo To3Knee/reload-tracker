@@ -3,11 +3,11 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/23/2025
 //Created By: T03KNEE
-//Version: 29.0.0 (Visual Auto-Gen & Unique Constraint Fix)
+//Version: 30.0.0 (Snake_Case Payload Fix)
 //About: Manage component LOT purchases.
-//       - CRITICAL FIX: Generates unique Lot ID ('SCAN-XXX') immediately after scanning.
-//                       This creates a visual confirmation and satisfies the DB 'UNIQUE' constraint.
-//       - DB COMPATIBILITY: Enforces numeric defaults (0) for numeric columns to prevent NOT NULL errors.
+//       - CRITICAL FIX: Mapped payload keys to snake_case (e.g., lot_id) to match DB schema.
+//                       Sending camelCase (lotId) likely caused "Column cannot be null" errors.
+//       - LOGIC: Retains all previous scanner fixes (Auto-Gen ID, 5-Pass Scan).
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -247,7 +247,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       const formats = [
           Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_39
+          Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.ITF, Html5QrcodeSupportedFormats.RSS_14
       ];
 
       const attemptScan = async (fileToScan, useRendered, config) => {
@@ -321,10 +322,9 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               body: JSON.stringify({ code })
           });
           
-          const autoLotId = `SCAN-${Date.now().toString().slice(-6)}`; // Visual ID for user
+          const autoLotId = `SCAN-${Date.now().toString().slice(-6)}`; 
 
           if (res.status === 404) {
-              // Product not found, but we still open form with generated ID
               setForm(prev => ({ ...prev, lotId: autoLotId }));
               throw new Error("Product not found. Enter details manually.");
           }
@@ -355,7 +355,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               imageUrl: data.imageUrl || prev.imageUrl,
               unit: type === 'powder' ? 'lb' : type === 'primer' ? 'each' : 'each',
               notes: data.description ? data.description.substring(0, 150) + "..." : "",
-              lotId: autoLotId // <--- KEY FIX: Pre-fill VISUALLY
+              lotId: autoLotId 
           }));
           
           HAPTIC.success();
@@ -370,10 +370,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
   async function loadData() { try { const data = await getAllPurchases(); setPurchases(data); if (onChanged) onChanged(); } catch (err) { console.error("Failed to load purchases", err); setError("Failed to sync inventory data."); } }
   
-  // FORM RESET WITH AUTO-ID
   function handleAddNew() { 
       setEditingId(null); 
-      // Auto-generate ID immediately when opening form manually too
       const autoId = `LOT-${Date.now().toString().slice(-6)}`;
       setForm({ ...DEFAULT_FORM, lotId: autoId }); 
       setError(null); 
@@ -385,7 +383,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   function promptDelete(item) { if (!canEdit) return; setItemToDelete(item); setDeleteModalOpen(true); HAPTIC.click(); }
   async function executeDelete() { if (!itemToDelete) return; setIsDeleting(true); try { await deletePurchase(itemToDelete.id); HAPTIC.success(); loadData(); setDeleteModalOpen(false); setItemToDelete(null); } catch (err) { setError(`Failed to delete: ${err.message}`); HAPTIC.error(); setDeleteModalOpen(false); } finally { setIsDeleting(false); } }
   
-  // --- SUBMIT HANDLER: BULLETPROOF PAYLOAD + CONSTRAINT CHECK ---
+  // --- SUBMIT HANDLER: SNAKE_CASE PAYLOAD (DB Schema Match) ---
   async function handleSubmit(e) { 
       e.preventDefault(); 
       setLoading(true); 
@@ -396,44 +394,42 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
           const dateObj = new Date(form.date);
           const validDate = !isNaN(dateObj.getTime()) ? form.date : new Date().toISOString().split('T')[0];
 
-          // 2. SAFETY CHECK: Lot ID MUST NOT be empty or duplicate
+          // 2. Ensure Lot ID
           let finalLotId = String(form.lotId || '').trim();
           if (!finalLotId) {
-              finalLotId = `AUTO-${Date.now()}`; // Fallback if user cleared the auto-gen
+              finalLotId = `AUTO-${Date.now()}`; 
           }
 
-          // 3. Construct Strict Payload (DB Schema Compliance)
+          // 3. Construct Payload with SNAKE_CASE keys
+          // This matches the database schema column names exactly.
           const payload = { 
-              ...(editingId && { id: editingId }), // Only send ID for updates
+              ...(editingId && { id: editingId }),
               
-              componentType: String(form.componentType || 'powder'),
+              lot_id: finalLotId,
+              component_type: String(form.componentType || 'powder'),
+              case_condition: String(form.caseCondition || ''),
+              caliber: String(form.caliber || '').trim(),
+              brand: String(form.brand || '').trim(),
+              name: String(form.name || '').trim(),
+              type_detail: String(form.typeDetail || '').trim(),
               
-              // FORCE NUMBERS (Schema: numeric DEFAULT 0)
               qty: parseFloat(form.qty) || 0, 
+              unit: String(form.unit || 'lb'),
+              
               price: parseFloat(form.price) || 0, 
               shipping: parseFloat(form.shipping) || 0, 
               tax: parseFloat(form.tax) || 0, 
               
-              // FORCE STRINGS (Schema: text)
-              brand: String(form.brand || '').trim(),
-              name: String(form.name || '').trim(),
               vendor: String(form.vendor || '').trim(),
+              purchase_date: validDate,
               
-              lotId: finalLotId, // Guaranteed valid string
-              
-              typeDetail: String(form.typeDetail || '').trim(),
-              caliber: String(form.caliber || '').trim(),
-              unit: String(form.unit || 'lb'),
-              notes: String(form.notes || ''),
               url: String(form.url || ''),
-              imageUrl: String(form.imageUrl || ''),
+              image_url: String(form.imageUrl || ''),
               status: String(form.status || 'active'),
-              caseCondition: String(form.caseCondition || ''),
-              
-              purchaseDate: validDate
+              notes: String(form.notes || '')
           }; 
           
-          console.log("Submitting Payload:", payload); 
+          console.log("Submitting Payload (Snake Case):", payload); 
 
           await addPurchase(payload); 
           HAPTIC.success(); 
@@ -442,9 +438,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       } catch (err) { 
           console.error("Save Error:", err);
           const msg = err.body ? JSON.stringify(err.body) : err.message;
-          // Helpful user error if Lot ID collision happens
           if (msg.includes("unique constraint") || msg.includes("lot_id")) {
-             setError("Error: This Lot ID already exists. Please create a unique Lot #.");
+             setError("Error: This Lot ID already exists.");
           } else {
              setError(`Failed to save: ${msg}`); 
           }
