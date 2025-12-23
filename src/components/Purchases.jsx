@@ -3,12 +3,11 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/23/2025
 //Created By: T03KNEE
-//Version: 28.0.0 (DB Constraint Fix)
+//Version: 29.0.0 (Visual Auto-Gen & Unique Constraint Fix)
 //About: Manage component LOT purchases.
-//       - CRITICAL FIX: 'handleSubmit' auto-generates a unique Lot ID if left blank.
-//                       (Fixes "Internal Server Error" due to UNIQUE/NOT NULL DB constraints).
-//       - FIX: Formats dates to YYYY-MM-DD strings (safer for Postgres 'date' columns).
-//       - UI: Hybrid Scanner (Live Modal + System File Picker).
+//       - CRITICAL FIX: Generates unique Lot ID ('SCAN-XXX') immediately after scanning.
+//                       This creates a visual confirmation and satisfies the DB 'UNIQUE' constraint.
+//       - DB COMPATIBILITY: Enforces numeric defaults (0) for numeric columns to prevent NOT NULL errors.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -322,7 +321,13 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               body: JSON.stringify({ code })
           });
           
-          if (res.status === 404) throw new Error("Product not found. Enter details manually.");
+          const autoLotId = `SCAN-${Date.now().toString().slice(-6)}`; // Visual ID for user
+
+          if (res.status === 404) {
+              // Product not found, but we still open form with generated ID
+              setForm(prev => ({ ...prev, lotId: autoLotId }));
+              throw new Error("Product not found. Enter details manually.");
+          }
           if (res.status === 401) throw new Error("Scanner config error.");
           if (!res.ok) throw new Error("Lookup failed.");
 
@@ -349,7 +354,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               componentType: type,
               imageUrl: data.imageUrl || prev.imageUrl,
               unit: type === 'powder' ? 'lb' : type === 'primer' ? 'each' : 'each',
-              notes: data.description ? data.description.substring(0, 150) + "..." : ""
+              notes: data.description ? data.description.substring(0, 150) + "..." : "",
+              lotId: autoLotId // <--- KEY FIX: Pre-fill VISUALLY
           }));
           
           HAPTIC.success();
@@ -363,48 +369,57 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   }
 
   async function loadData() { try { const data = await getAllPurchases(); setPurchases(data); if (onChanged) onChanged(); } catch (err) { console.error("Failed to load purchases", err); setError("Failed to sync inventory data."); } }
-  function handleAddNew() { setEditingId(null); setForm(DEFAULT_FORM); setError(null); setIsFormOpen(true); HAPTIC.click(); }
+  
+  // FORM RESET WITH AUTO-ID
+  function handleAddNew() { 
+      setEditingId(null); 
+      // Auto-generate ID immediately when opening form manually too
+      const autoId = `LOT-${Date.now().toString().slice(-6)}`;
+      setForm({ ...DEFAULT_FORM, lotId: autoId }); 
+      setError(null); 
+      setIsFormOpen(true); 
+      HAPTIC.click(); 
+  }
+
   function handleEdit(item) { setEditingId(item.id); setForm({ componentType: item.componentType || 'powder', date: item.purchaseDate ? item.purchaseDate.substring(0, 10) : getLocalDate(), vendor: item.vendor || '', brand: item.brand || '', name: item.name || '', typeDetail: item.typeDetail || '', lotId: item.lotId || '', qty: item.qty != null ? String(item.qty) : '', unit: item.unit || '', price: item.price != null ? String(item.price) : '', shipping: item.shipping != null ? String(item.shipping) : '', tax: item.tax != null ? String(item.tax) : '', notes: item.notes || '', status: item.status || 'active', url: item.url || '', imageUrl: item.imageUrl || '', caseCondition: item.caseCondition || '' }); setError(null); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); HAPTIC.click(); }
   function promptDelete(item) { if (!canEdit) return; setItemToDelete(item); setDeleteModalOpen(true); HAPTIC.click(); }
   async function executeDelete() { if (!itemToDelete) return; setIsDeleting(true); try { await deletePurchase(itemToDelete.id); HAPTIC.success(); loadData(); setDeleteModalOpen(false); setItemToDelete(null); } catch (err) { setError(`Failed to delete: ${err.message}`); HAPTIC.error(); setDeleteModalOpen(false); } finally { setIsDeleting(false); } }
   
-  // --- SUBMIT HANDLER: BULLETPROOF PAYLOAD + AUTO LOT ID ---
+  // --- SUBMIT HANDLER: BULLETPROOF PAYLOAD + CONSTRAINT CHECK ---
   async function handleSubmit(e) { 
       e.preventDefault(); 
       setLoading(true); 
       setError(null); 
       
       try { 
-          // 1. DATE FIX: Postgres expects YYYY-MM-DD for 'date' columns
+          // 1. Sanitize Date
           const dateObj = new Date(form.date);
           const validDate = !isNaN(dateObj.getTime()) ? form.date : new Date().toISOString().split('T')[0];
 
-          // 2. AUTO-GENERATE LOT ID if blank (Satisfies UNIQUE/NOT NULL DB Constraint)
+          // 2. SAFETY CHECK: Lot ID MUST NOT be empty or duplicate
           let finalLotId = String(form.lotId || '').trim();
           if (!finalLotId) {
-              const uniqueSuffix = Date.now().toString().slice(-6); // Last 6 digits of timestamp
-              finalLotId = `AUTO-${uniqueSuffix}`; 
+              finalLotId = `AUTO-${Date.now()}`; // Fallback if user cleared the auto-gen
           }
 
-          // 3. Construct Strict Payload
+          // 3. Construct Strict Payload (DB Schema Compliance)
           const payload = { 
-              // Removed ID if null to prevent auto-increment crash
-              ...(editingId && { id: editingId }),
+              ...(editingId && { id: editingId }), // Only send ID for updates
               
               componentType: String(form.componentType || 'powder'),
               
-              // Numbers: Force to 0 if empty/invalid
+              // FORCE NUMBERS (Schema: numeric DEFAULT 0)
               qty: parseFloat(form.qty) || 0, 
               price: parseFloat(form.price) || 0, 
               shipping: parseFloat(form.shipping) || 0, 
               tax: parseFloat(form.tax) || 0, 
               
-              // Strings: Trim and ensure not null
+              // FORCE STRINGS (Schema: text)
               brand: String(form.brand || '').trim(),
               name: String(form.name || '').trim(),
               vendor: String(form.vendor || '').trim(),
               
-              lotId: finalLotId, // Uses Auto-Gen ID if user didn't type one
+              lotId: finalLotId, // Guaranteed valid string
               
               typeDetail: String(form.typeDetail || '').trim(),
               caliber: String(form.caliber || '').trim(),
@@ -427,7 +442,12 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       } catch (err) { 
           console.error("Save Error:", err);
           const msg = err.body ? JSON.stringify(err.body) : err.message;
-          setError(`Failed to save: ${msg}`); 
+          // Helpful user error if Lot ID collision happens
+          if (msg.includes("unique constraint") || msg.includes("lot_id")) {
+             setError("Error: This Lot ID already exists. Please create a unique Lot #.");
+          } else {
+             setError(`Failed to save: ${msg}`); 
+          }
           HAPTIC.error(); 
       } finally { 
           setLoading(false); 
