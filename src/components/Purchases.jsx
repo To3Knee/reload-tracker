@@ -3,12 +3,12 @@
 //Script Location: src/components/Purchases.jsx
 //Date: 12/23/2025
 //Created By: T03KNEE
-//Version: 25.0.0 (The Hybrid Solution)
+//Version: 26.0.0 (Strict Payload Validation)
 //About: Manage component LOT purchases.
-//       - FEATURE: Restored "Live Camera" Modal. This is the primary way to scan.
-//       - FALLBACK: "System Camera" button remains for file uploads.
-//       - LOGIC: Uses robust 5-Pass strategy for files.
-//       - FIX: Includes the 'NaN' save fix so database doesn't crash on empty fields.
+//       - CRITICAL FIX: 'handleSubmit' now enforces strict data types for the backend.
+//       - FIX: Dates are converted to ISO strings to prevent DB crashes.
+//       - FIX: Empty numbers are forced to 0.00.
+//       - DEBUG: Adds console logging of the payload for troubleshooting.
 //===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -107,14 +107,12 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
           setError(null);
 
           const scannerId = "reader";
-          // We wait for DOM to render the modal
           setTimeout(async () => {
             if (!document.getElementById(scannerId)) return;
 
             const html5QrCode = new Html5Qrcode(scannerId);
             html5QrCodeRef.current = html5QrCode;
 
-            // Square QR box for UI guide
             const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
             
             await html5QrCode.start(
@@ -158,7 +156,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       fileInputRef.current?.click(); 
   }
 
-  // --- HELPER: ROBUST IMAGE PROCESSOR (For Files) ---
+  // --- HELPER: ROBUST IMAGE PROCESSOR ---
   const processImageFile = (file, options = {}) => {
       const { rotation = 0, contrastStretch = false, invert = false, resizeTo = 1200, padding = 100 } = options;
 
@@ -370,8 +368,61 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   function promptDelete(item) { if (!canEdit) return; setItemToDelete(item); setDeleteModalOpen(true); HAPTIC.click(); }
   async function executeDelete() { if (!itemToDelete) return; setIsDeleting(true); try { await deletePurchase(itemToDelete.id); HAPTIC.success(); loadData(); setDeleteModalOpen(false); setItemToDelete(null); } catch (err) { setError(`Failed to delete: ${err.message}`); HAPTIC.error(); setDeleteModalOpen(false); } finally { setIsDeleting(false); } }
   
-  // --- SUBMIT HANDLER (Fixes 500 Error) ---
-  async function handleSubmit(e) { e.preventDefault(); setLoading(true); setError(null); try { const payload = { ...form, id: editingId, qty: Number(form.qty) || 0, price: Number(form.price) || 0, shipping: Number(form.shipping) || 0, tax: Number(form.tax) || 0, lotId: form.lotId || "", vendor: form.vendor || "", purchaseDate: form.date }; await addPurchase(payload); HAPTIC.success(); setIsFormOpen(false); loadData(); } catch (err) { setError(`Failed to save: ${err.message}`); HAPTIC.error(); } finally { setLoading(false); } }
+  // --- SUBMIT HANDLER: BULLETPROOF PAYLOAD ---
+  // Converts all fields to safe types to prevent DB crashing
+  async function handleSubmit(e) { 
+      e.preventDefault(); 
+      setLoading(true); 
+      setError(null); 
+      
+      try { 
+          // 1. Sanitize Date (Postgres expects ISO)
+          const dateObj = new Date(form.date);
+          const validDate = !isNaN(dateObj.getTime()) ? dateObj.toISOString() : new Date().toISOString();
+
+          // 2. Construct Strict Payload
+          const payload = { 
+              id: editingId, // Can be null for new items
+              componentType: String(form.componentType || 'powder'),
+              
+              // Numbers: Force to 0 if empty/invalid
+              qty: parseFloat(form.qty) || 0, 
+              price: parseFloat(form.price) || 0, 
+              shipping: parseFloat(form.shipping) || 0, 
+              tax: parseFloat(form.tax) || 0, 
+              
+              // Strings: Trim and ensure not null
+              brand: String(form.brand || '').trim(),
+              name: String(form.name || '').trim(),
+              vendor: String(form.vendor || '').trim(),
+              lotId: String(form.lotId || '').trim(), // Send empty string if blank
+              typeDetail: String(form.typeDetail || '').trim(),
+              caliber: String(form.caliber || '').trim(),
+              unit: String(form.unit || 'lb'),
+              notes: String(form.notes || ''),
+              url: String(form.url || ''),
+              imageUrl: String(form.imageUrl || ''),
+              status: String(form.status || 'active'),
+              caseCondition: String(form.caseCondition || ''),
+              
+              // Date
+              purchaseDate: validDate
+          }; 
+          
+          console.log("Submitting Payload:", payload); // Debug for you
+
+          await addPurchase(payload); 
+          HAPTIC.success(); 
+          setIsFormOpen(false); 
+          loadData(); 
+      } catch (err) { 
+          console.error("Save Error:", err);
+          setError(`Failed to save: ${err.message}`); 
+          HAPTIC.error(); 
+      } finally { 
+          setLoading(false); 
+      } 
+  }
 
   const safeFloat = (val) => { const num = parseFloat(val); return isNaN(num) ? 0 : num; }
   const liveUnitCost = calculatePerUnit(safeFloat(form.price), safeFloat(form.shipping), safeFloat(form.tax), safeFloat(form.qty));
