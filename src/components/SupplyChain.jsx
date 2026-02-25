@@ -27,9 +27,16 @@ export function SupplyChain() {
 
     useEffect(() => { load() }, [])
 
+    const API = import.meta.env.VITE_API_BASE_URL || '/api'
+    const authFetch = (url, opts = {}) => fetch(`${API}${url}`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+        ...opts
+    })
+
     async function load() {
         try {
-            const res = await fetch('/api/market')
+            const res = await authFetch('/market')
             if (res.ok) setItems(await res.json())
         } catch (e) { console.error(e) }
     }
@@ -40,11 +47,12 @@ export function SupplyChain() {
         setError(null)
         HAPTIC.click()
         try {
-            await fetch('/api/market', { method: 'POST', body: JSON.stringify({ url }) })
+            const res = await authFetch('/market', { method: 'POST', body: JSON.stringify({ url }) })
+            if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Failed') }
             setUrl('')
             load()
             HAPTIC.success()
-        } catch (e) { 
+        } catch (e) {
             setError('Failed to track URL. Check link validity.')
             HAPTIC.error()
         } finally {
@@ -57,10 +65,10 @@ export function SupplyChain() {
         setError(null)
         HAPTIC.click()
         try {
-            await fetch(`/api/market/${id}/refresh`, { method: 'POST' })
+            await authFetch(`/market/${id}/refresh`, { method: 'POST' })
             load()
             HAPTIC.success()
-        } catch (e) { 
+        } catch (e) {
             setError('Refresh failed. Site may be blocking bots.')
             HAPTIC.error()
         } finally { setRefreshingId(null) }
@@ -70,11 +78,11 @@ export function SupplyChain() {
         if (!editItem) return
         setError(null)
         try {
-            await fetch(`/api/market/${editItem.id}`, { method: 'PUT', body: JSON.stringify(editItem) })
+            await authFetch(`/market/${editItem.id}`, { method: 'PUT', body: JSON.stringify(editItem) })
             setEditItem(null)
             load()
             HAPTIC.success()
-        } catch (e) { 
+        } catch (e) {
             setError('Save failed.')
             HAPTIC.error()
         }
@@ -82,10 +90,15 @@ export function SupplyChain() {
 
     async function confirmDelete() {
         if (!deleteId) return
-        await fetch(`/api/market/${deleteId}`, { method: 'DELETE' })
-        setDeleteId(null)
-        load()
-        HAPTIC.success()
+        try {
+            await authFetch(`/market/${deleteId}`, { method: 'DELETE' })
+            setDeleteId(null)
+            load()
+            HAPTIC.success()
+        } catch (e) {
+            setError('Delete failed.')
+            HAPTIC.error()
+        }
     }
 
     const grouped = items.reduce((acc, item) => {
@@ -156,9 +169,9 @@ export function SupplyChain() {
                                                 </div>
                                                 <div className="flex justify-between items-end">
                                                     <div className="text-lg font-black text-white">{formatCurrency(item.price)}</div>
-                                                    {(item.qty_per_unit > 1 || item.price === 0) && (
+                                                    {(item.qty_per_unit > 1 && item.price > 0) && (
                                                         <div className="text-[10px] text-zinc-500">
-                                                            {item.price > 0 ? formatCurrency(item.price / item.qty_per_unit) : '$--'} / unit
+                                                            {formatCurrency(item.price / item.qty_per_unit)} / unit
                                                         </div>
                                                     )}
                                                 </div>

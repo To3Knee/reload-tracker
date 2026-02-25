@@ -43,8 +43,10 @@ export async function handler(event) {
     if (method === 'OPTIONS') return { statusCode: 204, headers: baseHeaders }
 
     const currentUser = await getCurrentUser(event)
+    if (!currentUser) return jsonResponse(401, { message: 'Authentication required.' })
+
     const path = event.path || ''
-    
+
     if (path.endsWith('/spend')) {
       const data = await getMonthlySpend(currentUser)
       return jsonResponse(200, { data })

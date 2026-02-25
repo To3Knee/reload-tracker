@@ -24,6 +24,7 @@ export async function handler(event) {
 
     try {
         if (event.httpMethod === 'POST') {
+            if (!event.body) return { statusCode: 400, headers, body: 'Missing request body' }
             const body = JSON.parse(event.body)
             
             // ACTION: RUN SQL

@@ -222,8 +222,13 @@ export async function updatePurchase(id, updates, currentUser) {
   try {
     const result = await query(sql, values);
     if (result.rows.length === 0) throw new NotFoundError(`Purchase with id ${id} not found.`);
-    
+
+    // RETURNING * doesn't include JOINed username columns — fetch them now
     const row = result.rows[0];
+    if (row.created_by_user_id) {
+      const creatorRes = await query('SELECT username FROM users WHERE id = $1', [row.created_by_user_id]);
+      row.created_by_username = creatorRes.rows[0]?.username || null;
+    }
     row.updated_by_username = currentUser.username;
     return mapPurchaseRowToJson(row);
   } catch (err) {

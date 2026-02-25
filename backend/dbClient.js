@@ -38,9 +38,6 @@ function resolveConnectionString() {
     process.env.NETLIFY_DATABASE_URL &&
     process.env.NETLIFY_DATABASE_URL.trim();
   if (netlifyPooled) {
-    console.log(
-      '[Reload Tracker DB] Using NETLIFY_DATABASE_URL as connection string.'
-    );
     return netlifyPooled;
   }
 
@@ -48,9 +45,6 @@ function resolveConnectionString() {
     process.env.NETLIFY_DATABASE_URL_UNPOOLED &&
     process.env.NETLIFY_DATABASE_URL_UNPOOLED.trim();
   if (netlifyUnpooled) {
-    console.log(
-      '[Reload Tracker DB] Using NETLIFY_DATABASE_URL_UNPOOLED as connection string.'
-    );
     return netlifyUnpooled;
   }
 
@@ -91,9 +85,12 @@ function getPool() {
 
   poolInstance = new Pool({
     connectionString,
-    max: 5,
-    connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
+    // Neon serverless + Netlify Functions: keep pool small and connections short-lived.
+    // Each Netlify function invocation may be a cold start — holding connections open
+    // long-term wastes Neon's connection quota and adds latency on reconnect.
+    max: 3,
+    connectionTimeoutMillis: 8000,
+    idleTimeoutMillis: 10000,
     ssl: getSslConfig(),
   });
 
@@ -116,6 +113,29 @@ export async function query(text, params = []) {
 
   try {
     return await client.query(text, params);
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Execute multiple operations in a single transaction.
+ * Automatically rolls back on error; commits on success.
+ *
+ * @param {(client: import('pg').PoolClient) => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+export async function withTransaction(fn) {
+  const pool = getPool();
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
   } finally {
     client.release();
   }

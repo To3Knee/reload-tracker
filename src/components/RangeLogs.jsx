@@ -65,7 +65,11 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
   }
   const [form, setForm] = useState(DEFAULT_FORM)
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    const controller = new AbortController()
+    loadData(controller.signal)
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     if (shotString.length > 0) {
@@ -90,18 +94,21 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     }
   }, [highlightId, logs])
 
-  async function loadData() {
+  async function loadData(signal) {
     setLoading(true)
+    const safe = fn => fn.catch(e => { if (e?.name === 'AbortError') throw e; return [] })
     try {
       const [logData, batchData, gunData] = await Promise.all([
-          getRangeLogs().catch(()=>[]),
-          getBatches().catch(()=>[]),
-          getFirearms().catch(()=>[])
+          safe(getRangeLogs(signal)),
+          safe(getBatches(signal)),
+          safe(getFirearms(signal)),
       ])
       setLogs(logData)
       setBatchList(batchData)
       setGuns(gunData)
-    } catch (e) { console.error(e) } finally { setLoading(false) }
+    } catch (e) {
+      if (e?.name !== 'AbortError') console.error(e)
+    } finally { setLoading(false) }
   }
 
   function handleNewLog() {
@@ -185,7 +192,8 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
             const cur = data.current
             
             const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
-            const windDir = directions[Math.round(cur.wind_direction_10m / 45) % 8]
+            const DEGREES_PER_DIRECTION = 360 / directions.length
+            const windDir = directions[Math.round(cur.wind_direction_10m / DEGREES_PER_DIRECTION) % directions.length]
             
             const desc = `Wind: ${cur.wind_speed_10m}mph ${windDir}, Baro: ${cur.surface_pressure}hPa, Hum: ${cur.relative_humidity_2m}%`
             
@@ -250,6 +258,9 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     loadData()
   }
 
+  // Escape user-supplied strings before injecting into PDF innerHTML
+  const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
   const calculateMoa = (group, dist) => {
     const g = Number(group); const d = Number(dist); if (!g || !d) return '—'
     return ((g / (d / 100)) * 0.955).toFixed(2) + ' MOA'
@@ -284,7 +295,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     const primer = r.primerName || 'Unknown Primer'
     const coal = r.coal ? `COAL: ${r.coal}"` : ''
 
-    const firearmLine = log.firearmName ? `<p style="margin-top:4px;"><strong>RIFLE:</strong> ${log.firearmName}</p>` : ''
+    const firearmLine = log.firearmName ? `<p style="margin-top:4px;"><strong>RIFLE:</strong> ${esc(log.firearmName)}</p>` : ''
     const batchLine = log.batchId ? `<p style="margin-top:2px;"><strong>BATCH:</strong> #${log.batchId}</p>` : ''
     const shotsDisplay = (log.shots && log.shots.length > 0) ? `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;"><span class="stat-label">Shot Data (n=${log.shots.length})</span><div style="font-size:9px; color:#444; margin-top:4px; font-family:monospace; word-wrap:break-word;">${log.shots.join(', ')}</div></div>` : ''
 
@@ -295,17 +306,17 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
              weatherHtml = `
                 <div style="margin-top:8px; padding:6px; background:#f9f9f9; border:1px solid #eee; border-radius:4px; display:flex; gap:12px; align-items:center;">
                     <span style="font-weight:700; color:#b33c3c; font-size:9px; text-transform:uppercase;">Conditions</span>
-                    <span style="font-size:9px; color:#333;"><strong>Wind:</strong> ${parts[0].trim()}</span>
-                    <span style="font-size:9px; color:#333;"><strong>Baro:</strong> ${parts[1].trim()}</span>
-                    <span style="font-size:9px; color:#333;"><strong>Hum:</strong> ${parts[2].trim()}</span>
-                    ${log.temp ? `<span style="font-size:9px; color:#333;"><strong>Temp:</strong> ${log.temp}°F</span>` : ''}
+                    <span style="font-size:9px; color:#333;"><strong>Wind:</strong> ${esc(parts[0].trim())}</span>
+                    <span style="font-size:9px; color:#333;"><strong>Baro:</strong> ${esc(parts[1].trim())}</span>
+                    <span style="font-size:9px; color:#333;"><strong>Hum:</strong> ${esc(parts[2].trim())}</span>
+                    ${log.temp ? `<span style="font-size:9px; color:#333;"><strong>Temp:</strong> ${esc(String(log.temp))}°F</span>` : ''}
                 </div>
              `
         } else {
             weatherHtml = `
                 <div style="margin-top:8px; padding:6px; background:#f9f9f9; border:1px solid #eee; border-radius:4px;">
-                    <span style="font-weight:700; color:#b33c3c; font-size:9px; text-transform:uppercase;">Conditions:</span> 
-                    <span style="font-size:9px; color:#333;">${log.weather} ${log.temp ? `(${log.temp}°F)` : ''}</span>
+                    <span style="font-weight:700; color:#b33c3c; font-size:9px; text-transform:uppercase;">Conditions:</span>
+                    <span style="font-size:9px; color:#333;">${esc(log.weather)} ${log.temp ? `(${esc(String(log.temp))}°F)` : ''}</span>
                 </div>
             `
         }

@@ -22,12 +22,10 @@ export default function AiModal({ open, onClose }) {
   const bottomRef = useRef(null)
 
   useEffect(() => {
-    if (open) scrollToBottom()
+    if (!open) return
+    const id = setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    return () => clearTimeout(id)
   }, [open, messages])
-
-  const scrollToBottom = () => {
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
-  }
 
   async function handleSend(e) {
     e.preventDefault()

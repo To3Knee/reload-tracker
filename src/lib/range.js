@@ -9,8 +9,10 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
-export async function getRangeLogs() {
-  const res = await fetch(`${API_BASE_URL}/range`, { credentials: 'include' })
+export async function getRangeLogs(signal) {
+  const opts = { credentials: 'include' }
+  if (signal) opts.signal = signal
+  const res = await fetch(`${API_BASE_URL}/range`, opts)
   if (!res.ok) throw new Error('Failed to load logs')
   const data = await res.json()
   return data.logs || []

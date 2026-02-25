@@ -17,9 +17,15 @@ export async function executeRawSql(sqlString, currentUser) {
         throw new ValidationError('Unauthorized: Super Admin access required.')
     }
 
-    // 2. Safety Block
-    if (sqlString.toLowerCase().includes('drop table')) {
-        throw new ValidationError('Safety Block: DROP TABLE is not allowed via Web Console.')
+    // 2. Safety Block — normalize whitespace to defeat spacing/newline bypasses
+    const normalized = sqlString.toLowerCase().replace(/\s+/g, ' ')
+    const blocked = [
+        'drop table', 'drop database', 'drop schema', 'drop index',
+        'truncate', 'pg_read_file', 'pg_write_file', 'copy ', 'lo_import', 'lo_export'
+    ]
+    const hit = blocked.find(b => normalized.includes(b))
+    if (hit) {
+        throw new ValidationError(`Safety Block: "${hit.trim().toUpperCase()}" is not allowed via Web Console.`)
     }
 
     // 3. Execution

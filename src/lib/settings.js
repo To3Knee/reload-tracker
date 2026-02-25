@@ -9,14 +9,15 @@
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
-async function request(endpoint, method = 'GET', body = null) {
+async function request(endpoint, method = 'GET', body = null, signal = null) {
     const options = {
         method,
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include' // Important for Admin Auth Cookie
     }
     if (body) options.body = JSON.stringify(body)
-    
+    if (signal) options.signal = signal
+
     const res = await fetch(`${API_BASE}${endpoint}`, options)
     if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -25,8 +26,8 @@ async function request(endpoint, method = 'GET', body = null) {
     return res.json()
 }
 
-export async function fetchSettings() {
-    return request('/settings')
+export async function fetchSettings(signal) {
+    return request('/settings', 'GET', null, signal)
 }
 
 export async function saveSetting(key, value) {

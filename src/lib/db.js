@@ -49,8 +49,8 @@ export function formatCurrency(value) {
 
 // --- CORE EXPORTS (Read/Write) ---
 
-export async function getAllPurchases() {
-  const data = await apiRequest('/purchases')
+export async function getAllPurchases(signal) {
+  const data = await apiRequest('/purchases', signal ? { signal } : {})
   return Array.isArray(data) ? data : []
 }
 
@@ -64,8 +64,8 @@ export async function deletePurchase(id) {
   if (id) await apiRequest(`/purchases/${id}`, { method: 'DELETE' })
 }
 
-export async function getAllRecipes() {
-  const data = await apiRequest('/recipes')
+export async function getAllRecipes(signal) {
+  const data = await apiRequest('/recipes', signal ? { signal } : {})
   return Array.isArray(data) ? data : []
 }
 
@@ -90,5 +90,4 @@ export async function setSetting(key, value) {
 export async function seedData() {
   // In Production/Demo, we do NOT want to auto-populate data when the user deletes items.
   // This function is intentionally left empty to prevent "Zombie Data".
-  console.log('[Reload Tracker] Auto-Seeding Disabled.')
 }

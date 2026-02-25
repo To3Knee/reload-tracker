@@ -9,7 +9,7 @@
 //       - FIX: Ensures Specs are mapped correctly.
 //===============================================================
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { getFirearms, saveFirearm, deleteFirearm } from '../lib/armory'
 import { getGear } from '../lib/gear'
 import { Plus, Trash2, Edit, ChevronDown, ChevronUp, Crosshair, Info, User, Box, Wand2, Loader2, Link, X } from 'lucide-react'
@@ -156,8 +156,14 @@ export function Armory({ canEdit }) {
   const labelClass = "block text-xs font-semibold text-zinc-400 mb-1 flex items-center gap-1"
   const tabBtnClass = (active) => `pb-2 px-1 text-xs font-bold uppercase tracking-wider transition border-b-2 ${active ? 'border-red-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`
 
-  const availableGear = gear.filter(g => !form.gearIds.includes(Number(g.id)))
-  const selectedGear = gear.filter(g => form.gearIds.includes(Number(g.id)))
+  const availableGear = useMemo(
+    () => gear.filter(g => !form.gearIds.includes(Number(g.id))),
+    [gear, form.gearIds]
+  )
+  const selectedGear = useMemo(
+    () => gear.filter(g => form.gearIds.includes(Number(g.id))),
+    [gear, form.gearIds]
+  )
 
   return (
     <div className="space-y-6">

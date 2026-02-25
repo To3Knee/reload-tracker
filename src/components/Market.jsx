@@ -315,7 +315,7 @@ export function Market({ user }) {
                     </div>
                     <div>
                         <label className="text-xs text-zinc-500 block mb-1">Status</label>
-                        <select className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.in_stock} onChange={e => setEditingItem({...editingItem, in_stock: e.target.value === 'true'})}>
+                        <select className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.in_stock ? 'true' : 'false'} onChange={e => setEditingItem({...editingItem, in_stock: e.target.value === 'true'})}>
                             <option value="true">In Stock</option>
                             <option value="false">Out of Stock</option>
                         </select>

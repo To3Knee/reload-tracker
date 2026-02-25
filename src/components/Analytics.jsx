@@ -20,11 +20,24 @@ import {
     getVolumeByCaliberData,
     getSupplyForecastData
 } from '../lib/analytics'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend, ReferenceLine } from 'recharts'
 import { formatCurrency } from '../lib/db'
 import { AlertCircle, Clock, Package, Flame, Coins, Crosshair, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react'
 
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1']
+
+// Defined outside component — stable object references prevent Recharts
+// re-rendering tooltip on every parent render cycle.
+const tooltipStyle = {
+    backgroundColor: '#09090b',
+    borderColor: '#27272a',
+    borderRadius: '8px',
+    fontSize: '11px',
+    color: '#f4f4f5',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+    outline: 'none',
+}
+const itemStyle = { color: '#f4f4f5' }
 
 // --- SUB-COMPONENTS ---
 
@@ -83,16 +96,22 @@ export function Analytics() {
   const [showFactoryLine, setShowFactoryLine] = useState(false)
 
   useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+
+    // Swallow per-chart errors but propagate AbortError so Promise.all exits cleanly
+    const safe = fn => fn.catch(e => { if (e?.name === 'AbortError') throw e; return [] })
+
     async function load() {
         try {
             const [spend, trends, dist, vel, costs, vol, forecast] = await Promise.all([
-                getMonthlySpendData().catch(()=>[]),
-                getPriceTrendData().catch(()=>[]),
-                getInventoryDistributionData().catch(()=>[]),
-                getLoadVelocityData().catch(()=>[]),
-                getBatchCostHistoryData().catch(()=>[]),
-                getVolumeByCaliberData().catch(()=>[]),
-                getSupplyForecastData().catch(()=>[])
+                safe(getMonthlySpendData(signal)),
+                safe(getPriceTrendData(signal)),
+                safe(getInventoryDistributionData(signal)),
+                safe(getLoadVelocityData(signal)),
+                safe(getBatchCostHistoryData(signal)),
+                safe(getVolumeByCaliberData(signal)),
+                safe(getSupplyForecastData(signal)),
             ])
             setSpendData(spend)
             setTrendData(trends)
@@ -102,29 +121,14 @@ export function Analytics() {
             setVolumeData(vol)
             setForecastData(forecast)
         } catch (e) {
-            console.error("Analytics Load Error:", e)
+            if (e?.name !== 'AbortError') console.error("Analytics Load Error:", e)
         } finally {
             setLoading(false)
         }
     }
     load()
+    return () => controller.abort()
   }, [])
-
-  // Dark Theme Tooltip Style
-  const tooltipStyle = {
-      backgroundColor: '#09090b', // Zinc-950
-      borderColor: '#27272a',     // Zinc-800
-      borderRadius: '8px',
-      fontSize: '11px',
-      color: '#f4f4f5',           // Zinc-100 (White text)
-      boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-      outline: 'none'
-  }
-
-  // Explicit text style for list items inside tooltip
-  const itemStyle = {
-      color: '#f4f4f5' 
-  }
 
   if (loading) return <div className="p-8 text-center text-xs text-slate-500 animate-pulse">Running Ballistics Calculations...</div>
 
@@ -216,15 +220,12 @@ export function Analytics() {
                             <Area type="monotone" dataKey="cost" stroke="#3b82f6" fillOpacity={1} fill="url(#colorCost)" strokeWidth={2} />
                             
                             {showFactoryLine && (
-                                <Area 
-                                    type="monotone" 
-                                    dataKey={() => factoryPrice} 
-                                    stroke="#60a5fa" 
-                                    strokeDasharray="4 4" 
-                                    strokeWidth={1} 
-                                    fill="transparent" 
-                                    activeDot={false}
-                                    isAnimationActive={false}
+                                <ReferenceLine
+                                    y={factoryPrice}
+                                    stroke="#60a5fa"
+                                    strokeDasharray="4 4"
+                                    strokeWidth={1.5}
+                                    label={{ value: `Factory $${factoryPrice.toFixed(2)}`, fill: '#60a5fa', fontSize: 9, position: 'insideTopRight' }}
                                 />
                             )}
                         </AreaChart>

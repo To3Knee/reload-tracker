@@ -8,20 +8,17 @@
 //       - FIX: Passing 'currentUser' to Purchases component so Market Watch works.
 //===============================================================
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, lazy, Suspense, useCallback } from 'react'
 import Navbar from './components/Navbar'
 import Dashboard from './components/Dashboard'
 import { Purchases } from './components/Purchases'
 import { Inventory } from './components/Inventory'
 import { Recipes } from './components/Recipes'
 import { Batches } from './components/Batches'
-import { Analytics } from './components/Analytics'
 import { RangeLogs } from './components/RangeLogs'
-import { Armory } from './components/Armory' 
+import { Armory } from './components/Armory'
 import { getAllPurchases, getAllRecipes, seedData } from './lib/db'
 import { APP_VERSION_LABEL } from './version'
-import AuthModal from './components/AuthModal'
-import AiModal from './components/AiModal'
 import { fetchSettings } from './lib/settings'
 import { getCurrentUser, logoutUser, ROLE_ADMIN } from './lib/auth'
 import { HAPTIC } from './lib/haptics'
@@ -29,6 +26,11 @@ import logo from './assets/logo.png'
 import {
   Gauge, ShoppingCart, Package, Beaker, ClipboardList, Activity, Target, Crosshair, RefreshCw
 } from 'lucide-react'
+
+// Lazy-loaded: heavy bundles only downloaded when the tab/modal is first opened
+const Analytics  = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })))
+const AuthModal  = lazy(() => import('./components/AuthModal'))
+const AiModal    = lazy(() => import('./components/AiModal'))
 
 // CONFIG: Access Control
 const REQUIRE_LOGIN = import.meta.env.VITE_REQUIRE_LOGIN === 'true'
@@ -69,13 +71,15 @@ export default function App() {
   )
 
   useEffect(() => {
-    loadInitialData()
+    const controller = new AbortController()
+    loadInitialData(controller.signal)
+    return () => controller.abort()
   }, [])
 
   // Consolidated Data Loader
-  const loadInitialData = async () => {
+  const loadInitialData = async (signal) => {
     await seedData()
-    await refreshAllData()
+    await refreshAllData(signal)
 
     const params = new URLSearchParams(window.location.search)
     const batchId = params.get('batchId')
@@ -88,32 +92,47 @@ export default function App() {
   }
 
   // The "Master" Refresh Function
-  const refreshAllData = async () => {
+  const refreshAllData = async (signal) => {
     try {
       // Parallel fetch for speed
-      const [purchasesData, recipesData] = await Promise.all([getAllPurchases(), getAllRecipes()])
+      const [purchasesData, recipesData] = await Promise.all([
+        getAllPurchases(signal),
+        getAllRecipes(signal),
+      ])
       setPurchases(purchasesData)
       setRecipes(recipesData)
-      
+
       // Refresh user/settings silently
       const user = await getCurrentUser()
       if (user) {
           setCurrentUser(user)
-          setIsAuthOpen(false) 
+          setIsAuthOpen(false)
       } else if (REQUIRE_LOGIN) {
-          setIsAuthOpen(true) 
+          setIsAuthOpen(true)
       }
 
-      const settings = await fetchSettings()
+      const settings = await fetchSettings(signal)
       setAiEnabled(settings.ai_enabled === 'true' && (settings.hasAiKey || settings.ai_api_key))
-      
+
     } catch (e) {
-      console.error("Data refresh failed:", e)
+      if (e?.name !== 'AbortError') console.error("Data refresh failed:", e)
     }
   }
 
   const confirmAge = () => { localStorage.setItem('ageConfirmed', 'true'); setAgeConfirmed(true); HAPTIC.click(); }
-  const handleUseRecipe = recipe => { setSelectedRecipe(recipe); setActiveTab('calculator'); HAPTIC.soft(); }
+  const handleUseRecipe = useCallback((recipe) => { setSelectedRecipe(recipe); setActiveTab('calculator'); HAPTIC.soft() }, [])
+  const handleTabChange  = useCallback((t) => { setActiveTab(t); HAPTIC.soft() }, [])
+  const handleOpenSettings = useCallback(() => { setIsAuthOpen(true); HAPTIC.click() }, [])
+  const handleOpenAi     = useCallback(() => { setIsAiOpen(true); HAPTIC.click() }, [])
+  const handleLogin      = useCallback((user) => { setCurrentUser(user); setIsAuthOpen(false); HAPTIC.success() }, [])
+  const handleLogout     = useCallback(async () => {
+    await logoutUser()
+    setCurrentUser(null)
+    if (!REQUIRE_LOGIN) setIsAuthOpen(false)
+    setIsAiOpen(false)
+    HAPTIC.soft()
+  }, [])
+  const handleCloseAuth  = useCallback(() => { if (!REQUIRE_LOGIN || currentUser) setIsAuthOpen(false) }, [currentUser])
   const isAdmin = currentUser && currentUser.role === ROLE_ADMIN
 
   // --- TOUCH HANDLERS FOR PULL-TO-REFRESH ---
@@ -171,10 +190,10 @@ export default function App() {
     >
       <Navbar
         activeTab={activeTab}
-        setActiveTab={(t) => { setActiveTab(t); HAPTIC.soft(); }}
+        setActiveTab={handleTabChange}
         currentUser={currentUser}
-        onOpenSettings={() => { setIsAuthOpen(true); HAPTIC.click(); }}
-        onOpenAi={() => { setIsAiOpen(true); HAPTIC.click(); }}
+        onOpenSettings={handleOpenSettings}
+        onOpenAi={handleOpenAi}
         isAiEnabled={aiEnabled}
         menuItems={MENU_ITEMS}
       />
@@ -188,9 +207,9 @@ export default function App() {
         }}
       >
         <div className="bg-zinc-800 border border-zinc-700 rounded-full p-2 shadow-xl shadow-black/50">
-          <RefreshCw 
-            className={`w-6 h-6 text-red-500 ptr-spinner ${isRefreshing ? 'refreshing' : ''}`} 
-            style={{ transform: `rotate(${pullDistance * 3}deg)` }}
+          <RefreshCw
+            className={`w-6 h-6 text-red-500 ptr-spinner ${isRefreshing ? 'refreshing' : ''}`}
+            style={{ transform: `rotate(${pullDistance * 3}deg)`, willChange: 'transform' }}
           />
         </div>
       </div>
@@ -205,7 +224,7 @@ export default function App() {
            <img src={logo} alt="Reload Tracker" className="w-40 opacity-90 drop-shadow-2xl" />
         </div>
 
-        {activeTab === 'calculator' && <Dashboard purchases={purchases} selectedRecipe={selectedRecipe} onSelectRecipe={handleUseRecipe} canEdit={!!isAdmin} />}
+        {activeTab === 'calculator' && <Dashboard purchases={purchases} recipes={recipes} selectedRecipe={selectedRecipe} onSelectRecipe={handleUseRecipe} canEdit={!!isAdmin} />}
         {activeTab === 'armory' && <Armory canEdit={!!isAdmin} />}
         
         {/* FIX: Passed currentUser to Purchases */}
@@ -215,27 +234,27 @@ export default function App() {
         {activeTab === 'recipes' && <Recipes onUseRecipe={handleUseRecipe} canEdit={!!isAdmin} purchases={purchases} />}
         {activeTab === 'batches' && <Batches highlightId={scannedId} />}
         {activeTab === 'range' && <RangeLogs recipes={recipes} canEdit={!!isAdmin} highlightId={scannedId} />}
-        {activeTab === 'analytics' && <Analytics />}
+        {activeTab === 'analytics' && (
+          <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500 animate-pulse">Running Ballistics Calculations...</div>}>
+            <Analytics />
+          </Suspense>
+        )}
       </main>
 
-      {isAuthOpen && (
-          <AuthModal 
-            open={isAuthOpen} 
-            onClose={() => { if (!REQUIRE_LOGIN || currentUser) setIsAuthOpen(false) }} 
-            currentUser={currentUser} 
-            onLogin={user => { setCurrentUser(user); setIsAuthOpen(false); HAPTIC.success(); }} 
-            onLogout={async () => { 
-                await logoutUser()
-                setCurrentUser(null)
-                if (!REQUIRE_LOGIN) setIsAuthOpen(false)
-                setIsAiOpen(false)
-                HAPTIC.soft() 
-            }} 
-            canClose={!REQUIRE_LOGIN || !!currentUser}
-          />
-      )}
-      
-      {isAiOpen && <AiModal open={isAiOpen} onClose={() => setIsAiOpen(false)} />}
+      <Suspense fallback={null}>
+        {isAuthOpen && (
+            <AuthModal
+              open={isAuthOpen}
+              onClose={handleCloseAuth}
+              currentUser={currentUser}
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+              canClose={!REQUIRE_LOGIN || !!currentUser}
+            />
+        )}
+
+        {isAiOpen && <AiModal open={isAiOpen} onClose={() => setIsAiOpen(false)} />}
+      </Suspense>
 
       <div className="hidden md:block fixed bottom-2 right-3 z-50 text-[10px] text-slate-500"><span className="px-2 py-[2px] rounded-full border border-red-600/40 bg-black/70 backdrop-blur">Reload Tracker {APP_VERSION_LABEL}</span></div>
     </div>

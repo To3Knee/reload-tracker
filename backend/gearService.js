@@ -116,9 +116,9 @@ export async function updateGear(id, updates, currentUser) {
 }
 
 export async function deleteGear(id, currentUser) {
-  // SHARED DELETE: Any Admin can delete
+  // Soft delete — keeps FK relationships intact (firearm_gear links, etc.)
   const res = await query(
-    `DELETE FROM gear WHERE id = $1`,
+    `UPDATE gear SET status = 'deleted', updated_at = NOW() WHERE id = $1 AND status != 'deleted'`,
     [id]
   )
   if (res.rowCount === 0) throw new NotFoundError('Gear not found.')

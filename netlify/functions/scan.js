@@ -14,7 +14,7 @@ import { query } from '../../backend/dbClient.js'; // Needed for fallback auth
 
 const baseHeaders = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
@@ -38,9 +38,13 @@ export async function handler(event, context) {
       const cookieHeader = event.headers.cookie || event.headers.Cookie;
       let user = null;
 
-      // Attempt A: Standard Auth Service
+      // Attempt A: Standard Auth Service — extract token from cookie header first
       if (cookieHeader) {
-          user = await getUserForSessionToken(cookieHeader, SESSION_COOKIE_NAME);
+          const parsedCookies = parseCookies(cookieHeader);
+          const sessionToken = parsedCookies[SESSION_COOKIE_NAME];
+          if (sessionToken) {
+              user = await getUserForSessionToken(sessionToken);
+          }
       }
 
       // Attempt B: Manual Fallback (Fixes "Unauthorized" on Dev)
@@ -72,8 +76,6 @@ export async function handler(event, context) {
       const code = body.code;
 
       if (!code) throw new Error("No barcode provided");
-
-      console.log(`[SCAN] Lookup for: ${code} (User: ${user.username})`);
 
       // 3. EXECUTE LOOKUP
       const data = await lookupBarcode(code);

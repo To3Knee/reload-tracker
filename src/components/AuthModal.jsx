@@ -100,7 +100,7 @@ export default function AuthModal({
       setSqlResult(null);
   }, [open, currentUser, isAdmin])
 
-  async function loadUsers() { try { const users = await listAdminUsers(); setAdminUsers(users); } catch (err) { console.log(err) } }
+  async function loadUsers() { try { const users = await listAdminUsers(); setAdminUsers(users); } catch (err) { console.error(err) } }
   
   async function loadSettings() { 
       try { 
@@ -122,8 +122,8 @@ export default function AuthModal({
               setAiModel(data.ai_model || 'google/gemini-2.0-flash-exp:free'); 
               setCustomModel(''); 
           } 
-          if (data.ai_api_key) setApiKeyOverride(data.ai_api_key); 
-      } catch (err) { console.log(err) } 
+          if (data.ai_api_key) setApiKeyOverride(data.ai_api_key);
+      } catch (err) { console.error(err) }
   }
 
   function clearMessages() { setStatusMessage(''); setErrorMessage(''); }

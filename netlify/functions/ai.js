@@ -29,14 +29,15 @@ export async function handler(event) {
     }
 
     try {
+        if (!event.body) return { statusCode: 400, headers, body: JSON.stringify({ message: 'Missing request body' }) }
         const { prompt, history } = JSON.parse(event.body)
-        if (!prompt) return { statusCode: 400, body: JSON.stringify({ error: "Prompt required" }) }
+        if (!prompt) return { statusCode: 400, headers, body: JSON.stringify({ message: 'Prompt required' }) }
 
         const response = await chatWithAi(prompt, history)
         return { statusCode: 200, headers, body: JSON.stringify({ response }) }
 
     } catch (e) {
         console.error("AI Function Error:", e)
-        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) }
+        return { statusCode: 500, headers, body: JSON.stringify({ message: e.message }) }
     }
 }

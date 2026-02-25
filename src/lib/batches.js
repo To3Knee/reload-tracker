@@ -10,13 +10,14 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
-async function batchRequest(endpoint, method = 'GET', body = null) {
+async function batchRequest(endpoint, method = 'GET', body = null, signal = null) {
   const options = {
     method,
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include'
   }
   if (body) options.body = JSON.stringify(body)
+  if (signal) options.signal = signal
 
   const res = await fetch(`${API_BASE_URL}${endpoint}`, options)
   const data = await res.json()
@@ -24,8 +25,8 @@ async function batchRequest(endpoint, method = 'GET', body = null) {
   return data
 }
 
-export async function getBatches() {
-  const data = await batchRequest('/batches', 'GET')
+export async function getBatches(signal) {
+  const data = await batchRequest('/batches', 'GET', null, signal)
   return data.batches || []
 }
 

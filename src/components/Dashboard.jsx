@@ -10,7 +10,7 @@
 //===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
-import { getAllRecipes, saveRecipe } from '../lib/db'
+import { saveRecipe } from '../lib/db'
 import { getMarketListings } from '../lib/market'
 import { 
   calculateCostPerUnit, 
@@ -43,7 +43,7 @@ function BreakdownRow({ label, value }) {
   )
 }
 
-export default function Dashboard({ purchases = [], selectedRecipe, onSelectRecipe }) {
+export default function Dashboard({ purchases = [], recipes: recipesProp = [], selectedRecipe, onSelectRecipe }) {
   const [chargeGrains, setChargeGrains] = useState('')
   
   // TWEAK: Default to 20 rounds (Standard Rifle Box) instead of 1000
@@ -52,8 +52,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
   const [caseReuse, setCaseReuse] = useState(5)
   const [caliber, setCaliber] = useState('9mm')
   
-  const [recipes, setRecipes] = useState([])
-  const [marketItems, setMarketItems] = useState([]) 
+  const [marketItems, setMarketItems] = useState([])
   
   // FACTORY COMPARE STATES
   const [selectedFactoryId, setSelectedFactoryId] = useState('')
@@ -72,17 +71,9 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
   const [caseId, setCaseId] = useState('')
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [rData, mData] = await Promise.all([getAllRecipes(), getMarketListings().catch(()=>[])])
-        setRecipes(rData)
-        setMarketItems(mData)
-      } catch (err) {
-        console.error("Dashboard Load Error:", err)
-        setError("Could not load recipes. Check connection.")
-      }
-    }
-    load()
+    let mounted = true
+    getMarketListings().catch(() => []).then(data => { if (mounted) setMarketItems(data) })
+    return () => { mounted = false }
   }, [])
 
   // Filter Inventory based on Caliber
@@ -106,46 +97,46 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
 
   // 2. Determine Active Recipe Object
   const activeRecipe = useMemo(() => {
-      return selectedRecipe || recipes.find(r => String(r.id) === String(selectedRecipeId)) || null
-  }, [selectedRecipe, selectedRecipeId, recipes])
+      return selectedRecipe || recipesProp.find(r => String(r.id) === String(selectedRecipeId)) || null
+  }, [selectedRecipe, selectedRecipeId, recipesProp])
 
   const activeRecipeLabel = activeRecipe ? `${activeRecipe.name}${activeRecipe.caliber ? ` • ${activeRecipe.caliber}` : ''}` : ''
 
   // 3. MASTER EFFECT: Sync Form with Recipe or Defaults
+  // FIX: Compute all new lot IDs atomically to avoid stale-state override bug.
+  // Previously, setPowderId() was called and then ensureValid() immediately ran
+  // against the OLD powderId (React state updates are async), causing the recipe's
+  // lot selection to be overwritten by ensureValid every time.
   useEffect(() => {
       if (activeRecipe) {
           if (activeRecipe.chargeGrains) setChargeGrains(String(activeRecipe.chargeGrains))
           if (activeRecipe.lotSize) setLotSize(Number(activeRecipe.lotSize))
           if (activeRecipe.brassReuse) setCaseReuse(Number(activeRecipe.brassReuse))
 
-          if (activeRecipe.powderLotId && powderLots.some(p => String(p.id) === String(activeRecipe.powderLotId))) {
-              setPowderId(String(activeRecipe.powderLotId))
+          // Compute the intended lot ID for each slot — use recipe value if it exists
+          // in the current (non-depleted, caliber-filtered) lots, otherwise pick first available
+          const resolveId = (recipeId, lots) => {
+              if (recipeId && lots.some(l => String(l.id) === String(recipeId)))
+                  return String(recipeId)
+              return lots.length > 0 ? String(lots[0].id) : ''
           }
-          if (activeRecipe.bulletLotId && bulletLots.some(b => String(b.id) === String(activeRecipe.bulletLotId))) {
-              setBulletId(String(activeRecipe.bulletLotId))
-          }
-          if (activeRecipe.primerLotId && primerLots.some(p => String(p.id) === String(activeRecipe.primerLotId))) {
-              setPrimerId(String(activeRecipe.primerLotId))
-          }
-          if (activeRecipe.caseLotId && caseLots.some(c => String(c.id) === String(activeRecipe.caseLotId))) {
-              setCaseId(String(activeRecipe.caseLotId))
-          }
-      }
-      
-      const ensureValid = (currentId, lots, setter) => {
-          const isValid = currentId && lots.some(l => String(l.id) === String(currentId))
-          if (!isValid) {
-              if (lots.length > 0) setter(String(lots[0].id))
-              else setter('')
-          }
-      }
 
-      ensureValid(powderId, powderLots, setPowderId)
-      ensureValid(bulletId, bulletLots, setBulletId)
-      ensureValid(primerId, primerLots, setPrimerId)
-      ensureValid(caseId, caseLots, setCaseId)
-
-  }, [activeRecipe, caliber, powderLots, bulletLots, primerLots, caseLots]) 
+          setPowderId(resolveId(activeRecipe.powderLotId, powderLots))
+          setBulletId(resolveId(activeRecipe.bulletLotId, bulletLots))
+          setPrimerId(resolveId(activeRecipe.primerLotId, primerLots))
+          setCaseId(resolveId(activeRecipe.caseLotId, caseLots))
+      } else {
+          // No recipe active — just ensure current selections are still valid
+          const ensureValid = (currentId, lots, setter) => {
+              const isValid = currentId && lots.some(l => String(l.id) === String(currentId))
+              if (!isValid) setter(lots.length > 0 ? String(lots[0].id) : '')
+          }
+          ensureValid(powderId, powderLots, setPowderId)
+          ensureValid(bulletId, bulletLots, setBulletId)
+          ensureValid(primerId, primerLots, setPrimerId)
+          ensureValid(caseId, caseLots, setCaseId)
+      }
+  }, [activeRecipe, caliber, powderLots, bulletLots, primerLots, caseLots])
 
   const factoryOptions = useMemo(() => {
       return marketItems.filter(m => (m.category === 'ammo' || m.category === 'other') && m.price > 0)
@@ -191,7 +182,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
         lot: totalPerRound * (numericLotSize || 0),
       },
     }
-  }, [purchases.length, powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, lotSize, caseReuse])
+  }, [powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, lotSize, caseReuse])
 
   const roiStats = useMemo(() => {
       const factoryCost = Number(manualFactoryCost) || 0
@@ -256,18 +247,18 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
       roundsPossible: limiting.value,
       needsCharge: false,
     }
-  }, [activeRecipe, purchases.length, powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, caseReuse])
+  }, [activeRecipe, powderId, bulletId, primerId, caseId, powderLots, bulletLots, primerLots, caseLots, chargeGrains, caseReuse])
 
   const headerRounds = activeRecipe && capacity && !capacity.needsCharge ? (typeof capacity.roundsPossible === 'number' ? capacity.roundsPossible : 0) : null
-  const recipesForCaliber = recipes.filter(r => { if (!caliber) return true; if (!r.caliber) return true; return r.caliber === caliber })
+  const recipesForCaliber = recipesProp.filter(r => { if (!caliber) return true; if (!r.caliber) return true; return r.caliber === caliber })
   const hasBallistics = !!activeRecipe && (activeRecipe.bulletWeightGr || activeRecipe.muzzleVelocityFps || activeRecipe.zeroDistanceYards || activeRecipe.groupSizeInches)
-  const calibers = Array.from(new Set(recipes.map(r => r.caliber).filter(c => c && c.trim().length > 0))).sort()
+  const calibers = Array.from(new Set(recipesProp.map(r => r.caliber).filter(c => c && c.trim().length > 0))).sort()
 
   function handleRecipeSelect(e) {
     const id = e.target.value
     setSelectedRecipeId(id)
     if (onSelectRecipe) {
-        const r = recipes.find(x => String(x.id) === String(id))
+        const r = recipesProp.find(x => String(x.id) === String(id))
         if(r) onSelectRecipe(r)
     }
   }
@@ -294,8 +285,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
         lotSize: scenario.lotSize || 0,
         notes: 'Saved from Live Round Calculator config.',
       })
-      const data = await getAllRecipes()
-      setRecipes(data)
+      // Recipe saved — App.jsx will pick it up on next pull-to-refresh
     } catch (err) {
       setError(`Failed to save recipe: ${err.message}`)
     } finally { setSavingRecipeId(null) }
@@ -345,7 +335,7 @@ export default function Dashboard({ purchases = [], selectedRecipe, onSelectReci
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">Recipe (optional)</label>
-              {recipes.length === 0 ? (
+              {recipesProp.length === 0 ? (
                 <div className="text-[11px] text-slate-500 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-xl px-3 py-1.5">No recipes found.</div>
               ) : (
                 <select className={inputClass} value={selectedRecipeId} onChange={handleRecipeSelect}>

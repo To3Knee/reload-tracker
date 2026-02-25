@@ -41,7 +41,12 @@ export function GearLocker() {
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
-    try { setGearList(await getGear()) } catch (e) { console.error(e) }
+    try {
+      setGearList(await getGear())
+    } catch (e) {
+      console.error(e)
+      setError('Failed to load gear. Check your connection and try again.')
+    }
   }
 
   function handleAddNew() {
@@ -124,7 +129,16 @@ export function GearLocker() {
 
   return (
     <div className="space-y-6">
-        
+
+        {/* TOP-LEVEL ERROR BANNER (load failures shown here) */}
+        {error && !isFormOpen && (
+            <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in">
+                <AlertTriangle className="text-red-500 flex-shrink-0" size={18} />
+                <p className="text-xs text-red-200/80 flex-1">{error}</p>
+                <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={14}/></button>
+            </div>
+        )}
+
         {/* ADD BUTTON (Only visible when form closed) */}
         {!isFormOpen && (
             <button onClick={handleAddNew} className="w-full py-3 rounded-xl border border-dashed border-zinc-700 text-zinc-500 hover:text-red-400 hover:border-red-500/50 hover:bg-red-900/10 transition flex items-center justify-center gap-2 text-xs font-bold">

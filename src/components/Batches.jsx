@@ -75,7 +75,6 @@ export function Batches({ highlightId }) {
         await updateBatch(id, { notes: editNotes })
         setBatches(prev => prev.map(b => b.id === id ? { ...b, notes: editNotes } : b))
         setEditingId(null)
-        loadHistory() 
     } catch (err) {
         console.error(err)
     }

@@ -53,10 +53,10 @@ function mapRecipeRowToJson(row) {
     caseLotId: row.case_lot_id || '',
 
     // Joined Names
-    powderName: row.powder_brand ? `${row.powder_brand} ${row.powder_name}` : null,
-    bulletName: row.bullet_brand ? `${row.bullet_brand} ${row.bullet_name}` : null,
-    primerName: row.primer_brand ? `${row.primer_brand} ${row.primer_name}` : null,
-    caseName: row.case_brand ? `${row.case_brand} ${row.case_name}` : null,
+    powderName: row.powder_brand && row.powder_name ? `${row.powder_brand} ${row.powder_name}` : (row.powder_brand || null),
+    bulletName: row.bullet_brand && row.bullet_name ? `${row.bullet_brand} ${row.bullet_name}` : (row.bullet_brand || null),
+    primerName: row.primer_brand && row.primer_name ? `${row.primer_brand} ${row.primer_name}` : (row.primer_brand || null),
+    caseName: row.case_brand && row.case_name ? `${row.case_brand} ${row.case_name}` : (row.case_brand || null),
 
     // Attribution
     createdByUserId: row.created_by_user_id || null,
@@ -80,9 +80,7 @@ function normalizeId(value) {
   return Number(value);
 }
 
-export async function listRecipes(filters = {}) {
-  const values = [];
-  const sql = `
+const RECIPE_SELECT = `
     SELECT
       r.*,
       uc.username AS created_by_username,
@@ -98,8 +96,29 @@ export async function listRecipes(filters = {}) {
     LEFT JOIN purchases b ON r.bullet_lot_id = b.id
     LEFT JOIN purchases pr ON r.primer_lot_id = pr.id
     LEFT JOIN purchases c ON r.case_lot_id = c.id
-    ORDER BY r.archived ASC, r.caliber ASC, r.name ASC
-  `;
+`;
+
+async function getRecipeById(id) {
+  const result = await query(`${RECIPE_SELECT} WHERE r.id = $1`, [id]);
+  return result.rows.length > 0 ? mapRecipeRowToJson(result.rows[0]) : null;
+}
+
+export async function listRecipes(filters = {}) {
+  const whereParts = [];
+  const values = [];
+  let idx = 1;
+
+  if (filters.status) {
+    whereParts.push(`r.status = $${idx++}`);
+    values.push(filters.status);
+  }
+  if (filters.caliber) {
+    whereParts.push(`r.caliber = $${idx++}`);
+    values.push(filters.caliber);
+  }
+
+  const whereClause = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : '';
+  const sql = `${RECIPE_SELECT} ${whereClause} ORDER BY r.archived ASC, r.caliber ASC, r.name ASC`;
   const result = await query(sql, values);
   return result.rows.map(mapRecipeRowToJson);
 }
@@ -130,8 +149,7 @@ export async function createRecipe(payload, currentUser) {
   ];
 
   const result = await query(sql, params);
-  const fullList = await listRecipes(); 
-  return fullList.find(r => r.id === result.rows[0].id);
+  return getRecipeById(result.rows[0].id);
 }
 
 export async function updateRecipe(id, updates, currentUser) {
@@ -170,9 +188,7 @@ export async function updateRecipe(id, updates, currentUser) {
 
   const sql = `UPDATE recipes SET ${setParts.join(', ')} WHERE id = $${idx}`;
   await query(sql, values);
-  
-  const all = await listRecipes();
-  return all.find(r => String(r.id) === String(id));
+  return getRecipeById(id);
 }
 
 export async function deleteRecipe(id, currentUser, cascade = false) {

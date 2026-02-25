@@ -13,9 +13,6 @@ import { query } from './dbClient.js'
 import { chatWithAi } from './aiService.js'
 import * as cheerio from 'cheerio'
 
-// Bypass SSL for scraping
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
 export async function listMarket(userId) {
     // FIX: Aliased 'category' as 'componentType' so the frontend recognizes it
     const res = await query(
@@ -37,7 +34,6 @@ export async function addListing(item, userId) {
     const newItem = res.rows[0]
 
     try {
-        console.log(`[Market] Auto-scraping new item: ${newItem.id}`);
         return await refreshListing(newItem.id, userId);
     } catch (err) {
         console.error("[Market] Auto-scrape failed, returning placeholder:", err);

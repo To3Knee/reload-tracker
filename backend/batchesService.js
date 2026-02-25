@@ -8,7 +8,7 @@
 //       Updated: SQL JOINs reinforced to prevent data loss.
 //===============================================================
 
-import { query } from './dbClient.js'
+import { query, withTransaction } from './dbClient.js'
 import { ValidationError, NotFoundError } from './errors.js'
 
 const GRAINS_PER_LB = 7000
@@ -81,62 +81,65 @@ export async function createBatch(payload, currentUser) {
 
   const { recipeId, rounds, powderLotId, bulletLotId, primerLotId, caseLotId, notes } = payload
   const roundsLoaded = Number(rounds)
-  
+
   if (!recipeId || roundsLoaded <= 0) {
     throw new ValidationError('Valid Recipe and Round Count required.')
   }
 
+  // Pre-flight checks outside the transaction (read-only)
   const recipeRes = await query('SELECT * FROM recipes WHERE id = $1', [recipeId])
   if (recipeRes.rows.length === 0) throw new NotFoundError('Recipe not found.')
   const recipe = recipeRes.rows[0]
 
-  if (powderLotId) {
-    const powRes = await query('SELECT * FROM purchases WHERE id = $1', [powderLotId])
-    if (powRes.rows.length > 0) {
-      const lot = powRes.rows[0]
-      const charge = Number(recipe.charge_grains) || 0
-      const totalGrainsNeeded = charge * roundsLoaded
-      const currentGrains = getAvailableGrains(lot.qty, lot.unit)
-      
-      const remainingGrains = currentGrains - totalGrainsNeeded
-      const newQty = convertGrainsToUnit(remainingGrains, lot.unit)
-      const newStatus = newQty <= 0.01 ? 'depleted' : 'active'
-
-      await query(
-        'UPDATE purchases SET qty = $1, status = $2, updated_at = NOW() WHERE id = $3',
-        [newQty, newStatus, powderLotId]
-      )
+  // Wrap all inventory decrements + batch INSERT in a single transaction
+  // so a failed INSERT never leaves inventory in a decremented state.
+  return await withTransaction(async (client) => {
+    if (powderLotId) {
+      const powRes = await client.query('SELECT * FROM purchases WHERE id = $1', [powderLotId])
+      if (powRes.rows.length > 0) {
+        const lot = powRes.rows[0]
+        const charge = Number(recipe.charge_grains) || 0
+        const totalGrainsNeeded = charge * roundsLoaded
+        const currentGrains = getAvailableGrains(lot.qty, lot.unit)
+        const remainingGrains = currentGrains - totalGrainsNeeded
+        const newQty = convertGrainsToUnit(remainingGrains, lot.unit)
+        const newStatus = newQty <= 0.01 ? 'depleted' : 'active'
+        await client.query(
+          'UPDATE purchases SET qty = $1, status = $2, updated_at = NOW() WHERE id = $3',
+          [newQty, newStatus, powderLotId]
+        )
+      }
     }
-  }
 
-  async function decrementDiscrete(lotId, amount) {
-    if (!lotId) return
-    const res = await query('SELECT * FROM purchases WHERE id = $1', [lotId])
-    if (res.rows.length > 0) {
-      const lot = res.rows[0]
-      const newQty = (Number(lot.qty) || 0) - amount
-      const newStatus = newQty <= 0 ? 'depleted' : 'active'
-      await query(
-        'UPDATE purchases SET qty = $1, status = $2, updated_at = NOW() WHERE id = $3',
-        [newQty, newStatus, lotId]
-      )
+    async function decrementDiscrete(lotId, amount) {
+      if (!lotId) return
+      const res = await client.query('SELECT * FROM purchases WHERE id = $1', [lotId])
+      if (res.rows.length > 0) {
+        const lot = res.rows[0]
+        const newQty = (Number(lot.qty) || 0) - amount
+        const newStatus = newQty <= 0 ? 'depleted' : 'active'
+        await client.query(
+          'UPDATE purchases SET qty = $1, status = $2, updated_at = NOW() WHERE id = $3',
+          [newQty, newStatus, lotId]
+        )
+      }
     }
-  }
 
-  await decrementDiscrete(bulletLotId, roundsLoaded)
-  await decrementDiscrete(primerLotId, roundsLoaded)
+    await decrementDiscrete(bulletLotId, roundsLoaded)
+    await decrementDiscrete(primerLotId, roundsLoaded)
 
-  const insertSql = `
-    INSERT INTO batches 
-    (recipe_id, load_date, rounds_loaded, powder_lot_id, bullet_lot_id, primer_lot_id, case_lot_id, notes, created_by_user_id)
-    VALUES ($1, CURRENT_DATE, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id
-  `
-  const res = await query(insertSql, [
-    recipeId, roundsLoaded, powderLotId, bulletLotId, primerLotId, caseLotId, notes, currentUser.id
-  ])
+    const insertSql = `
+      INSERT INTO batches
+      (recipe_id, load_date, rounds_loaded, powder_lot_id, bullet_lot_id, primer_lot_id, case_lot_id, notes, created_by_user_id)
+      VALUES ($1, CURRENT_DATE, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id
+    `
+    const res = await client.query(insertSql, [
+      recipeId, roundsLoaded, powderLotId, bulletLotId, primerLotId, caseLotId, notes, currentUser.id
+    ])
 
-  return { id: res.rows[0].id, message: 'Batch logged.' }
+    return { id: res.rows[0].id, message: 'Batch logged.' }
+  })
 }
 
 export async function updateBatch(id, updates, currentUser) {

@@ -109,8 +109,6 @@ export async function lookupBarcode(code) {
         throw new Error(`API Key required for ${config.provider}`);
     }
 
-    console.log(`[BARCODE] Lookup ${code} via ${config.provider}`);
-
     switch (config.provider) {
         case 'go-upc': return await fetchGoUpc(code, config.apiKey);
         case 'barcodelookup': return await fetchBarcodeLookup(code, config.apiKey);

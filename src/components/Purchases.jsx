@@ -70,14 +70,16 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   const showCondition = ['case'].includes(form.componentType);
   const qtyLabel = ['lb', 'kg', 'gr'].includes(form.unit) ? 'Weight' : 'Count';
 
-  useEffect(() => { 
-      loadData();
-      checkScannerConfig();
+  useEffect(() => {
+    const controller = new AbortController()
+    loadData(controller.signal)
+    checkScannerConfig(controller.signal)
+    return () => controller.abort()
   }, [])
 
   useEffect(() => { if (highlightId && purchases.length > 0) { const targetId = String(highlightId); setTimeout(() => { const el = document.getElementById(`purchase-${targetId}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }) }, 600) } }, [highlightId, purchases])
 
-  // CLEANUP
+  // CLEANUP: Stop scanner on unmount
   useEffect(() => {
       return () => {
           if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
@@ -87,13 +89,13 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       }
   }, [])
 
-  async function checkScannerConfig() {
+  async function checkScannerConfig(signal) {
       try {
-          const settings = await fetchSettings();
+          const settings = await fetchSettings(signal);
           const isEnabled = String(settings.barcode_enabled).toLowerCase().trim() === 'true';
           setScannerEnabled(isEnabled);
       } catch (e) {
-          setScannerEnabled(false);
+          if (e?.name !== 'AbortError') setScannerEnabled(false);
       }
   }
 
@@ -368,28 +370,39 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       }
   }
 
-  async function loadData() { try { const data = await getAllPurchases(); setPurchases(data); if (onChanged) onChanged(); } catch (err) { console.error("Failed to load purchases", err); setError("Failed to sync inventory data."); } }
-  
-  function handleAddNew() { 
-      setEditingId(null); 
+  async function loadData(signal) {
+    try {
+      const data = await getAllPurchases(signal);
+      setPurchases(data);
+      if (onChanged) onChanged();
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        console.error("Failed to load purchases", err);
+        setError("Failed to sync inventory data.");
+      }
+    }
+  }
+
+  function handleAddNew() {
+      setEditingId(null);
       const autoId = `LOT-${Date.now().toString().slice(-6)}`;
-      setForm({ ...DEFAULT_FORM, lotId: autoId }); 
-      setError(null); 
-      setIsFormOpen(true); 
-      HAPTIC.click(); 
+      setForm({ ...DEFAULT_FORM, lotId: autoId });
+      setError(null);
+      setIsFormOpen(true);
+      HAPTIC.click();
   }
 
   function handleEdit(item) { setEditingId(item.id); setForm({ componentType: item.componentType || 'powder', date: item.purchaseDate ? item.purchaseDate.substring(0, 10) : getLocalDate(), vendor: item.vendor || '', brand: item.brand || '', name: item.name || '', typeDetail: item.typeDetail || '', lotId: item.lotId || '', qty: item.qty != null ? String(item.qty) : '', unit: item.unit || '', price: item.price != null ? String(item.price) : '', shipping: item.shipping != null ? String(item.shipping) : '', tax: item.tax != null ? String(item.tax) : '', notes: item.notes || '', status: item.status || 'active', url: item.url || '', imageUrl: item.imageUrl || '', caseCondition: item.caseCondition || '' }); setError(null); setIsFormOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); HAPTIC.click(); }
   function promptDelete(item) { if (!canEdit) return; setItemToDelete(item); setDeleteModalOpen(true); HAPTIC.click(); }
   async function executeDelete() { if (!itemToDelete) return; setIsDeleting(true); try { await deletePurchase(itemToDelete.id); HAPTIC.success(); loadData(); setDeleteModalOpen(false); setItemToDelete(null); } catch (err) { setError(`Failed to delete: ${err.message}`); HAPTIC.error(); setDeleteModalOpen(false); } finally { setIsDeleting(false); } }
-  
+
   // --- SUBMIT HANDLER: SNAKE_CASE PAYLOAD (DB Schema Match) ---
-  async function handleSubmit(e) { 
-      e.preventDefault(); 
-      setLoading(true); 
-      setError(null); 
-      
-      try { 
+  async function handleSubmit(e) {
+      e.preventDefault();
+      setLoading(true);
+      setError(null);
+
+      try {
           // 1. Sanitize Date
           const dateObj = new Date(form.date);
           const validDate = !isNaN(dateObj.getTime()) ? form.date : new Date().toISOString().split('T')[0];
@@ -397,14 +410,14 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
           // 2. Ensure Lot ID
           let finalLotId = String(form.lotId || '').trim();
           if (!finalLotId) {
-              finalLotId = `AUTO-${Date.now()}`; 
+              finalLotId = `AUTO-${Date.now()}`;
           }
 
           // 3. Construct Payload with SNAKE_CASE keys
           // This matches the database schema column names exactly.
-          const payload = { 
+          const payload = {
               ...(editingId && { id: editingId }),
-              
+
               lot_id: finalLotId,
               component_type: String(form.componentType || 'powder'),
               case_condition: String(form.caseCondition || ''),
@@ -412,41 +425,39 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               brand: String(form.brand || '').trim(),
               name: String(form.name || '').trim(),
               type_detail: String(form.typeDetail || '').trim(),
-              
-              qty: parseFloat(form.qty) || 0, 
+
+              qty: parseFloat(form.qty) || 0,
               unit: String(form.unit || 'lb'),
-              
-              price: parseFloat(form.price) || 0, 
-              shipping: parseFloat(form.shipping) || 0, 
-              tax: parseFloat(form.tax) || 0, 
-              
+
+              price: parseFloat(form.price) || 0,
+              shipping: parseFloat(form.shipping) || 0,
+              tax: parseFloat(form.tax) || 0,
+
               vendor: String(form.vendor || '').trim(),
               purchase_date: validDate,
-              
+
               url: String(form.url || ''),
               image_url: String(form.imageUrl || ''),
               status: String(form.status || 'active'),
               notes: String(form.notes || '')
-          }; 
-          
-          console.log("Submitting Payload (Snake Case):", payload); 
+          };
 
-          await addPurchase(payload); 
-          HAPTIC.success(); 
-          setIsFormOpen(false); 
-          loadData(); 
-      } catch (err) { 
+          await addPurchase(payload);
+          HAPTIC.success();
+          setIsFormOpen(false);
+          loadData();
+      } catch (err) {
           console.error("Save Error:", err);
           const msg = err.body ? JSON.stringify(err.body) : err.message;
           if (msg.includes("unique constraint") || msg.includes("lot_id")) {
              setError("Error: This Lot ID already exists.");
           } else {
-             setError(`Failed to save: ${msg}`); 
+             setError(`Failed to save: ${msg}`);
           }
-          HAPTIC.error(); 
-      } finally { 
-          setLoading(false); 
-      } 
+          HAPTIC.error();
+      } finally {
+          setLoading(false);
+      }
   }
 
   const safeFloat = (val) => { const num = parseFloat(val); return isNaN(num) ? 0 : num; }

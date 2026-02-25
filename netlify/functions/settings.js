@@ -22,7 +22,7 @@ export async function handler(event) {
     // 1. Auth Check (Admins Only)
     const user = await getUser(event)
     if (!user || user.role !== 'admin') {
-        return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
+        return { statusCode: 401, headers, body: JSON.stringify({ message: 'Unauthorized' }) }
     }
 
     try {
@@ -45,8 +45,9 @@ export async function handler(event) {
 
         // POST: Save a setting
         if (event.httpMethod === 'POST') {
+            if (!event.body) return { statusCode: 400, headers, body: JSON.stringify({ message: 'Missing request body' }) }
             const { key, value } = JSON.parse(event.body)
-            if (!key) return { statusCode: 400, body: 'Missing Key' }
+            if (!key) return { statusCode: 400, headers, body: JSON.stringify({ message: 'Missing key' }) }
             
             await saveSetting(key, value)
             return { statusCode: 200, headers, body: JSON.stringify({ success: true }) }

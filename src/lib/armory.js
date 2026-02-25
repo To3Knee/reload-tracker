@@ -9,8 +9,10 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
-export async function getFirearms() {
-  const res = await fetch(`${API_BASE_URL}/firearms`, { credentials: 'include' })
+export async function getFirearms(signal) {
+  const opts = { credentials: 'include' }
+  if (signal) opts.signal = signal
+  const res = await fetch(`${API_BASE_URL}/firearms`, opts)
   if (!res.ok) throw new Error('Failed to load armory')
   return await res.json()
 }

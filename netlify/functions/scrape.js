@@ -10,9 +10,9 @@
 
 import * as cheerio from 'cheerio'
 
-const baseHeaders = { 
+const baseHeaders = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*' 
+    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
 }
 
 // ... (Keep existing helpers determineType, toTitleCase, cleanText, guessBrand, extractCaliber) ...

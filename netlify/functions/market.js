@@ -9,6 +9,7 @@
 
 import { listMarket, addListing, updateListing, deleteListing, refreshListing } from '../../backend/marketService.js'
 import { getUserForSessionToken, SESSION_COOKIE_NAME } from '../../backend/authService.js'
+import { toHttpError } from '../../backend/errors.js'
 
 const baseHeaders = { 'Content-Type': 'application/json' }
 
@@ -77,6 +78,6 @@ export async function handler(event) {
     return jsonResponse(405, { message: 'Method Not Allowed' })
 
   } catch (err) {
-    return jsonResponse(500, { message: err.message })
+    return toHttpError(err)
   }
 }
