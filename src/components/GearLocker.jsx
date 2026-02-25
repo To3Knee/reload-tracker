@@ -38,14 +38,20 @@ export function GearLocker() {
   // NEW: Error State
   const [error, setError] = useState(null)
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    const controller = new AbortController()
+    loadData(controller.signal)
+    return () => controller.abort()
+  }, [])
 
-  async function loadData() {
+  async function loadData(signal) {
     try {
-      setGearList(await getGear())
+      setGearList(await getGear(signal))
     } catch (e) {
-      console.error(e)
-      setError('Failed to load gear. Check your connection and try again.')
+      if (e?.name !== 'AbortError') {
+        console.error(e)
+        setError('Failed to load gear. Check your connection and try again.')
+      }
     }
   }
 

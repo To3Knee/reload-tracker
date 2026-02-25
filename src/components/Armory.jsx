@@ -45,14 +45,20 @@ export function Armory({ canEdit }) {
   }
   const [form, setForm] = useState(DEFAULT_FORM)
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    const controller = new AbortController()
+    loadData(controller.signal)
+    return () => controller.abort()
+  }, [])
 
-  async function loadData() {
+  async function loadData(signal) {
     try {
-        const [gData, gearData] = await Promise.all([getFirearms(), getGear()])
+        const [gData, gearData] = await Promise.all([getFirearms(signal), getGear(signal)])
         setGuns(gData)
         setGear(gearData)
-    } catch(e) { console.error(e) }
+    } catch(e) {
+      if (e?.name !== 'AbortError') console.error(e)
+    }
   }
 
   async function handleAutoFill() {

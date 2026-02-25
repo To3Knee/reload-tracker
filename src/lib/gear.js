@@ -9,22 +9,23 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
-async function request(endpoint, method = 'GET', body = null) {
+async function request(endpoint, method = 'GET', body = null, signal = null) {
     const options = {
         method,
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
     }
     if (body) options.body = JSON.stringify(body)
-    
+    if (signal) options.signal = signal
+
     const res = await fetch(`${API_BASE_URL}${endpoint}`, options)
     const data = await res.json()
     if (!res.ok) throw new Error(data.message || 'Request failed')
     return data
 }
 
-export async function getGear() {
-  return await request('/gear', 'GET')
+export async function getGear(signal) {
+  return await request('/gear', 'GET', null, signal)
 }
 
 export async function saveGear(gear) {

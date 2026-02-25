@@ -153,7 +153,7 @@ export async function createPurchase(data, currentUser) {
   } catch (err) {
     // Retry Logic: If we accidentally generated a duplicate (1 in a million), try one more time
     if (err.code === '23505' && !data.lotId) {
-         console.log("Collision detected on Auto-ID, retrying...");
+         console.warn("Collision detected on Auto-ID, retrying...");
          values[1] = generateSystemLotId(data.componentType); // New random ID
          const retryRes = await query(sql, values);
          return mapPurchaseRowToJson(retryRes.rows[0]);

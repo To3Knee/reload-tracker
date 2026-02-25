@@ -26,8 +26,10 @@ export function Batches({ highlightId }) {
   const [verifyDeleteId, setVerifyDeleteId] = useState(null)
 
   useEffect(() => {
+    const controller = new AbortController()
     checkAdmin()
-    loadHistory()
+    loadHistory(controller.signal)
+    return () => controller.abort()
   }, [])
 
   useEffect(() => {
@@ -47,13 +49,13 @@ export function Batches({ highlightId }) {
     setIsAdmin(user && user.role === ROLE_ADMIN)
   }
 
-  async function loadHistory() {
+  async function loadHistory(signal) {
     try {
       setLoading(true)
-      const data = await getBatches()
+      const data = await getBatches(signal)
       setBatches(data)
     } catch (err) {
-      setError('Unable to load batch history.')
+      if (err?.name !== 'AbortError') setError('Unable to load batch history.')
     } finally {
       setLoading(false)
     }
