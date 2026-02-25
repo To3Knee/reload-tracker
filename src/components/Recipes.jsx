@@ -292,113 +292,184 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
     downloadExcel(dataToExport, columns, `reload-tracker-recipes-${filenameSuffix}-${timestamp}`);
   }
 
-  // --- PDF GENERATOR (Professional Design + QR Code + Restored Theme + Big Logo) ---
+  // --- PDF GENERATOR (Precision Engineering Dark Theme v2.0) ---
   async function handleExportPdf(recipe) {
-    if (!recipe) return; 
+    if (!recipe) return;
     HAPTIC.click();
-    
+
     let qrImg = '';
     try {
-        const appUrl = window.location.origin;
-        const qrUrl = `${appUrl}?recipeId=${recipe.id}`;
-        qrImg = await QRCode.toDataURL(qrUrl, { margin: 0, width: 80 });
-    } catch(e) { console.warn("QR Gen Failed", e); }
+      const qrUrl = `${window.location.origin}?recipeId=${recipe.id}`;
+      qrImg = await QRCode.toDataURL(qrUrl, { margin: 0, width: 80, color: { dark: '#d4a843', light: '#060606' } });
+    } catch(e) { console.warn('QR Gen Failed', e); }
 
     const win = window.open('', '_blank');
     if (!win) { setError('Pop-up blocked. Please allow popups.'); return; }
-    win.document.write('<html><body><p>Generating Data Sheet...</p></body></html>');
+    win.document.write('<html><body style="background:#0a0a0a"><p style="color:#4a4844;font-family:monospace;padding:20px;font-size:12px">Generating Data Sheet...</p></body></html>');
 
     setTimeout(() => {
       try {
-          const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-          const resolve = (lotId, type) => { if (!lotId) return '---'; const p = purchases.find(i => String(i.id) === String(lotId)); return p ? `${p.brand || ''} ${p.name || type}`.trim() : `Lot #${lotId}`; }
+        const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+        const resolve = (lotId, type) => { if (!lotId) return '---'; const p = purchases.find(i => String(i.id) === String(lotId)); return p ? `${p.brand || ''} ${p.name || type}`.trim() : `Lot #${lotId}`; }
+        const resolveLotId = (lotId) => { if (!lotId) return null; const p = purchases.find(i => String(i.id) === String(lotId)); return p ? (p.lotId || `LOT-${p.id}`) : `ID:${lotId}`; }
 
-          const powderName = esc(recipe.powderName || resolve(recipe.powderLotId, 'Powder'))
-          const bulletName = esc(recipe.bulletName || resolve(recipe.bulletLotId, 'Bullet'))
-          const primerName = esc(recipe.primerName || resolve(recipe.primerLotId, 'Primer'))
-          const caseName   = esc(recipe.caseName   || resolve(recipe.caseLotId,   'Brass'))
+        const powderName   = esc(recipe.powderName || resolve(recipe.powderLotId, 'Powder'))
+        const bulletName   = esc(recipe.bulletName || resolve(recipe.bulletLotId, 'Bullet'))
+        const primerName   = esc(recipe.primerName || resolve(recipe.primerLotId, 'Primer'))
+        const caseName     = esc(recipe.caseName   || resolve(recipe.caseLotId,   'Brass'))
+        const powderLotRef = resolveLotId(recipe.powderLotId)
+        const bulletLotRef = resolveLotId(recipe.bulletLotId)
+        const primerLotRef = resolveLotId(recipe.primerLotId)
+        const caseLotRef   = resolveLotId(recipe.caseLotId)
+        const hasLots      = powderLotRef || bulletLotRef || primerLotRef || caseLotRef
 
-          const logoUrl = `${window.location.origin}/logo.png`;
-          const name    = esc(recipe.name    || 'Untitled')
-          const caliber = esc(recipe.caliber || 'Unknown')
-          const date    = new Date().toLocaleDateString();
+        const logoUrl  = `${window.location.origin}/logo.png`
+        const name     = esc(recipe.name    || 'Untitled')
+        const caliber  = esc(recipe.caliber || 'Unknown')
+        const date     = new Date().toLocaleDateString()
+        const profile  = recipe.profileType ? recipe.profileType.charAt(0).toUpperCase() + recipe.profileType.slice(1) : ''
 
-          const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${name}</title><style>
-          @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700;900&display=swap');
-          @page{margin:0.25in;size:letter portrait}
-          body{margin:0;padding:20px;font-family:'Inter',sans-serif;background:#000;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-          .card{width:6in;min-height:4in;height:auto;background:#fdfbf7;position:relative;display:flex;flex-direction:column;overflow:visible;box-sizing:border-box}
-          
-          .header{background:#111;color:#fff;padding:.8rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid #b33c3c}
-          .header-text h1{margin:0;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
-          .header-text h2{margin:2px 0 0 0;font-size:11px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:.2em}
-          .header-right { display: flex; align-items: center; gap: 15px; }
-          
-          /* FIX: Logo size increased to 75px */
-          .logo{height:75px;width:auto}
-          .qr{height:40px;width:40px;background:white;padding:2px;border-radius:2px}
-          
-          .content{padding:1.5rem 2rem;flex:1}
-          
-          .section-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
-          
-          .stat-row{display:flex;flex-direction:column;border-bottom:1px solid #e5e5e5;padding-bottom:4px;margin-bottom:4px}
-          .stat-row:last-child{border-bottom:none}
-          .stat-label{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-bottom:1px}
-          .stat-value{font-size:11px;font-weight:700;color:#000;font-family:'JetBrains Mono',monospace}
-          
-          .warning-text{color:#b33c3c}
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${name} — Load Data Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+@page { size: letter portrait; margin: 0.4in 0.5in; }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.card { max-width: 7.5in; margin: 0 auto; background: #0a0a0a; }
+/* HEADER */
+.hdr { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #060606; border-bottom: 1px solid #2a2a2a; position: relative; }
+.hdr::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #b87333 20%, #d4a843 50%, #b87333 80%, transparent); }
+.eyebrow { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: #b87333; margin-bottom: 4px; }
+.rname { font-size: 22px; font-weight: 900; color: #f0ece4; line-height: 1; text-transform: uppercase; letter-spacing: -0.02em; }
+.rsub { font-size: 10px; color: #7a8190; margin-top: 4px; letter-spacing: 0.05em; }
+.hdr-r { display: flex; align-items: center; gap: 12px; }
+.logo { height: 60px; width: auto; }
+.qr-box { background: #060606; border: 1px solid #2a2a2a; padding: 3px; border-radius: 3px; }
+.qr-img { width: 50px; height: 50px; display: block; }
+/* CONTENT */
+.content { padding: 16px 20px 12px; }
+/* SECTION EYEBROW */
+.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.28em; color: #b87333; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 16px; }
+.sect:first-child { margin-top: 0; }
+.sect::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #2a2a2a, transparent); }
+/* COMPONENT GRID */
+.comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.comp-card { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 4px; padding: 8px 10px; position: relative; overflow: hidden; }
+.comp-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, #2a2a2a 0%, transparent 100%); }
+.clabel { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #4a4844; margin-bottom: 3px; }
+.cval { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #f0ece4; }
+.cval.cu { color: #d4a843; }
+.cval.wn { color: #e07a5f; }
+/* BALLISTICS ROW */
+.blt-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.blt-card { background: #080808; border: 1px solid #1a1a1a; border-radius: 4px; padding: 7px 8px; text-align: center; }
+.blabel { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #4a4844; margin-bottom: 3px; }
+.bval { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #d4a843; }
+/* LOAD SPECS ROW */
+.spec-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.spec-card { background: #080808; border: 1px solid #1a1a1a; border-radius: 4px; padding: 7px 10px; }
+/* LOT IDs */
+.lot-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.lot-tag { font-family: 'JetBrains Mono', monospace; font-size: 7.5px; font-weight: 700; color: #b87333; border: 1px solid #2a2a2a; border-radius: 3px; padding: 3px 7px; background: #060606; letter-spacing: 0.08em; }
+.lot-tag span { color: #4a4844; margin-right: 4px; font-weight: 400; }
+/* RANGE TABLE */
+.tbl-wrap { background: #080808; border: 1px solid #1e1e1e; border-radius: 4px; overflow: hidden; }
+.ws-table { width: 100%; border-collapse: collapse; }
+.ws-table th { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: #4a4844; text-align: left; padding: 6px 8px; border-bottom: 1px solid #1e1e1e; background: #060606; }
+.ws-table td { height: 28px; border-bottom: 1px solid #111; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #1e1e1e; padding: 0 8px; }
+.ws-table tr:last-child td { border-bottom: none; }
+/* NOTES */
+.notes-box { background: #080808; border: 1px solid #1e1e1e; border-left: 2px solid #b87333; border-radius: 0 4px 4px 0; padding: 10px 14px; }
+.notes-body { font-family: 'JetBrains Mono', monospace; font-size: 9px; line-height: 1.6; color: #7a8190; white-space: pre-wrap; }
+/* FOOTER */
+.footer { display: flex; justify-content: space-between; align-items: center; padding: 8px 20px; background: #060606; border-top: 1px solid #1a1a1a; margin-top: 14px; }
+.footer-l { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: #2a2a2a; text-transform: uppercase; letter-spacing: 0.2em; }
+.footer-r { font-size: 7px; color: #8b2a2a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+/* CLOSE BTN */
+.close-btn { position: fixed; top: 12px; right: 12px; background: #2a2a2a; color: #ccc; padding: 6px 14px; border-radius: 4px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid #3a3a3a; cursor: pointer; }
+@media screen { body { padding: 24px; } }
+@media print { .close-btn { display: none !important; } }
+</style>
+</head><body>
+<button onclick="window.close()" class="close-btn">✕ Close</button>
+<div class="card">
+  <div class="hdr">
+    <div>
+      <div class="eyebrow">Precision Load Data Sheet · Reload Tracker</div>
+      <div class="rname">${name}</div>
+      <div class="rsub">${caliber}${profile ? ' · ' + profile : ''} · ${date}</div>
+    </div>
+    <div class="hdr-r">
+      ${qrImg ? `<div class="qr-box"><img src="${qrImg}" class="qr-img"/></div>` : ''}
+      <img src="${logoUrl}" class="logo" alt="Reload Tracker"/>
+    </div>
+  </div>
+  <div class="content">
 
-          .worksheet{margin-top:20px;border:1px solid #ddd;border-radius:4px;padding:10px;background:#fff}
-          .worksheet-title{font-size:10px;font-weight:700;color:#b33c3c;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:block}
-          .ws-table{width:100%;border-collapse:collapse}
-          .ws-table th{text-align:left;font-size:8px;color:#666;border-bottom:1px solid #000;padding:4px}
-          .ws-table td{border-bottom:1px dashed #ccc;height:25px}
+    <div class="sect">Component Specifications</div>
+    <div class="comp-grid">
+      <div class="comp-card"><div class="clabel">Bullet</div><div class="cval">${bulletName}</div></div>
+      <div class="comp-card"><div class="clabel">Powder</div><div class="cval">${powderName}</div></div>
+      <div class="comp-card"><div class="clabel">Charge Weight</div><div class="cval cu">${recipe.chargeGrains ? esc(String(recipe.chargeGrains)) + ' gr' : '---'}</div></div>
+      <div class="comp-card"><div class="clabel">Primer ⚠</div><div class="cval wn">${primerName}</div></div>
+      <div class="comp-card"><div class="clabel">Brass / Case</div><div class="cval">${caseName}</div></div>
+      <div class="comp-card"><div class="clabel">C.O.A.L.</div><div class="cval cu">${recipe.coal ? esc(String(recipe.coal)) + '"' : '---'}</div></div>
+    </div>
 
-          .notes-section{background:#f5f5f5;border-radius:8px;padding:1rem;border:1px solid #ddd;margin-top:20px}
-          .notes-label{font-size:9px;font-weight:700;color:#b33c3c;text-transform:uppercase;letter-spacing:.15em;margin-bottom:.25rem;display:block}
-          .notes-body{font-size:10px;line-height:1.4;color:#333;white-space:pre-wrap}
+    <div class="sect">Ballistic Parameters</div>
+    <div class="blt-grid">
+      <div class="blt-card"><div class="blabel">Bullet Wt</div><div class="bval">${recipe.bulletWeightGr ? esc(String(recipe.bulletWeightGr)) + ' gr' : '---'}</div></div>
+      <div class="blt-card"><div class="blabel">Target Vel</div><div class="bval">${recipe.muzzleVelocityFps ? esc(String(recipe.muzzleVelocityFps)) + ' fps' : '---'}</div></div>
+      <div class="blt-card"><div class="blabel">Zero Dist</div><div class="bval">${recipe.zeroDistanceYards ? esc(String(recipe.zeroDistanceYards)) + ' yds' : '---'}</div></div>
+      <div class="blt-card"><div class="blabel">Case Cap</div><div class="bval">${recipe.caseCapacity ? esc(String(recipe.caseCapacity)) + ' gr H₂O' : '---'}</div></div>
+    </div>
 
-          .footer{padding:.5rem 2rem;background:#e5e5e5;text-align:center;font-size:8px;color:#666;text-transform:uppercase;letter-spacing:.1em;margin-top:auto}
-          .close-btn{position:fixed;top:10px;right:10px;z-index:9999;background:rgba(0,0,0,.8);color:#fff;padding:12px 24px;border-radius:50px;font-family:sans-serif;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 15px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);cursor:pointer;backdrop-filter:blur(10px)}
-          @media print{.close-btn{display:none!important}}</style></head><body><button onclick="window.close()" class="close-btn">Close X</button><div class="card"><div class="header"><div class="header-text"><h1>${name}</h1><h2>${caliber} • ${date}</h2></div><div class="header-right">${qrImg ? `<img src="${qrImg}" class="qr"/>` : ''}<img src="${logoUrl}" class="logo" alt="Reload Tracker"/></div></div><div class="content">
-          
-          <div class="section-grid">
-            <div>
-                <div class="stat-row"><span class="stat-label">Bullet</span><span class="stat-value">${bulletName}</span></div>
-                <div class="stat-row"><span class="stat-label">Powder</span><span class="stat-value">${powderName}</span></div>
-                <div class="stat-row"><span class="stat-label">Charge Wt</span><span class="stat-value">${recipe.chargeGrains ? recipe.chargeGrains + ' gr' : '---'}</span></div>
-                <div class="stat-row"><span class="stat-label">Primer</span><span class="stat-value warning-text">${primerName}</span></div>
-                <div class="stat-row"><span class="stat-label">Brass</span><span class="stat-value">${caseName}</span></div>
-            </div>
-            <div>
-                <div class="stat-row"><span class="stat-label">C.O.A.L.</span><span class="stat-value">${recipe.coal ? recipe.coal + '"' : '---'}</span></div>
-                <div class="stat-row"><span class="stat-label">Target Vel</span><span class="stat-value">${recipe.muzzleVelocityFps ? recipe.muzzleVelocityFps + ' fps' : '---'}</span></div>
-                <div class="stat-row"><span class="stat-label">Intended Zero</span><span class="stat-value">${recipe.zeroDistanceYards ? recipe.zeroDistanceYards + ' yds' : '---'}</span></div>
-                <div class="stat-row"><span class="stat-label">Case Cap</span><span class="stat-value">${recipe.caseCapacity ? recipe.caseCapacity + ' gr H2O' : '---'}</span></div>
-            </div>
-          </div>
+    <div class="sect">Load Specs</div>
+    <div class="spec-row">
+      <div class="spec-card"><div class="clabel">Std Lot Size</div><div class="cval cu">${recipe.lotSize ? esc(String(recipe.lotSize)) + ' rds' : '---'}</div></div>
+      <div class="spec-card"><div class="clabel">Brass Reuse</div><div class="cval">${recipe.brassReuse ? esc(String(recipe.brassReuse)) + 'x' : '---'}</div></div>
+      <div class="spec-card"><div class="clabel">Profile</div><div class="cval">${profile || '---'}</div></div>
+    </div>
 
-          <div class="worksheet">
-            <span class="worksheet-title">Range Results (Write-In)</span>
-            <table class="ws-table">
-                <thead><tr><th width="25%">Date / Temp</th><th width="20%">Avg Vel</th><th width="15%">SD</th><th width="15%">ES</th><th>Group Size</th></tr></thead>
-                <tbody>
-                    <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                    <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                    <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                </tbody>
-            </table>
-          </div>
+    ${hasLots ? `
+    <div class="sect">Component LOT IDs</div>
+    <div class="lot-row">
+      ${powderLotRef ? `<div class="lot-tag"><span>PWD</span>${esc(powderLotRef)}</div>` : ''}
+      ${bulletLotRef ? `<div class="lot-tag"><span>BLT</span>${esc(bulletLotRef)}</div>` : ''}
+      ${primerLotRef ? `<div class="lot-tag"><span>PRM</span>${esc(primerLotRef)}</div>` : ''}
+      ${caseLotRef   ? `<div class="lot-tag"><span>BRS</span>${esc(caseLotRef)}</div>` : ''}
+    </div>
+    ` : ''}
 
-          <div class="notes-section">
-            <span class="notes-label">Load Notes</span>
-            <div class="notes-body">${esc(recipe.notes || 'No specific notes.')}</div>
-          </div>
+    <div class="sect">Range Results (Write-In)</div>
+    <div class="tbl-wrap">
+      <table class="ws-table">
+        <thead><tr><th width="20%">Date / Temp</th><th width="16%">Avg Vel (fps)</th><th width="10%">SD</th><th width="10%">ES</th><th width="16%">Group Size</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
 
-          </div><div class="footer">GENERATED BY RELOAD TRACKER • SAFETY FIRST • VERIFY ALL LOADS</div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);</script></body></html>`;
-          
-          win.document.open(); win.document.write(html); win.document.close();
+    ${recipe.notes ? `
+    <div class="sect">Load Notes</div>
+    <div class="notes-box"><div class="notes-body">${esc(recipe.notes)}</div></div>
+    ` : ''}
+
+  </div>
+  <div class="footer">
+    <div class="footer-l">Generated ${date} · Reload Tracker · Recipe ID: ${recipe.id || '—'}</div>
+    <div class="footer-r">⚠ Verify all loads · Never exceed max charge · Safety first</div>
+  </div>
+</div>
+<script>window.onload = () => { setTimeout(() => window.print(), 600); }<\/script>
+</body></html>`;
+
+        win.document.open(); win.document.write(html); win.document.close();
       } catch (e) { setError(`Failed to generate PDF: ${e.message}`); }
     }, 100);
   }

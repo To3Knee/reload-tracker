@@ -36,9 +36,9 @@ const renderOptionLabel = p => `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'}$
 
 function BreakdownRow({ label, value }) {
   return (
-    <div className="flex items-center justify-between bg-black/40 rounded-xl px-3 py-2">
-      <span className="text-slate-400 text-xs">{label}</span>
-      <span className="font-semibold text-slate-100 text-xs" title={toPrecisionMoney(value)}>{toPrecisionMoney(value)}</span>
+    <div className="rt-card flex items-center justify-between p-2">
+      <span className="text-steel-500 text-[11px]">{label}</span>
+      <span className="font-mono text-[#d4a843] text-[11px]" title={toPrecisionMoney(value)}>{toPrecisionMoney(value)}</span>
     </div>
   )
 }
@@ -323,7 +323,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Caliber</label>
+              <label className="rt-label">Caliber</label>
               {calibers.length === 0 ? (
                 <input type="text" className={inputClass} value={caliber} onChange={e => setCaliber(e.target.value)} placeholder="e.g. 9mm, .223 Rem" />
               ) : (
@@ -334,7 +334,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
               )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Recipe (optional)</label>
+              <label className="rt-label">Recipe (optional)</label>
               {recipesProp.length === 0 ? (
                 <div className="text-[11px] text-slate-500 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-xl px-3 py-1.5">No recipes found.</div>
               ) : (
@@ -349,11 +349,11 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           {/* Inputs Group 2 */}
           <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-800/80">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Charge weight (gr)</label>
+              <label className="rt-label">Charge weight (gr)</label>
               <input type="number" className={inputClass} value={chargeGrains} onChange={e => setChargeGrains(e.target.value)} min="0" step="0.01" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Lot size (rounds)</label>
+              <label className="rt-label">Lot size (rounds)</label>
               <input type="number" className={inputClass} value={lotSize} onChange={e => setLotSize(e.target.value)} min="0" />
             </div>
           </div>
@@ -361,28 +361,28 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           {/* Inputs Group 3 */}
           <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-800/80">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Powder lot</label>
+              <label className="rt-label">Powder lot</label>
               <select className={inputClass} value={powderId} onChange={e => setPowderId(e.target.value)}>
                 <option value="">Select powder...</option>
                 {powderLots.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Bullet lot</label>
+              <label className="rt-label">Bullet lot</label>
               <select className={inputClass} value={bulletId} onChange={e => setBulletId(e.target.value)}>
                 <option value="">Select bullet...</option>
                 {bulletLots.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Primer lot</label>
+              <label className="rt-label">Primer lot</label>
               <select className={inputClass} value={primerId} onChange={e => setPrimerId(e.target.value)}>
                 <option value="">Select primer...</option>
                 {primerLots.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Brass lot</label>
+              <label className="rt-label">Brass lot</label>
               <select className={inputClass} value={caseId} onChange={e => setCaseId(e.target.value)}>
                 <option value="">Select brass...</option>
                 {caseLots.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}
@@ -391,7 +391,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           </div>
 
           <div className="pt-4 border-t border-slate-800/80">
-             <label className="block text-xs font-semibold text-emerald-400 mb-1 flex items-center gap-1"><DollarSign size={12}/> Compare vs Factory Ammo</label>
+             <label className="block text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-500 mb-1 flex items-center gap-1"><DollarSign size={12}/> Compare vs Factory Ammo</label>
              <div className="grid grid-cols-2 gap-3">
                  <select 
                     className={inputClass + " border-emerald-500/30 focus:border-emerald-500 focus:ring-emerald-500/50"} 
@@ -426,10 +426,10 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
 
           {scenarios.length > 0 && (
             <div className="border-t border-red-500/20 pt-4 space-y-2">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-2">SAVED CONFIGURATIONS</p>
+              <p className="rt-section-eyebrow mb-2">SAVED CONFIGURATIONS</p>
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {scenarios.map(s => (
-                  <div key={s.id} className="flex items-center justify-between bg-black/40 rounded-xl px-3 py-2 text-[11px] text-slate-300">
+                  <div key={s.id} className="rt-card flex items-center justify-between px-3 py-2 text-[11px] text-steel-300">
                     <div>
                       <div className="font-semibold text-slate-100">{s.name}</div>
                       <div className="text-slate-400">{toStandardMoney(s.cost.perRound)} /rnd</div>
@@ -451,7 +451,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           {activeRecipe && (
               <div className="rt-card p-6 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 blur-3xl rounded-full"></div>
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-2">Loadout Profile</p>
+                  <p className="rt-section-eyebrow mb-2">Loadout Profile</p>
                   
                   <div className="mb-4">
                       <h3 className="text-xl font-bold text-white">{activeRecipeLabel}</h3>
@@ -469,7 +469,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           <div className="glass p-6">
             <div>
               <div className="flex items-center justify-between mb-2">
-                   <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Cost Analysis</p>
+                   <p className="rt-section-eyebrow">Cost Analysis</p>
                    <div className="group relative">
                        <Info size={14} className="text-slate-600 hover:text-slate-400 cursor-help"/>
                        <div className="absolute right-0 bottom-6 w-48 bg-black border border-slate-700 p-2 rounded text-[10px] text-slate-300 opacity-0 group-hover:opacity-100 transition pointer-events-none z-50">
@@ -547,7 +547,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
 
           {/* 3. COMPONENT BREAKDOWN */}
           <div className="glass p-6">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-3">Components (Unit Cost)</p>
+            <p className="rt-section-eyebrow mb-3">Components (Unit Cost)</p>
             <div className="grid grid-cols-2 gap-3">
               <BreakdownRow label="Powder" value={breakdown?.powder.perRound} />
               <BreakdownRow label="Bullet" value={breakdown?.bullet.perRound} />

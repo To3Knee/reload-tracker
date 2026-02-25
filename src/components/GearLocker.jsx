@@ -130,18 +130,25 @@ export function GearLocker() {
       try { await deleteGear(id); HAPTIC.success(); loadData() } catch (e) { HAPTIC.error() }
   }
 
-  const inputClass = "w-full bg-black/60 border border-zinc-700 rounded-xl px-3 py-2 text-[11px] text-zinc-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 placeholder:text-zinc-600"
-  const labelClass = "block text-xs font-semibold text-zinc-400 mb-1"
+  const isPWA = typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true)
+  const inputClass = 'rt-input'
+  const labelClass = 'rt-label'
 
   return (
     <div className="space-y-6">
 
         {/* TOP-LEVEL ERROR BANNER (load failures shown here) */}
         {error && !isFormOpen && (
-            <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in">
-                <AlertTriangle className="text-red-500 flex-shrink-0" size={18} />
-                <p className="text-xs text-red-200/80 flex-1">{error}</p>
-                <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={14}/></button>
+            <div className="flex items-start gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in">
+                <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+                <div className="flex-1 min-w-0">
+                    <p className="text-xs text-red-200/80">{error}</p>
+                    {isPWA && <p className="text-[10px] text-red-400/60 mt-1">Running as installed app — try logging out and back in within the app.</p>}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => { setError(null); loadData(); }} className="rt-btn rt-btn-ghost text-[9px]">Retry</button>
+                    <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={14}/></button>
+                </div>
             </div>
         )}
 
@@ -217,7 +224,7 @@ export function GearLocker() {
 
         <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
             {gearList.map(item => (
-                <div key={item.id} className="bg-black/40 border border-zinc-800 rounded-xl overflow-hidden flex flex-col hover:border-zinc-600 transition group min-h-[96px]">
+                <div key={item.id} className="rt-card flex flex-col hover:border-steel-600 transition-colors group min-h-[96px]">
                     <div className="flex h-full">
                         <div className="w-24 bg-black flex-shrink-0 border-r border-zinc-800 relative">
                             {item.imageUrl ? (
@@ -248,11 +255,11 @@ export function GearLocker() {
                                     {item.url && <a href={item.url} target="_blank" className="text-zinc-500 hover:text-red-400 transition"><ExternalLink size={12}/></a>}
                                 </div>
                                 <div className="flex gap-2 flex-shrink-0">
-                                    <button onClick={() => handleEdit(item)} className="p-1.5 rounded bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition"><Edit size={12}/></button>
+                                    <button onClick={() => handleEdit(item)} className="rt-btn rt-btn-icon"><Edit size={12}/></button>
                                     {verifyDeleteId === item.id ? (
-                                        <button onClick={() => handleDelete(item.id)} className="px-2 py-1 rounded bg-red-600 text-[9px] text-white font-bold animate-in fade-in zoom-in">Confirm</button>
+                                        <button onClick={() => handleDelete(item.id)} className="rt-btn rt-btn-primary animate-in fade-in zoom-in">Confirm</button>
                                     ) : (
-                                        <button onClick={() => setVerifyDeleteId(item.id)} className="p-1.5 rounded bg-zinc-800 text-zinc-500 hover:text-red-400 hover:bg-zinc-700 transition"><Trash2 size={12}/></button>
+                                        <button onClick={() => setVerifyDeleteId(item.id)} className="rt-btn rt-btn-icon hover:text-red-400 hover:border-red-900"><Trash2 size={12}/></button>
                                     )}
                                 </div>
                             </div>
