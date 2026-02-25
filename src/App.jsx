@@ -175,7 +175,7 @@ export default function App() {
           <p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-4">Reload Tracker</p>
           <h1 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-[0.1em] text-white">For Responsible <span className="text-red-600">Adult Reloaders</span> Only.</h1>
           <p className="text-sm text-slate-400 mb-8">By continuing you confirm you are of legal age.</p>
-          <button onClick={confirmAge} className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-red-700 hover:bg-red-600 text-sm font-semibold shadow-lg shadow-red-900/40 transition active:scale-95">I am 21 or older</button>
+          <button onClick={confirmAge} className="rt-btn rt-btn-primary px-8 py-3 text-sm font-semibold shadow-lg shadow-red-900/40 active:scale-95">I am 21 or older</button>
           <div className="mt-4 text-[10px] text-slate-600">Reload Tracker {APP_VERSION_LABEL}</div>
         </div>
       </div>
@@ -257,7 +257,7 @@ export default function App() {
         {isAiOpen && <AiModal open={isAiOpen} onClose={() => setIsAiOpen(false)} />}
       </Suspense>
 
-      <div className="hidden md:block fixed bottom-2 right-3 z-50 text-[10px] text-slate-500"><span className="px-2 py-[2px] rounded-full border border-red-600/40 bg-black/70 backdrop-blur">Reload Tracker {APP_VERSION_LABEL}</span></div>
+      <div className="hidden md:block fixed bottom-2 right-3 z-50 text-[10px] text-steel-500"><span className="px-2 py-[2px] rounded border border-red-600/30 bg-black/70 backdrop-blur font-mono tracking-wider">Reload Tracker {APP_VERSION_LABEL}</span></div>
     </div>
   )
 }

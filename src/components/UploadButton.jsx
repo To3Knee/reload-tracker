@@ -81,7 +81,7 @@ export default function UploadButton({ onUploadComplete, currentImageUrl }) {
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center z-20">
           <button
             onClick={handleRemove}
-            className="flex items-center gap-2 px-4 py-2 bg-red-900/80 text-red-100 rounded-full border border-red-500/50 hover:bg-red-800 transition text-xs font-bold"
+            className="rt-btn rt-btn-danger"
           >
             <X size={14} /> Remove Photo
           </button>

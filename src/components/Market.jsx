@@ -211,20 +211,20 @@ export function Market({ user }) {
                                     
                                     {/* TYPE BADGE - UPDATED TO RED */}
                                     <div className="absolute top-2 left-2 z-10">
-                                         <span className="text-[9px] px-2 py-[1px] rounded-full bg-red-900/60 border border-red-500/40 text-red-200 backdrop-blur-md uppercase tracking-wide font-bold shadow-lg shadow-black/50">
+                                         <span className="text-[9px] px-2 py-[1px] rounded bg-red-900/60 border border-red-500/40 text-red-200 backdrop-blur-md uppercase tracking-wide font-bold shadow-lg shadow-black/50">
                                             {typeLabel}
                                         </span>
                                     </div>
 
                                     {/* ACTIONS (Top Right) */}
                                     <div className="absolute top-2 right-2 flex gap-2">
-                                        <button onClick={() => handleRefresh(item.id)} className={`p-2 rounded-full bg-black/60 text-zinc-300 hover:text-white backdrop-blur-md border border-zinc-700 ${refreshingId === item.id ? 'animate-spin text-emerald-400' : ''}`}>
+                                        <button onClick={() => handleRefresh(item.id)} className={`rt-btn rt-btn-icon backdrop-blur-md ${refreshingId === item.id ? 'animate-spin text-emerald-400' : ''}`}>
                                             <RefreshCw size={14} />
                                         </button>
-                                        <button onClick={() => setEditingItem(item)} className="p-2 rounded-full bg-black/60 text-zinc-300 hover:text-amber-400 backdrop-blur-md border border-zinc-700">
+                                        <button onClick={() => setEditingItem(item)} className="rt-btn rt-btn-icon backdrop-blur-md hover:text-amber-400 hover:border-amber-700">
                                             <Edit size={14} />
                                         </button>
-                                        <button onClick={() => promptDelete(item)} className="p-2 rounded-full bg-black/60 text-zinc-300 hover:text-red-400 backdrop-blur-md border border-zinc-700">
+                                        <button onClick={() => promptDelete(item)} className="rt-btn rt-btn-icon backdrop-blur-md hover:text-red-400 hover:border-red-700">
                                             <Trash2 size={14} />
                                         </button>
                                     </div>
@@ -259,7 +259,7 @@ export function Market({ user }) {
                                             href={item.url} 
                                             target="_blank" 
                                             rel="noreferrer" 
-                                            className="px-3 py-1 bg-emerald-900/20 border border-emerald-500/30 text-emerald-400 rounded-full font-bold uppercase tracking-wide hover:bg-emerald-900/40 hover:border-emerald-500/50 hover:text-emerald-300 transition flex items-center gap-1"
+                                            className="rt-btn rt-btn-ghost text-emerald-500 hover:text-emerald-400 hover:border-emerald-700"
                                         >
                                             Store Page <ExternalLink size={10} />
                                         </a>

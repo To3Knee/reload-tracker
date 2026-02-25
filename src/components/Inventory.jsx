@@ -127,11 +127,11 @@ export function Inventory({ purchases = [], selectedRecipe }) {
   return (
     <div className="space-y-6">
       {/* HUD HEADER */}
-      <div className="flex items-start gap-4">
-        <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
+      <div className="rt-section">
+        <div className="rt-section-bar" />
         <div>
-            <span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Supply Chain</span>
-            <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">INVENTORY</h2>
+          <span className="rt-section-eyebrow">Supply Chain</span>
+          <h2 className="rt-section-title">INVENTORY</h2>
         </div>
       </div>
 
@@ -276,10 +276,10 @@ function LotCard({ lot }) {
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,_#b33c3c_0,_transparent_60%)]" />
         
         <div className="relative z-10 flex items-start justify-between px-3 pt-2">
-          <span className="inline-flex items-center text-[9px] font-mono px-2 py-[1px] rounded-full bg-black/80 border border-red-500/40 text-red-200">
+          <span className="inline-flex items-center text-[9px] font-mono px-2 py-[1px] rounded bg-black/80 border border-red-500/40 text-red-200">
             {lot.lotId || 'LOT'}
           </span>
-          <span className="text-[9px] px-2 py-[1px] rounded-full bg-black/60 border border-slate-700 text-slate-300">
+          <span className="text-[9px] px-2 py-[1px] rounded bg-black/60 border border-slate-700 text-slate-300">
             {typeLabel}
           </span>
         </div>

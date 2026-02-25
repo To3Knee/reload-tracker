@@ -153,7 +153,7 @@ export function GearLocker() {
         )}
 
         {isFormOpen && (
-            <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in">
+            <div className="glass p-6 border border-red-500/30 animation-fade-in">
                 <h3 className="text-sm font-bold text-zinc-200 mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2">
                     {editingId ? 'Edit Gear' : 'New Gear'}
                 </h3>
@@ -200,7 +200,7 @@ export function GearLocker() {
                         <div><label className={labelClass}>Price</label><input type="number" className={inputClass} value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="0.00" /></div>
                     </div>
                     
-                    <div className="bg-black/20 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between">
+                    <div className="rt-card p-3 flex flex-col justify-between">
                         <label className={labelClass}>Photo</label>
                         <UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} />
                     </div>
@@ -208,8 +208,8 @@ export function GearLocker() {
                     <div><label className={labelClass}>Notes</label><textarea className={inputClass + ' h-20 resize-none'} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
 
                     <div className="flex justify-end gap-3 pt-2">
-                        <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-full border border-zinc-600 text-zinc-300 hover:bg-zinc-800/60 text-xs font-bold transition">Cancel</button>
-                        <button type="submit" disabled={loading} className="px-6 py-2 rounded-full bg-red-700 hover:bg-red-600 text-white text-xs font-bold transition shadow-lg shadow-red-900/20">{loading ? 'Saving...' : 'Save Gear'}</button>
+                        <button type="button" onClick={() => setIsFormOpen(false)} className="rt-btn rt-btn-secondary">Cancel</button>
+                        <button type="submit" disabled={loading} className="rt-btn rt-btn-primary shadow-lg shadow-red-900/20">{loading ? 'Saving...' : 'Save Gear'}</button>
                     </div>
                 </form>
             </div>
@@ -236,7 +236,7 @@ export function GearLocker() {
                                 <div className="flex items-center gap-2 mt-1">
                                     <p className="text-[10px] text-zinc-400 truncate flex-1">{item.brand} {item.model}</p>
                                     {item.ownerName && (
-                                        <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-zinc-900/80 border border-zinc-700 text-zinc-500 flex items-center gap-1 flex-shrink-0" title={`Added by ${item.ownerName}`}>
+                                        <span className="text-[8px] px-1.5 py-0.5 rounded bg-zinc-900/80 border border-zinc-700 text-zinc-500 flex items-center gap-1 flex-shrink-0" title={`Added by ${item.ownerName}`}>
                                             <User size={8} /> {item.ownerName}
                                         </span>
                                     )}

@@ -422,21 +422,21 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
       return guessCaseLength(form.caliber) 
   })()
 
-  const inputClass = 'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/60 placeholder:text-slate-600'
-  const labelClass = 'block text-xs font-semibold text-slate-400 mb-1'
+  const inputClass = 'rt-input'
+  const labelClass = 'rt-label'
 
   return (
     <div className="space-y-6">
       
-      <div className="flex items-start gap-4">
-        <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
+      <div className="rt-section">
+        <div className="rt-section-bar" />
         <div>
-            <span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Load Data</span>
-            <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">RECIPES</h2>
+          <span className="rt-section-eyebrow">Load Data</span>
+          <h2 className="rt-section-title">RECIPES</h2>
         </div>
       </div>
 
-      <div className="glass rounded-2xl p-6 space-y-4">
+      <div className="glass p-6 space-y-4">
         <div><h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest border-b border-slate-800 pb-2 mb-4">{editingRecipe ? 'MODIFY LOAD DATA' : 'NEW LOAD DEFINITION'}</h3></div>
         {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
 
@@ -458,7 +458,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
                 </div>
 
                 {/* 2. INGREDIENTS */}
-                <div className="flex-1 space-y-4 bg-black/20 rounded-xl p-4 border border-slate-800/50">
+                <div className="flex-1 space-y-4 rt-card p-4">
                     <p className="text-[10px] uppercase text-slate-500 tracking-[0.2em] mb-2 border-b border-slate-800 pb-1">Ingredients</p>
                     <div><FieldLabel label="Powder" help="Select from Inventory." /><select className={inputClass} value={form.powderLotId} onChange={e => updateField('powderLotId', e.target.value)}><option value="">Select Powder...</option>{powders.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}</select></div>
                     <div><FieldLabel label="Charge (gr)" help="Powder weight." /><input type="number" min="0" step="0.01" className={inputClass} value={form.chargeGrains} onChange={e => updateField('chargeGrains', e.target.value)} /></div>
@@ -509,18 +509,18 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
             </div>
 
             <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 pt-2 border-t border-slate-800/50">
-              {editingRecipe ? (<button type="button" onClick={resetForm} className="inline-flex items-center px-4 py-2 rounded-full border border-slate-600 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 transition">Cancel edit</button>) : (<button type="button" onClick={resetForm} className="inline-flex items-center px-4 py-2 rounded-full border border-slate-600 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 transition">Clear</button>)}
-              <button type="submit" disabled={saving} className="inline-flex items-center px-5 py-2 rounded-full bg-red-700 hover:bg-red-600 text-xs font-semibold shadow-lg shadow-red-900/40 transition disabled:opacity-60 text-white">{saving ? 'Saving…' : 'Save Recipe'}</button>
+              {editingRecipe ? (<button type="button" onClick={resetForm} className="inline-flex items-center rt-btn rt-btn-secondary">Cancel edit</button>) : (<button type="button" onClick={resetForm} className="inline-flex items-center rt-btn rt-btn-secondary">Clear</button>)}
+              <button type="submit" disabled={saving} className="rt-btn rt-btn-primary disabled:opacity-60">{saving ? 'Saving…' : 'Save Recipe'}</button>
             </div>
           </form>
         ) : (<div className="mt-3 text-xs text-slate-400 border border-dashed border-slate-700/70 rounded-xl px-3 py-3 bg-black/30">Read-only mode. Sign in as a Reloader.</div>)}
       </div>
 
       {/* List */}
-      <div className="glass rounded-2xl p-6 space-y-4">
+      <div className="glass p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-800 pb-2">
           <div><p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-1">Saved Recipes</p><p className="text-xs text-slate-400">{recipes.length === 0 ? 'No recipes yet.' : `${recipes.length} recipe${recipes.length !== 1 ? 's' : ''} saved.`}</p></div>
-          {recipes.length > 0 && (<span onClick={() => handleExportExcel(recipes, 'all')} className="px-3 py-1 rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer text-[10px] text-slate-400 flex items-center gap-1"><FileText size={10} /> Download All (Excel)</span>)}
+          {recipes.length > 0 && (<button type="button" onClick={() => handleExportExcel(recipes, 'all')} className="rt-btn rt-btn-ghost text-emerald-500 hover:text-emerald-400 hover:border-emerald-700"><FileText size={10} /> Download All (Excel)</button>)}
         </div>
 
         {recipes.length > 0 && (
@@ -546,7 +546,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
                         </div>
                         <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap gap-2 items-center"><span className="text-slate-500">{profileLabel}</span><span className="w-1 h-1 rounded-full bg-slate-700"></span><span className="text-slate-300 font-medium">{r.chargeGrains} gr Charge</span></div>
                     </div>
-                    {r.source && <div className="text-[9px] text-slate-600 uppercase tracking-wide border border-slate-800 px-2 py-0.5 rounded-full whitespace-nowrap ml-2">{r.source}</div>}
+                    {r.source && <div className="text-[9px] text-slate-600 uppercase tracking-wide border border-slate-800 px-2 py-0.5 rounded whitespace-nowrap ml-2">{r.source}</div>}
                   </div>
 
                   {(powder || bullet) && (<div className="text-[10px] text-slate-500 bg-black/20 rounded-lg px-2 py-1.5 border border-slate-800/50">{powder && <span>{powder}</span>}{powder && bullet && <span className="mx-1.5 text-slate-700">•</span>}{bullet && <span>{bullet}</span>}</div>)}
@@ -560,16 +560,16 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
 
                   <div className="flex flex-wrap items-center justify-between pt-2 border-t border-slate-800/50 mt-1 gap-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                        {onUseRecipe && !isArchived && (<span onClick={() => onUseRecipe(r)} className="px-2 py-[2px] rounded-full bg-black/60 border border-emerald-500/40 text-emerald-300 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer text-[10px]">Use in Calculator</span>)}
-                        {canEdit && (<span onClick={() => openBatchModal(r)} className="px-2 py-[2px] rounded-full bg-black/60 border border-red-500/40 text-red-300 hover:border-red-500/70 hover:text-red-200 transition cursor-pointer flex items-center gap-1 text-[10px]"><ClipboardList size={12} /> Load Batch</span>)}
-                        <span onClick={() => handleExportPdf(r)} className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer flex items-center gap-1 text-[10px]"><Printer size={12}/> Export PDF</span>
-                        <span onClick={() => handleExportExcel([r], `single-${r.name.replace(/\s+/g,'-')}`)} className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 transition cursor-pointer flex items-center gap-1 text-[10px]"><FileText size={12}/> Export Excel</span>
-                        {canEdit && (<><span onClick={() => handleEdit(r)} className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 transition cursor-pointer text-[10px]">Edit</span><span onClick={() => { if (!isArchiving) handleArchiveToggle(r) }} className={'px-2 py-[2px] rounded-full bg-black/60 border border-amber-400 text-amber-300 hover:bg-amber-500/10 transition cursor-pointer text-[10px] ' + (isArchiving ? 'opacity-50 pointer-events-none' : '')}>{isArchiving ? (isArchived ? 'Unarchiving…' : 'Archiving…') : (isArchived ? 'Unarchive' : 'Archive')}</span><span onClick={() => promptDelete(r)} className="px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition cursor-pointer text-[10px]">Delete</span></>)}
+                        {onUseRecipe && !isArchived && (<span onClick={() => onUseRecipe(r)} className="rt-btn rt-btn-confirm">Use in Calculator</span>)}
+                        {canEdit && (<span onClick={() => openBatchModal(r)} className="rt-btn rt-btn-danger"><ClipboardList size={12} /> Load Batch</span>)}
+                        <span onClick={() => handleExportPdf(r)} className="rt-btn rt-btn-ghost hover:text-emerald-400 hover:border-emerald-700"><Printer size={12}/> Export PDF</span>
+                        <span onClick={() => handleExportExcel([r], `single-${r.name.replace(/\s+/g,'-')}`)} className="rt-btn rt-btn-ghost hover:text-emerald-400 hover:border-emerald-700"><FileText size={12}/> Export Excel</span>
+                        {canEdit && (<><span onClick={() => handleEdit(r)} className="rt-btn rt-btn-ghost">Edit</span><span onClick={() => { if (!isArchiving) handleArchiveToggle(r) }} className={'rt-btn rt-btn-ghost border-amber-800/60 text-amber-500 hover:text-amber-300 ' + (isArchiving ? 'opacity-50 pointer-events-none' : '')}>{isArchiving ? (isArchived ? 'Unarchiving…' : 'Archiving…') : (isArchived ? 'Unarchive' : 'Archive')}</span><span onClick={() => promptDelete(r)} className="rt-btn rt-btn-danger">Delete</span></>)}
                     </div>
                     
                     <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity min-w-0">
-                        {createdStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded-full border border-slate-800 text-slate-500 bg-black/40 text-[9px] truncate max-w-[150px]"><User size={9} /> {createdStr}</span>)}
-                        {updatedStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded-full border border-slate-800 text-slate-500 bg-black/40 text-[9px] truncate max-w-[150px]"><Clock size={9} /> {updatedStr}</span>)}
+                        {createdStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded border border-slate-800 text-slate-500 bg-black/40 text-[9px] truncate max-w-[150px]"><User size={9} /> {createdStr}</span>)}
+                        {updatedStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded border border-slate-800 text-slate-500 bg-black/40 text-[9px] truncate max-w-[150px]"><Clock size={9} /> {updatedStr}</span>)}
                     </div>
                   </div>
                 </div>
@@ -604,7 +604,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
                     </div>
                 </div>
                 
-                <div className="bg-black/40 rounded-xl p-4 border border-slate-800 text-sm text-slate-300">
+                <div className="rt-card p-4 border border-slate-800 text-sm text-slate-300">
                     <p className="mb-2 font-bold text-slate-200">Recommended Action:</p>
                     <p className="text-xs text-slate-400 mb-4">Archive the recipe instead. It will be hidden from the active list but your batch history will be preserved.</p>
                     <button onClick={() => handleResolveConflict('archive')} className="w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-900/20"><Archive size={14} /> Archive Recipe (Safe)</button>
@@ -624,7 +624,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4"><div><label className={labelClass}>Rounds Loaded</label><input type="number" className={inputClass} value={batchForm.rounds} onChange={e => setBatchForm(p => ({ ...p, rounds: e.target.value }))} /></div><div><label className={labelClass}>Powder Lot</label><select className={inputClass} value={batchForm.powderLotId} onChange={e => setBatchForm(p => ({ ...p, powderLotId: e.target.value }))}><option value="">Select Powder...</option>{powders.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div></div>
                      <div className="grid grid-cols-3 gap-4"><div><label className={labelClass}>Bullet Lot</label><select className={inputClass} value={batchForm.bulletLotId} onChange={e => setBatchForm(p => ({ ...p, bulletLotId: e.target.value }))}><option value="">Select...</option>{bullets.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div><div><label className={labelClass}>Primer Lot</label><select className={inputClass} value={batchForm.primerLotId} onChange={e => setBatchForm(p => ({ ...p, primerLotId: e.target.value }))}><option value="">Select...</option>{primers.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div><div><label className={labelClass}>Brass Lot</label><select className={inputClass} value={batchForm.caseLotId} onChange={e => setBatchForm(p => ({ ...p, caseLotId: e.target.value }))}><option value="">Select Brass...</option>{cases.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div></div>
-                    <button onClick={handleBatchSubmit} disabled={batchSubmitting} className="w-full py-2 rounded-full bg-red-700 text-white font-bold text-xs hover:bg-red-600 transition shadow-lg shadow-red-900/20">Log Batch</button>
+                    <button onClick={handleBatchSubmit} disabled={batchSubmitting} className="rt-btn rt-btn-primary w-full justify-center">Log Batch</button>
                 </div>
             </div>
         </div>

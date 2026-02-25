@@ -22,7 +22,7 @@ import { Info, AlertTriangle, X, TrendingUp, DollarSign, TrendingDown } from 'lu
 
 // --- GLOBAL STYLES & HELPERS ---
 
-const inputClass = 'w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60'
+const inputClass = 'rt-input'
 
 const toPrecisionMoney = (val) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(val || 0)
@@ -291,18 +291,18 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
     } finally { setSavingRecipeId(null) }
   }
 
-  const saveConfigButtonClass = 'px-2 py-[2px] rounded-full bg-black/60 border border-emerald-400/70 text-emerald-300 hover:bg-emerald-900/40 transition text-[11px] cursor-pointer'
-  const removeButtonClass = 'px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-300 hover:bg-red-900/40 transition text-[11px] cursor-pointer'
-  const saveRecipeButtonClass = 'px-2 py-[2px] rounded-full bg-black/60 border border-emerald-400/70 text-emerald-300 hover:bg-emerald-900/40 transition text-[11px] cursor-pointer disabled:opacity-50'
+  const saveConfigButtonClass = 'rt-btn rt-btn-confirm'
+  const removeButtonClass     = 'rt-btn rt-btn-danger'
+  const saveRecipeButtonClass = 'rt-btn rt-btn-confirm disabled:opacity-50'
 
   return (
     <div className="space-y-6">
       {/* MAIN HEADER */}
-      <div className="flex items-start gap-4">
-        <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
+      <div className="rt-section">
+        <div className="rt-section-bar" />
         <div>
-            <span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Live Round</span>
-            <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">CALCULATOR</h2>
+          <span className="rt-section-eyebrow">Live Round</span>
+          <h2 className="rt-section-title">CALCULATOR</h2>
         </div>
       </div>
 
@@ -319,7 +319,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
 
       <div className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-6 items-start">
         {/* LEFT COLUMN: INPUTS */}
-        <div className="glass rounded-2xl p-6 space-y-6">
+        <div className="glass p-6 space-y-6">
           
           <div className="grid md:grid-cols-2 gap-4">
             <div>
@@ -449,7 +449,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
         <div className="space-y-6">
           
           {activeRecipe && (
-              <div className="bg-black/40 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+              <div className="rt-card p-6 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 blur-3xl rounded-full"></div>
                   <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-2">Loadout Profile</p>
                   
@@ -466,7 +466,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           )}
 
           {/* 2. COST CARD */}
-          <div className="glass rounded-2xl p-6">
+          <div className="glass p-6">
             <div>
               <div className="flex items-center justify-between mb-2">
                    <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Cost Analysis</p>
@@ -546,7 +546,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           </div>
 
           {/* 3. COMPONENT BREAKDOWN */}
-          <div className="glass rounded-2xl p-6">
+          <div className="glass p-6">
             <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-3">Components (Unit Cost)</p>
             <div className="grid grid-cols-2 gap-3">
               <BreakdownRow label="Powder" value={breakdown?.powder.perRound} />

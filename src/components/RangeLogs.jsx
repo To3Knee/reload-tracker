@@ -397,29 +397,29 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     win.document.close()
   }
 
-  const inputClass = "w-full bg-black/60 border border-slate-700/70 rounded-xl px-3 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/60 placeholder:text-slate-600"
-  const labelClass = "block text-xs font-semibold text-slate-400 mb-1"
+  const inputClass = "rt-input"
+  const labelClass = "rt-label"
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-4">
-        <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
+      <div className="rt-section">
+        <div className="rt-section-bar" />
         <div>
-            <span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Performance</span>
-            <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">RANGE LOGS</h2>
+          <span className="rt-section-eyebrow">Performance</span>
+          <h2 className="rt-section-title">RANGE LOGS</h2>
         </div>
       </div>
       
       <div className="flex justify-end border-b border-zinc-800 pb-2 mb-6">
             {canEdit && !isFormOpen && (
-                <button onClick={handleNewLog} className="px-4 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-700 hover:border-red-500/50 hover:text-white transition flex items-center gap-2">
+                <button onClick={handleNewLog} className="rt-btn rt-btn-secondary">
                     <Plus size={12} /> New Session
                 </button>
             )}
       </div>
 
       {isFormOpen && (
-        <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in">
+        <div className="glass p-6 border border-red-500/30 animation-fade-in">
             <h3 className="text-sm font-bold text-slate-200 mb-4 flex justify-between items-center">
                 <span>{editingId ? 'Edit Range Log' : 'New Range Session'}</span>
             </h3>
@@ -516,7 +516,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
                     <div><label className={labelClass}>Notes</label><textarea className={inputClass + " h-full min-h-[120px] resize-none"} placeholder="How did it shoot?" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={handleCancel} className="px-4 py-1.5 rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800/60 text-[11px] font-semibold transition">Cancel</button><button type="submit" disabled={loading} className="px-5 py-1.5 rounded-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-[11px] font-semibold shadow-lg shadow-red-900/40 transition">{loading ? 'Saving...' : (editingId ? 'Save Changes' : 'Save Log')}</button></div>
+                <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={handleCancel} className="rt-btn rt-btn-secondary">Cancel</button><button type="submit" disabled={loading} className="rt-btn rt-btn-primary disabled:opacity-60">{loading ? 'Saving...' : (editingId ? 'Save Changes' : 'Save Log')}</button></div>
             </form>
         </div>
       )}
@@ -525,7 +525,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
         {logs.length === 0 && !isFormOpen && (<div className="text-center p-12 border border-dashed border-slate-800 rounded-2xl"><Target size={48} className="mx-auto mb-3 text-slate-700" /><p className="text-slate-500 text-sm">No range logs recorded yet.</p><p className="text-[11px] text-slate-600 mt-1">Log your first trip to track groups and velocity.</p></div>)}
         {logs.map(log => {
             const isHighlighted = String(highlightId) === String(log.id)
-            return (<div id={`rangelog-${log.id}`} key={log.id} className={`glass rounded-xl p-0 flex flex-col md:flex-row items-stretch overflow-hidden group transition duration-500 ${isHighlighted ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'border-red-500/20'}`}><div className="w-full md:w-48 h-48 md:h-auto bg-black/40 relative flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-800">{log.imageUrl ? (<div className="relative w-full h-full group-image"><img src={log.imageUrl} alt="Target" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" /><a href={log.imageUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 bg-black/60 p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-black/90 transition opacity-0 group-hover:opacity-100"><ExternalLink size={12} /></a></div>) : (<div className="w-full h-full flex items-center justify-center text-slate-800"><Target size={32} /></div>)}{log.groupSize && (<div className="absolute top-2 left-2 bg-black/80 backdrop-blur border border-emerald-500/30 px-2 py-1 rounded-md shadow-lg"><span className="text-xs font-bold text-emerald-400">{log.groupSize}"</span></div>)}</div>
+            return (<div id={`rangelog-${log.id}`} key={log.id} className={`glass p-0 flex flex-col md:flex-row items-stretch overflow-hidden group transition duration-500 ${isHighlighted ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'border-red-500/20'}`}><div className="w-full md:w-48 h-48 md:h-auto bg-black/40 relative flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-800">{log.imageUrl ? (<div className="relative w-full h-full group-image"><img src={log.imageUrl} alt="Target" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" /><a href={log.imageUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 bg-black/60 p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-black/90 transition opacity-0 group-hover:opacity-100"><ExternalLink size={12} /></a></div>) : (<div className="w-full h-full flex items-center justify-center text-slate-800"><Target size={32} /></div>)}{log.groupSize && (<div className="absolute top-2 left-2 bg-black/80 backdrop-blur border border-emerald-500/30 px-2 py-1 rounded-md shadow-lg"><span className="text-xs font-bold text-emerald-400">{log.groupSize}"</span></div>)}</div>
             <div className="flex-1 p-4 md:p-5 flex flex-col">
                 <div className="flex justify-between items-start mb-3">
                     <div>
@@ -538,17 +538,17 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
                         </div>
                     </div>
                     <div className="flex gap-2 items-center">
-                        <button onClick={() => handlePrintLog(log)} className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:border-emerald-500/70 hover:text-emerald-300 text-slate-400 text-[10px] transition flex items-center gap-1"><Printer size={10} /> Print</button>
+                        <button onClick={() => handlePrintLog(log)} className="rt-btn rt-btn-ghost hover:text-emerald-400 hover:border-emerald-700"><Printer size={10} /> Print</button>
                         {canEdit && (<>
-                            <button onClick={() => handleStartEdit(log)} className="px-2 py-[2px] rounded-full bg-black/60 border border-slate-700 hover:bg-slate-800/80 text-slate-400 text-[10px] transition">Edit</button>
+                            <button onClick={() => handleStartEdit(log)} className="rt-btn rt-btn-ghost">Edit</button>
                             
                             {verifyDeleteId === log.id ? (
                                 <div className="flex items-center gap-1 animate-in fade-in zoom-in duration-200">
-                                    <button onClick={() => handleDelete(log.id)} className="px-2 py-[2px] rounded-full bg-red-600 text-white text-[10px] font-bold hover:bg-red-500 transition">Yes</button>
-                                    <button onClick={() => setVerifyDeleteId(null)} className="px-2 py-[2px] rounded-full bg-slate-800 text-slate-400 text-[10px] hover:bg-slate-700 transition">No</button>
+                                    <button onClick={() => handleDelete(log.id)} className="rt-btn rt-btn-danger">Yes, Delete</button>
+                                    <button onClick={() => setVerifyDeleteId(null)} className="rt-btn rt-btn-ghost">No</button>
                                 </div>
                             ) : (
-                                <button onClick={() => setVerifyDeleteId(log.id)} className="px-2 py-[2px] rounded-full bg-black/60 border border-red-700/70 text-red-400 hover:bg-red-900/40 text-[10px] transition">Remove</button>
+                                <button onClick={() => setVerifyDeleteId(log.id)} className="rt-btn rt-btn-danger">Remove</button>
                             )}
                         </>)}
                     </div>

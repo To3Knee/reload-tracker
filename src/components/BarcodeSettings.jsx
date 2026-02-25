@@ -168,8 +168,8 @@ export function BarcodeSettings({ settings, onSave }) {
                             {message && <span className={`text-[10px] font-medium ${message.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>{message.text}</span>}
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={handleTest} disabled={saving || testing || !enabled} className="px-4 py-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 text-[10px] font-bold border border-zinc-700 transition flex items-center gap-2"><Zap size={12}/> {testing ? 'Testing...' : 'Test'}</button>
-                            <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 text-[10px] font-bold border border-zinc-700 transition flex items-center gap-2"><Save size={12}/> {saving ? 'Saving...' : 'Save Config'}</button>
+                            <button onClick={handleTest} disabled={saving || testing || !enabled} className="rt-btn rt-btn-ghost disabled:opacity-50"><Zap size={12}/> {testing ? 'Testing...' : 'Test'}</button>
+                            <button onClick={handleSave} disabled={saving} className="rt-btn rt-btn-secondary disabled:opacity-50"><Save size={12}/> {saving ? 'Saving...' : 'Save Config'}</button>
                         </div>
                     </div>
                 </div>

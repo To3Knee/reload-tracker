@@ -466,11 +466,11 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   const filteredPurchases = purchases.filter(p => { const term = searchTerm.toLowerCase(); return `${p.brand} ${p.name} ${p.lotId} ${p.vendor} ${p.componentType}`.toLowerCase().includes(term) })
   const lotsByType = useMemo(() => { const groups = { powder: [], bullet: [], primer: [], case: [], other: [] }; for (const p of filteredPurchases) { const type = groups[p.componentType] ? p.componentType : 'other'; groups[type].push(p); } return groups; }, [filteredPurchases])
 
-  const inputClass = "w-full bg-[#1a1a1a] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-zinc-600"
-  const labelClass = "block text-xs font-semibold text-zinc-400 mb-1"
+  const inputClass = "rt-input"
+  const labelClass = "rt-label"
   const helpClass = "text-[9px] text-zinc-600 mt-0.5 italic flex items-center gap-1"
-  const sectionLabelClass = "text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4 block"
-  const tabBtnClass = (active) => `pb-2 px-1 text-xs font-bold uppercase tracking-wider transition border-b-2 ${active ? 'border-red-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`
+  const sectionLabelClass = "rt-label block mb-4"
+  const tabBtnClass = (active) => `pb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] transition border-b-2 flex items-center gap-2 ${active ? 'border-[#b87333] text-[#f0ece4]' : 'border-transparent text-[#4a4844] hover:text-[#9a9590]'}`
 
   const getSmartPrice = (type, unitCost) => {
       if (type === 'primer') return { label: 'Cost / 1k', val: unitCost * 1000 };
@@ -489,9 +489,12 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileScan} />
 
       {/* HEADER */}
-      <div className="flex items-start gap-4">
-        <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
-        <div><span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Supply Chain</span><h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">PURCHASES</h2></div>
+      <div className="rt-section">
+        <div className="rt-section-bar" />
+        <div>
+          <span className="rt-section-eyebrow">Supply Chain</span>
+          <h2 className="rt-section-title">PURCHASES</h2>
+        </div>
       </div>
 
       {/* TOOLBAR */}
@@ -503,11 +506,11 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
           {activeSubTab === 'inventory' && canEdit && !isFormOpen && (
               <div className="flex gap-2 mb-2">
                   {scannerEnabled && canEdit && (
-                    <button onClick={() => { setShowScanner(true); HAPTIC.click(); }} className="px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-700 hover:border-emerald-500/50 hover:text-white transition flex items-center gap-2">
+                    <button onClick={() => { setShowScanner(true); HAPTIC.click(); }} className="rt-btn rt-btn-secondary">
                       <ScanBarcode size={14} /> Scan Barcode
                     </button>
                   )}
-                  <button onClick={handleAddNew} className="px-4 py-1.5 rounded-full bg-red-700 border border-red-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-red-600 transition flex items-center gap-2"><Plus size={12} /> New Lot</button>
+                  <button onClick={handleAddNew} className="rt-btn rt-btn-primary"><Plus size={12} /> New Lot</button>
               </div>
           )}
       </div>
@@ -575,7 +578,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
             {/* FORM AND INVENTORY LIST */}
             {isFormOpen && (
-                <div className="glass rounded-2xl p-6 border border-red-500/30 animation-fade-in relative mb-6">
+                <div className="glass p-6 border border-red-500/30 animation-fade-in relative mb-6">
                     <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={18} /></button>
                     <span className={sectionLabelClass}>{editingId ? 'EDIT PURCHASE' : 'ADD PURCHASE'}</span>
                     
@@ -620,19 +623,19 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-black/20 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between"><label className={labelClass}>Reference Photo</label><div className="flex-1 flex flex-col justify-center"><UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} /></div></div>
+                            <div className="rt-card p-3 flex flex-col justify-between"><label className={labelClass}>Reference Photo</label><div className="flex-1 flex flex-col justify-center"><UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} /></div></div>
                             <div className="space-y-3">
                                 <div><label className={labelClass}>Product URL</label><input className={inputClass} value={form.url} onChange={e => setForm({...form, url: e.target.value})} placeholder="https://..." /></div>
                                 <div><label className={labelClass}>Notes</label><textarea className={inputClass + " h-20 resize-none"} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Performance notes, etc." /></div>
                                 <div><label className={labelClass}>Status</label><select className={inputClass} value={form.status} onChange={e => setForm({...form, status: e.target.value})}><option value="active">Active</option><option value="depleted">Depleted</option></select></div>
                             </div>
                         </div>
-                        <div className="pt-2 flex justify-end gap-3"><button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-full border border-zinc-700 text-zinc-400 hover:text-white text-xs font-bold transition">Cancel</button><button type="submit" disabled={loading} className="px-6 py-2 rounded-full bg-red-700 hover:bg-red-600 text-white text-xs font-bold transition">{loading ? 'Saving...' : 'Save Record'}</button></div>
+                        <div className="pt-2 flex justify-end gap-3"><button type="button" onClick={() => setIsFormOpen(false)} className="rt-btn rt-btn-secondary">Cancel</button><button type="submit" disabled={loading} className="rt-btn rt-btn-primary">{loading ? 'Saving...' : 'Save Record'}</button></div>
                     </form>
                 </div>
             )}
 
-            <div className="glass rounded-2xl p-6">
+            <div className="glass p-6">
                 <div className="flex items-center gap-2 mb-6 bg-black/40 p-2 rounded-xl border border-zinc-800"><Search size={16} className="text-zinc-500 ml-2" /><input className="bg-transparent border-none focus:outline-none text-xs text-zinc-200 w-full placeholder:text-zinc-600" placeholder="Search purchases..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
                 <div className="space-y-8">
                     {COMPONENT_TYPES.map(type => {
@@ -659,8 +662,8 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                                             <div>
                                                 <div className="flex items-center gap-3"><span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${depleted ? 'bg-zinc-900 text-zinc-500 border-zinc-800' : 'bg-red-900/20 text-red-400 border-red-900/50'}`}>{p.componentType}</span><span className="text-xs text-zinc-500 font-mono">{p.lotId}</span></div>
                                                 <h4 className="text-sm font-bold text-zinc-200 mt-1">{p.brand} {p.name}</h4>
-                                                <div className="text-[11px] text-zinc-500 mt-1 flex flex-wrap gap-2">{p.caliber && <span className="text-zinc-400">{p.caliber}</span>}{p.typeDetail && <span className="text-zinc-400 italic">{p.typeDetail}</span>}{p.vendor && <span className="px-2 py-[1px] bg-black/40 border border-zinc-800 rounded-full">{p.vendor}</span>}{p.purchaseDate && <span className="px-2 py-[1px] bg-black/40 border border-zinc-800 rounded-full">{p.purchaseDate.substring(0,10)}</span>}{p.caseCondition && <span className="px-2 py-[1px] bg-black/40 border border-zinc-800 rounded-full">{CASE_CONDITIONS.find(c=>c.value===p.caseCondition)?.label || p.caseCondition}</span>}{p.url && <a href={p.url} target="_blank" rel="noreferrer" className="px-2 py-[1px] bg-black/40 border border-emerald-900/50 text-emerald-500 hover:text-emerald-300 hover:border-emerald-500/50 rounded-full transition">Page ↗</a>}</div>
-                                                {attribution && (<div className="mt-2 flex items-center gap-2"><span className="flex items-center gap-1 text-[9px] text-zinc-500 px-2 py-0.5 bg-black/20 rounded-full border border-zinc-800">{p.updatedByUsername ? <Clock size={10}/> : <User size={10}/>} {attribution}</span></div>)}
+                                                <div className="text-[11px] text-zinc-500 mt-1 flex flex-wrap gap-2">{p.caliber && <span className="text-zinc-400">{p.caliber}</span>}{p.typeDetail && <span className="text-zinc-400 italic">{p.typeDetail}</span>}{p.vendor && <span className="px-2 py-[1px] bg-black/40 border border-zinc-800 rounded">{p.vendor}</span>}{p.purchaseDate && <span className="px-2 py-[1px] bg-black/40 border border-zinc-800 rounded">{p.purchaseDate.substring(0,10)}</span>}{p.caseCondition && <span className="px-2 py-[1px] bg-black/40 border border-zinc-800 rounded">{CASE_CONDITIONS.find(c=>c.value===p.caseCondition)?.label || p.caseCondition}</span>}{p.url && <a href={p.url} target="_blank" rel="noreferrer" className="px-2 py-[1px] bg-black/40 border border-emerald-900/50 text-emerald-500 hover:text-emerald-300 hover:border-emerald-500/50 rounded transition">Page ↗</a>}</div>
+                                                {attribution && (<div className="mt-2 flex items-center gap-2"><span className="flex items-center gap-1 text-[9px] text-zinc-500 px-2 py-0.5 bg-black/20 rounded border border-zinc-800">{p.updatedByUsername ? <Clock size={10}/> : <User size={10}/>} {attribution}</span></div>)}
                                             </div>
                                         </div>
                                         <div className="mt-3 md:mt-0 flex flex-wrap items-center justify-between md:justify-end gap-x-6 gap-y-4">
@@ -672,7 +675,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                                                 </span>
                                                 {isPowder && (<span className="block text-[9px] text-zinc-500 mt-0.5 font-mono">(${grainCost.toFixed(4)}/gr)</span>)}
                                             </div>
-                                            <div className="flex flex-col items-end gap-2 min-w-[70px]">{canEdit && (<><button onClick={() => handleEdit(p)} className="px-3 py-1 rounded-full bg-black/60 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Edit size={12} /> Edit</button><button onClick={() => promptDelete(p)} className="px-3 py-1 rounded-full bg-black/60 border border-red-900/40 text-red-400 hover:text-red-300 hover:bg-red-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Trash2 size={12} /> Remove</button></>)}<button onClick={() => { HAPTIC.click(); printPurchaseLabel(p); }} className="px-3 py-1 rounded-full bg-black/60 border border-emerald-900/40 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20 transition cursor-pointer text-[10px] flex items-center gap-1 w-full justify-center"><Printer size={12} /> Label</button></div>
+                                            <div className="flex flex-col items-end gap-2 min-w-[70px]">{canEdit && (<><button onClick={() => handleEdit(p)} className="rt-btn rt-btn-ghost w-full justify-center"><Edit size={12} /> Edit</button><button onClick={() => promptDelete(p)} className="rt-btn rt-btn-danger w-full justify-center"><Trash2 size={12} /> Remove</button></>)}<button onClick={() => { HAPTIC.click(); printPurchaseLabel(p); }} className="rt-btn rt-btn-ghost w-full justify-center text-emerald-500 hover:text-emerald-400 hover:border-emerald-700"><Printer size={12} /> Label</button></div>
                                         </div>
                                     </div>
                                 )
