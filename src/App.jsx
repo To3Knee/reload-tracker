@@ -198,31 +198,32 @@ export default function App() {
         menuItems={MENU_ITEMS}
       />
 
-      {/* Pull To Refresh Indicator - Z-Index 60 to appear ABOVE navbar (z-50) */}
-      <div 
-        className="fixed top-20 left-0 right-0 flex justify-center z-[60] pointer-events-none transition-transform duration-200"
-        style={{ 
-          transform: `translateY(${pullDistance - 50}px)`, 
-          opacity: pullDistance > 10 ? 1 : 0 
+      {/* Pull To Refresh — sits just below the mobile top header */}
+      <div
+        className="fixed left-0 right-0 flex justify-center z-[60] pointer-events-none transition-transform duration-200"
+        style={{
+          top: 'calc(48px + env(safe-area-inset-top))',
+          transform: `translateY(${pullDistance - 50}px)`,
+          opacity: pullDistance > 10 ? 1 : 0
         }}
       >
-        <div className="bg-zinc-800 border border-zinc-700 rounded-full p-2 shadow-xl shadow-black/50">
+        <div className="rt-card p-2 shadow-xl shadow-black/60">
           <RefreshCw
-            className={`w-6 h-6 text-red-500 ptr-spinner ${isRefreshing ? 'refreshing' : ''}`}
+            className={`w-5 h-5 text-[#b87333] ptr-spinner ${isRefreshing ? 'refreshing' : ''}`}
             style={{ transform: `rotate(${pullDistance * 3}deg)`, willChange: 'transform' }}
           />
         </div>
       </div>
 
-      <main 
+      <main
         ref={mainRef}
-        className="max-w-6xl mx-auto px-4 pt-[calc(5rem+env(safe-area-inset-top))] md:pt-28 pb-24 transition-transform duration-200"
+        className="max-w-6xl mx-auto px-4
+          pt-[calc(56px+env(safe-area-inset-top))]
+          pb-[calc(72px+env(safe-area-inset-bottom))]
+          md:pt-[88px] md:pb-10
+          transition-transform duration-200"
         style={{ transform: `translateY(${pullDistance > 0 ? pullDistance / 2 : 0}px)` }}
       >
-        
-        <div className="flex justify-center mb-6 md:hidden">
-           <img src={logo} alt="Reload Tracker" className="w-40 opacity-90 drop-shadow-2xl" />
-        </div>
 
         {activeTab === 'calculator' && <Dashboard purchases={purchases} recipes={recipes} selectedRecipe={selectedRecipe} onSelectRecipe={handleUseRecipe} canEdit={!!isAdmin} />}
         {activeTab === 'armory' && <Armory canEdit={!!isAdmin} />}
