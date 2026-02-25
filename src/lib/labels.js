@@ -1,196 +1,241 @@
 //===============================================================
 //Script Name: labels.js
 //Script Location: src/lib/labels.js
-//Date: 11/30/2025
+//Date: 02/25/2026
 //Created By: T03KNEE
-//Version: 1.3.0
-//About: Generates printable labels (Dymo/Zebra style).
-//       Updated: Added "Close" button for Mobile PWA support.
+//Version: 2.0.0 — Redesigned for Precision Engineering aesthetic
+//About: Generates printable labels (Dymo 30334 / 2.25" x 1.25").
+//       Both label types: Batch (loaded ammo) and Purchase (component LOT).
 //===============================================================
 
 import QRCode from 'qrcode'
 
-const CLOSE_BTN_STYLE = `
-  .close-btn {
-    position: fixed; bottom: 10px; right: 10px; z-index: 9999;
-    background: rgba(0,0,0,0.8); color: #fff; padding: 8px 16px;
-    border-radius: 20px; font-family: sans-serif; font-weight: bold; font-size: 10px;
-    text-decoration: none; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
+/* ── SHARED STYLES ──────────────────────────────────────────── */
+const SHARED_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  @page { size: 2.25in 1.25in; margin: 0; }
+
+  html, body { margin: 0; padding: 0; background: #1a1a1a; }
+
+  /* ── SCREEN PREVIEW ── */
+  @media screen and (min-width: 500px) {
+    body { display: flex; flex-direction: column; align-items: flex-start; padding: 40px 50px; gap: 12px; }
+    .label-card { transform: scale(2.8); transform-origin: top left; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
+    .print-hint {
+      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+      color: #888; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .close-btn {
+      position: fixed; top: 14px; right: 14px;
+      background: #2a2a2a; color: #ccc; padding: 6px 14px;
+      border-radius: 4px; font-family: 'Inter', sans-serif; font-weight: 700;
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      text-decoration: none; border: 1px solid #3a3a3a; cursor: pointer;
+    }
   }
-  @media print { .close-btn, .print-hint { display: none !important; } }
+  @media screen and (max-width: 499px) {
+    body { display: flex; flex-direction: column; align-items: center; padding-top: 56px; gap: 8px; background: #111; }
+    .label-card { transform: scale(1.5); transform-origin: top center; }
+    .print-hint {
+      position: fixed; top: 0; left: 0; right: 0;
+      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+      color: #fff; background: #c0392b; padding: 8px 12px;
+      text-align: center; letter-spacing: 0.05em;
+    }
+    .close-btn { display: none; }
+  }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .print-hint, .close-btn { display: none !important; }
+    .label-card { transform: none !important; box-shadow: none !important; }
+  }
+
+  /* ── LABEL BASE ── */
+  .label-card {
+    width: 2.25in; height: 1.25in;
+    background: #0a0a0a;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    display: flex;
+    box-sizing: border-box;
+    position: relative;
+    border: 1px solid #2a2a2a;
+  }
+
+  /* Copper top-line accent */
+  .label-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #b87333 30%, #d4a843 50%, #b87333 70%, transparent 100%);
+    z-index: 10;
+  }
+
+  /* ── LAYOUT ── */
+  .label-left {
+    width: 0.75in; display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 4px; border-right: 1px solid #1e1e1e; flex-shrink: 0;
+    background: #060606;
+  }
+  .qr-img { width: 0.62in; height: 0.62in; }
+  .label-right {
+    flex: 1; padding: 5px 6px 4px 6px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    overflow: hidden;
+  }
+
+  /* ── TYPOGRAPHY ── */
+  .eyebrow {
+    font-size: 5.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.22em; color: #b87333;
+    margin-bottom: 1px;
+  }
+  .main-title {
+    font-size: 9.5px; font-weight: 900; text-transform: uppercase;
+    color: #f0ece4; line-height: 1.1; letter-spacing: -0.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sub-title {
+    font-size: 7.5px; font-weight: 600; color: #9a9590;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.2; margin-top: 1px;
+  }
+  .detail-row {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 6.5px; color: #d4a843; letter-spacing: 0.04em;
+    white-space: nowrap; overflow: hidden;
+  }
+  .footer-row {
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .lot-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 5.5px; font-weight: 700;
+    color: #b87333; letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .type-badge {
+    font-size: 5px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.18em; color: #555c6a;
+    border: 0.5px solid #2a2a2a; padding: 1px 3px; border-radius: 1px;
+  }
+  .rt-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 4.5px; color: #2a2a2a; letter-spacing: 0.2em; text-transform: uppercase;
+  }
 `
 
-/**
- * Generate a printable label for a specific batch (Loaded Ammo).
- */
+/* ── OPEN POPUP HELPER ─────────────────────────────────────── */
+function openLabelWindow(html, title = 'Label') {
+  const win = window.open('', '_blank', 'width=620,height=440')
+  if (win) {
+    win.document.write(html)
+    win.document.close()
+  } else {
+    alert('Please allow popups to print labels.')
+  }
+}
+
+/* ── BATCH LABEL ────────────────────────────────────────────── */
 export async function printBatchLabel(batch) {
   if (!batch) return
 
   const appUrl = window.location.origin
-  const qrUrl = `${appUrl}?batchId=${batch.id}`
-  
-  const qrDataUri = await QRCode.toDataURL(qrUrl, {
-    width: 100,
-    margin: 0,
-    errorCorrectionLevel: 'L'
-  })
+  const qrUrl  = `${appUrl}?batchId=${batch.id}`
+  const qrDataUri = await QRCode.toDataURL(qrUrl, { width: 80, margin: 0, errorCorrectionLevel: 'L',
+    color: { dark: '#d4a843', light: '#060606' } })
+
+  const components = batch.components?.split(',')[0]?.trim() || 'Load Data'
+  const dateStr    = batch.date || ''
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
 <title>Batch #${batch.id}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;900&display=swap');
-  @page { size: 2.25in 1.25in; margin: 0; }
-  html, body { margin: 0; padding: 0; background: #eee; }
-
-  .label-card {
-    width: 2.25in; height: 1.25in;
-    background: white; color: black;
-    font-family: 'Inter', sans-serif; 
-    overflow: hidden;
-    display: flex; box-sizing: border-box; position: relative;
-  }
-
-  @media screen and (min-width: 500px) {
-    .label-card { transform: scale(3); transform-origin: top left; margin: 50px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-    .print-hint { position: fixed; top: 10px; left: 50px; font-size: 14px; font-weight: bold; color: #444; background: #ddd; padding: 4px 10px; border-radius: 4px; font-family: sans-serif; }
-  }
-  @media screen and (max-width: 499px) {
-    .label-card { transform: scale(1.4); transform-origin: top center; margin: 60px auto 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.4); }
-    .print-hint { position: fixed; top: 0; left: 0; right: 0; font-size: 12px; font-weight: bold; color: #fff; background: #b33c3c; padding: 8px; text-align: center; font-family: sans-serif; }
-  }
-  
-  /* Shared Close Button Style */
-  ${CLOSE_BTN_STYLE}
-
-  .label-container { width: 100%; height: 100%; display: flex; padding: 0.1in; box-sizing: border-box; align-items: center; }
-  .qr-section { width: 0.8in; display: flex; justify-content: center; align-items: center; }
-  .qr-img { width: 100%; height: auto; }
-  .info-section { flex: 1; padding-left: 0.1in; display: flex; flex-direction: column; justify-content: center; line-height: 1.1; }
-  .date { font-size: 8px; font-weight: 600; color: #555; margin-bottom: 2px; }
-  .recipe-name { font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px; word-break: break-word; }
-  .details { font-size: 8px; font-weight: 600; color: #000; }
-  .batch-id { font-size: 7px; margin-top: 4px; color: #999; }
-</style>
+<style>${SHARED_CSS}</style>
 </head>
 <body>
-  <button onclick="window.close()" class="close-btn">Close X</button>
-  <div class="print-hint">🖨️ Size 30334 (2.25" x 1.25") • Margins: None</div>
+  <button onclick="window.close()" class="close-btn">✕ Close</button>
+  <span class="print-hint">DYMO 30334 · 2.25" × 1.25" · No Margins</span>
   <div class="label-card">
-    <div class="label-container">
-      <div class="qr-section"><img src="${qrDataUri}" class="qr-img" /></div>
-      <div class="info-section">
-        <div class="date">${batch.date}</div>
-        <div class="recipe-name">${batch.recipe.split('(')[0]}</div>
-        <div class="details">
-          ${batch.components.split(',')[0] || 'Load Data'} <br/>
-          ${batch.rounds} Rounds
+    <div class="label-left">
+      <img src="${qrDataUri}" class="qr-img" />
+      <div class="rt-logo" style="margin-top:3px">RT</div>
+    </div>
+    <div class="label-right">
+      <div>
+        <div class="eyebrow">Loaded Ammunition</div>
+        <div class="main-title">${batch.recipe?.split('(')[0]?.trim() || 'Batch'}</div>
+        <div class="sub-title">${components}</div>
+      </div>
+      <div>
+        <div class="detail-row">${batch.rounds} RDS · ${dateStr}</div>
+        <div class="footer-row">
+          <span class="lot-badge">ID: ${batch.id}</span>
+          <span class="type-badge">AMMO</span>
         </div>
-        <div class="batch-id">ID: ${batch.id}</div>
       </div>
     </div>
   </div>
-  <script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>
+  <script>window.onload = () => { setTimeout(() => window.print(), 600); }<\/script>
 </body>
 </html>`
 
-  const win = window.open('', '_blank', 'width=500,height=400')
-  if (win) {
-      win.document.write(html)
-      win.document.close()
-  } else {
-      alert('Please allow popups to print labels.')
-  }
+  openLabelWindow(html, `Batch #${batch.id}`)
 }
 
-/**
- * Generate a printable label for a Purchase/Inventory Item.
- */
+/* ── PURCHASE / LOT LABEL ───────────────────────────────────── */
 export async function printPurchaseLabel(purchase) {
   if (!purchase) return
 
   const appUrl = window.location.origin
-  const qrUrl = `${appUrl}?purchaseId=${purchase.id}`
-  
-  const qrDataUri = await QRCode.toDataURL(qrUrl, {
-    width: 100,
-    margin: 0,
-    errorCorrectionLevel: 'L'
-  })
+  const qrUrl  = `${appUrl}?purchaseId=${purchase.id}`
+  const qrDataUri = await QRCode.toDataURL(qrUrl, { width: 80, margin: 0, errorCorrectionLevel: 'L',
+    color: { dark: '#d4a843', light: '#060606' } })
 
-  const dateStr = purchase.purchaseDate || ''
+  const type      = (purchase.componentType || 'Component').toUpperCase()
+  const brand     = purchase.brand || ''
+  const name      = purchase.name  || ''
+  const qty       = `${purchase.qty} ${purchase.unit}`
+  const caliber   = purchase.caliber ? ` · ${purchase.caliber}` : ''
+  const dateStr   = purchase.purchaseDate ? String(purchase.purchaseDate).substring(0, 10) : ''
+  const lotId     = purchase.lotId || `ID:${purchase.id}`
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
-<title>Lot ${purchase.lotId || purchase.id}</title>
+<title>LOT ${lotId}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;900&display=swap');
-  @page { size: 2.25in 1.25in; margin: 0; }
-  html, body { margin: 0; padding: 0; background: #eee; }
-
-  .label-card {
-    width: 2.25in; height: 1.25in;
-    background: white; color: black;
-    font-family: 'Inter', sans-serif; 
-    overflow: hidden;
-    display: flex;
-    box-sizing: border-box;
-    position: relative;
-  }
-
-  @media screen and (min-width: 500px) {
-    .label-card { transform: scale(3); transform-origin: top left; margin: 50px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-    .print-hint { position: fixed; top: 10px; left: 50px; font-size: 14px; font-weight: bold; color: #444; background: #ddd; padding: 4px 10px; border-radius: 4px; font-family: sans-serif; }
-  }
-  @media screen and (max-width: 499px) {
-    .label-card { transform: scale(1.4); transform-origin: top center; margin: 60px auto 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.4); }
-    .print-hint { position: fixed; top: 0; left: 0; right: 0; font-size: 12px; font-weight: bold; color: #fff; background: #b33c3c; padding: 8px; text-align: center; font-family: sans-serif; }
-  }
-  
-  /* Shared Close Button Style */
-  ${CLOSE_BTN_STYLE}
-
-  .label-container { width: 100%; height: 100%; display: flex; padding: 0.1in; box-sizing: border-box; align-items: center; }
-  .qr-section { width: 0.8in; display: flex; justify-content: center; align-items: center; }
-  .qr-img { width: 100%; height: auto; }
-  .info-section { flex: 1; padding-left: 0.1in; display: flex; flex-direction: column; justify-content: center; line-height: 1.1; }
-  .type { font-size: 7px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; border-bottom: 1px solid #ccc; padding-bottom: 1px; }
-  .brand-name { font-size: 10px; font-weight: 900; text-transform: uppercase; margin-top: 2px; }
-  .product-name { font-size: 9px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .details { font-size: 8px; color: #333; }
-  .lot-row { font-size: 8px; font-weight: 900; margin-top: 4px; background: #eee; padding: 1px 4px; border-radius: 2px; display: inline-block; }
-</style>
+<style>${SHARED_CSS}</style>
 </head>
 <body>
-  <button onclick="window.close()" class="close-btn">Close X</button>
-  <div class="print-hint">🖨️ Size 30334 (2.25" x 1.25") • Margins: None</div>
+  <button onclick="window.close()" class="close-btn">✕ Close</button>
+  <span class="print-hint">DYMO 30334 · 2.25" × 1.25" · No Margins</span>
   <div class="label-card">
-    <div class="label-container">
-      <div class="qr-section"><img src="${qrDataUri}" class="qr-img" /></div>
-      <div class="info-section">
-        <div class="type">${purchase.componentType || 'COMPONENT'}</div>
-        <div class="brand-name">${purchase.brand || ''}</div>
-        <div class="product-name">${purchase.name || ''}</div>
-        <div class="details">
-          ${purchase.qty} ${purchase.unit} ${dateStr ? '• ' + dateStr : ''}
+    <div class="label-left">
+      <img src="${qrDataUri}" class="qr-img" />
+      <div class="rt-logo" style="margin-top:3px">RT</div>
+    </div>
+    <div class="label-right">
+      <div>
+        <div class="eyebrow">${type}${purchase.caliber ? ' · ' + purchase.caliber : ''}</div>
+        <div class="main-title">${brand}</div>
+        <div class="sub-title">${name}</div>
+      </div>
+      <div>
+        <div class="detail-row">${qty}${dateStr ? ' · ' + dateStr : ''}</div>
+        <div class="footer-row">
+          <span class="lot-badge">${lotId}</span>
+          <span class="type-badge">${type.substring(0, 6)}</span>
         </div>
-        <div class="lot-row">LOT: ${purchase.lotId || 'N/A'}</div>
       </div>
     </div>
   </div>
-  <script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>
+  <script>window.onload = () => { setTimeout(() => window.print(), 600); }<\/script>
 </body>
 </html>`
 
-  const win = window.open('', '_blank', 'width=500,height=400')
-  if (win) {
-      win.document.write(html)
-      win.document.close()
-  } else {
-      alert('Please allow popups to print labels.')
-  }
+  openLabelWindow(html, `LOT ${lotId}`)
 }

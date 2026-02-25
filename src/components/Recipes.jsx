@@ -446,7 +446,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
             {/* VISUALIZER & INGREDIENTS - LEFT COL */}
             <div className="lg:row-span-3 order-first lg:order-none flex flex-col gap-6">
                 {/* 1. VISUALIZER (Compact Fixed Height) */}
-                <div className="h-20 md:h-24 lg:h-56 min-h-[80px]">
+                <div className="h-48 md:h-52 lg:h-64 min-h-[192px]">
                     <CartridgeVisualizer 
                         diameter={guessDiameter(form.caliber)}
                         bulletLength={Number(form.bulletLength) || 0}
