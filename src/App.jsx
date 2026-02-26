@@ -220,7 +220,7 @@ export default function App() {
         className="max-w-6xl mx-auto px-4
           pt-[calc(56px+env(safe-area-inset-top))]
           pb-[calc(72px+env(safe-area-inset-bottom))]
-          md:pt-[88px] md:pb-10
+          lg:pt-[88px] lg:pb-10
           transition-transform duration-200"
         style={{ transform: `translateY(${pullDistance > 0 ? pullDistance / 2 : 0}px)` }}
       >
@@ -257,7 +257,7 @@ export default function App() {
         {isAiOpen && <AiModal open={isAiOpen} onClose={() => setIsAiOpen(false)} />}
       </Suspense>
 
-      <div className="hidden md:block fixed bottom-2 right-3 z-50 text-[10px] text-steel-500"><span className="px-2 py-[2px] rounded border border-red-600/30 bg-black/70 backdrop-blur font-mono tracking-wider">Reload Tracker {APP_VERSION_LABEL}</span></div>
+      <div className="hidden lg:block fixed bottom-2 right-3 z-50 text-[10px] text-steel-500"><span className="px-2 py-[2px] rounded border border-red-600/30 bg-black/70 backdrop-blur font-mono tracking-wider">Reload Tracker {APP_VERSION_LABEL}</span></div>
     </div>
   )
 }

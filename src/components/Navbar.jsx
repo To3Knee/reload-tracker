@@ -40,7 +40,7 @@ export default function Navbar({
       {/* ═══════════════════════════════════════════════════════
           DESKTOP — Full top bar (md and up)
       ═══════════════════════════════════════════════════════ */}
-      <nav className="hidden md:flex fixed z-50 top-0 left-0 right-0 h-[72px] items-center px-6 gap-4
+      <nav className="hidden lg:flex fixed z-50 top-0 left-0 right-0 h-[72px] items-center px-6 gap-4
                       bg-[#080808]/96 backdrop-blur-xl border-b border-[#1e1e1e]
                       shadow-[0_1px_0_#2a2a2a,0_4px_24px_rgba(0,0,0,0.6)]">
 
@@ -105,7 +105,7 @@ export default function Navbar({
           MOBILE — Slim top header (branding + utility only)
       ═══════════════════════════════════════════════════════ */}
       <header
-        className="md:hidden fixed z-50 top-0 left-0 right-0
+        className="lg:hidden fixed z-50 top-0 left-0 right-0
                    flex items-center justify-between px-4
                    bg-[#080808]/97 backdrop-blur-xl border-b border-[#1e1e1e]"
         style={{ height: 'calc(48px + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
@@ -134,7 +134,7 @@ export default function Navbar({
           MOBILE — Fixed bottom tab bar
       ═══════════════════════════════════════════════════════ */}
       <nav
-        className="md:hidden fixed z-50 bottom-0 left-0 right-0
+        className="lg:hidden fixed z-50 bottom-0 left-0 right-0
                    flex items-stretch
                    bg-[#080808]/98 backdrop-blur-xl border-t border-[#1e1e1e]
                    overflow-x-auto no-scrollbar"
