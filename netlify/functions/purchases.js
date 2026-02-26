@@ -51,8 +51,8 @@ async function getCurrentUser(event) {
   const cookieHeader = event.headers.cookie || event.headers.Cookie || '';
   const cookies = {};
   cookieHeader.split(';').forEach(c => {
-    const [k, v] = c.trim().split('=');
-    if (k) cookies[k] = decodeURIComponent(v || '');
+    const [k, ...rest] = c.trim().split('=');
+    if (k) cookies[k] = decodeURIComponent(rest.join('=') || '');
   });
 
   const token = cookies[SESSION_COOKIE_NAME];

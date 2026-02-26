@@ -132,7 +132,7 @@ export function Market({ user }) {
                 </div>
                 <div>
                     <h3 className="text-xl font-bold text-white">Authentication Required</h3>
-                    <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
+                    <p className="text-steel-400 text-sm mt-2 max-w-md mx-auto">
                         You must be logged in to access the Market Watch features and track real-time pricing.
                     </p>
                 </div>
@@ -164,12 +164,12 @@ export function Market({ user }) {
     <div className="space-y-6 mt-4">
 
       {/* ADD BAR */}
-      <div className="glass p-4 rounded-xl border border-zinc-800">
+      <div className="glass p-4 rounded-xl border border-steel-700">
           <form onSubmit={handleAdd} className="flex gap-2">
               <div className="relative flex-1">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" size={16} />
                   <input 
-                      className="w-full bg-black/60 border border-zinc-700 rounded-xl pl-10 pr-4 py-3 text-sm text-zinc-200 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500/50 placeholder:text-zinc-600"
+                      className="w-full bg-black/60 border border-steel-600 rounded-xl pl-10 pr-4 py-3 text-sm text-steel-100 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500/50 placeholder:text-steel-500"
                       placeholder="Paste Product URL (Midway, Brownells, etc)..."
                       value={newItemUrl}
                       onChange={e => setNewItemUrl(e.target.value)}
@@ -183,7 +183,7 @@ export function Market({ user }) {
 
       {/* EMPTY STATE */}
       {items.length === 0 && !loading && (
-           <p className="text-center text-zinc-500 py-10">No items tracked. Paste a URL above to start.</p>
+           <p className="text-center text-steel-400 py-10">No items tracked. Paste a URL above to start.</p>
       )}
 
       {/* GROUPED LIST */}
@@ -191,7 +191,7 @@ export function Market({ user }) {
         {groupedItems.map(group => (
             <div key={group.type.value}>
                 {/* SECTION HEADER */}
-                <h3 className="text-sm font-semibold text-zinc-200 mb-2 uppercase tracking-wider border-b border-zinc-800 pb-1 inline-block pr-4">
+                <h3 className="text-sm font-semibold text-steel-100 mb-2 uppercase tracking-wider border-b border-steel-700 pb-1 inline-block pr-4">
                     {group.type.label}
                 </h3>
 
@@ -201,12 +201,12 @@ export function Market({ user }) {
                         const typeLabel = COMPONENT_TYPES.find(t => t.value === (item.componentType || 'other'))?.label || 'Other'
                         
                         return (
-                            <div key={item.id} className="bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 rounded-xl overflow-hidden group transition-all">
+                            <div key={item.id} className="bg-steel-800/40 border border-steel-700 hover:border-steel-600 rounded-xl overflow-hidden group transition-all">
                                 <div className="h-32 bg-black relative">
                                     {item.image_url ? (
                                         <img src={item.image_url} alt={item.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-zinc-700"><Search size={32}/></div>
+                                        <div className="w-full h-full flex items-center justify-center text-steel-600"><Search size={32}/></div>
                                     )}
                                     
                                     {/* TYPE BADGE - UPDATED TO RED */}
@@ -236,25 +236,25 @@ export function Market({ user }) {
                                 
                                 <div className="p-4">
                                     <div className="flex justify-between items-start gap-2 mb-1">
-                                        <h3 className="text-sm font-bold text-zinc-200 line-clamp-1 flex-1" title={item.name}>{item.name}</h3>
-                                        {item.vendor && <span className="text-[9px] px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400 border border-zinc-700 whitespace-nowrap">{item.vendor}</span>}
+                                        <h3 className="text-sm font-bold text-steel-100 line-clamp-1 flex-1" title={item.name}>{item.name}</h3>
+                                        {item.vendor && <span className="text-[9px] px-1.5 py-0.5 bg-steel-700 rounded text-steel-300 border border-steel-600 whitespace-nowrap">{item.vendor}</span>}
                                     </div>
                                     
                                     <div className="flex justify-between items-end">
                                         <div>
-                                            <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Price</p>
+                                            <p className="text-[10px] text-steel-400 uppercase tracking-wide">Price</p>
                                             <p className="text-lg font-mono font-bold text-emerald-400">{formatCurrency(item.price)}</p>
                                         </div>
                                         {(item.qty_per_unit > 1 && item.price > 0) && (
                                             <div className="text-right">
-                                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Per Unit</p>
-                                                <p className="text-xs font-bold text-zinc-300">{formatCurrency(item.price / item.qty_per_unit)}</p>
+                                                <p className="text-[10px] text-steel-400 uppercase tracking-wide">Per Unit</p>
+                                                <p className="text-xs font-bold text-steel-200">{formatCurrency(item.price / item.qty_per_unit)}</p>
                                             </div>
                                         )}
                                     </div>
                                     
                                     {/* FOOTER: Store Link (Emerald Pill) */}
-                                    <div className="mt-3 pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[10px] text-zinc-600">
+                                    <div className="mt-3 pt-3 border-t border-steel-700/50 flex justify-between items-center text-[10px] text-steel-500">
                                         <a 
                                             href={item.url} 
                                             target="_blank" 
@@ -277,22 +277,22 @@ export function Market({ user }) {
       {/* EDIT MODAL */}
       {editingItem && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
-            <div className="bg-[#0f0f10] border border-zinc-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl relative">
+            <div className="bg-[#0f0f10] border border-steel-600 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl relative">
                 
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <Edit size={18} className="text-red-500"/> Edit Listing
                 </h3>
                 
                 <div>
-                    <label className="text-xs text-zinc-500 block mb-1">Product Name</label>
-                    <input className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.name} onChange={e => setEditingItem({...editingItem, name: e.target.value})} />
+                    <label className="text-xs text-steel-400 block mb-1">Product Name</label>
+                    <input className="w-full bg-black border border-steel-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.name} onChange={e => setEditingItem({...editingItem, name: e.target.value})} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="text-xs text-zinc-500 block mb-1">Component Type</label>
+                        <label className="text-xs text-steel-400 block mb-1">Component Type</label>
                         <select 
-                            className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none"
+                            className="w-full bg-black border border-steel-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none"
                             value={editingItem.componentType || 'other'}
                             onChange={e => setEditingItem({...editingItem, componentType: e.target.value})}
                         >
@@ -302,20 +302,20 @@ export function Market({ user }) {
                         </select>
                     </div>
                     <div>
-                        <label className="text-xs text-zinc-500 block mb-1">Price ($)</label>
-                        <input type="number" step="0.01" className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.price} onChange={e => setEditingItem({...editingItem, price: e.target.value})} />
+                        <label className="text-xs text-steel-400 block mb-1">Price ($)</label>
+                        <input type="number" step="0.01" className="w-full bg-black border border-steel-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.price} onChange={e => setEditingItem({...editingItem, price: e.target.value})} />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="text-xs text-zinc-500 block mb-1">Pack Quantity</label>
-                        <input type="number" className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.qty_per_unit} onChange={e => setEditingItem({...editingItem, qty_per_unit: e.target.value})} />
-                        <p className="text-[9px] text-zinc-600 mt-1">e.g. 1000 for primers</p>
+                        <label className="text-xs text-steel-400 block mb-1">Pack Quantity</label>
+                        <input type="number" className="w-full bg-black border border-steel-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.qty_per_unit} onChange={e => setEditingItem({...editingItem, qty_per_unit: e.target.value})} />
+                        <p className="text-[9px] text-steel-500 mt-1">e.g. 1000 for primers</p>
                     </div>
                     <div>
-                        <label className="text-xs text-zinc-500 block mb-1">Status</label>
-                        <select className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.in_stock ? 'true' : 'false'} onChange={e => setEditingItem({...editingItem, in_stock: e.target.value === 'true'})}>
+                        <label className="text-xs text-steel-400 block mb-1">Status</label>
+                        <select className="w-full bg-black border border-steel-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.in_stock ? 'true' : 'false'} onChange={e => setEditingItem({...editingItem, in_stock: e.target.value === 'true'})}>
                             <option value="true">In Stock</option>
                             <option value="false">Out of Stock</option>
                         </select>
@@ -323,12 +323,12 @@ export function Market({ user }) {
                 </div>
 
                 <div>
-                     <label className="text-xs text-zinc-500 block mb-1">Vendor Name</label>
-                     <input className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.vendor || ''} onChange={e => setEditingItem({...editingItem, vendor: e.target.value})} placeholder="e.g. MidwayUSA" />
+                     <label className="text-xs text-steel-400 block mb-1">Vendor Name</label>
+                     <input className="w-full bg-black border border-steel-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editingItem.vendor || ''} onChange={e => setEditingItem({...editingItem, vendor: e.target.value})} placeholder="e.g. MidwayUSA" />
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                    <button onClick={() => setEditingItem(null)} className="flex-1 py-2 rounded-lg border border-zinc-700 text-zinc-400 hover:text-white transition text-sm">Cancel</button>
+                    <button onClick={() => setEditingItem(null)} className="flex-1 py-2 rounded-lg border border-steel-600 text-steel-300 hover:text-white transition text-sm">Cancel</button>
                     <button onClick={handleSaveEdit} className="flex-1 py-2 rounded-lg bg-red-700 text-white font-bold hover:bg-red-600 transition text-sm">Save Changes</button>
                 </div>
             </div>
@@ -344,12 +344,12 @@ export function Market({ user }) {
                 </div>
                 <div>
                     <h3 className="text-lg font-bold text-white">Stop Tracking?</h3>
-                    <p className="text-sm text-zinc-400 mt-1">
+                    <p className="text-sm text-steel-300 mt-1">
                         Are you sure you want to remove <span className="text-white font-medium">{itemToDelete.name}</span> from your watch list?
                     </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                    <button onClick={() => setItemToDelete(null)} className="px-4 py-2 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 font-medium text-sm transition">Cancel</button>
+                    <button onClick={() => setItemToDelete(null)} className="px-4 py-2 rounded-xl border border-steel-600 text-steel-200 hover:bg-steel-700 font-medium text-sm transition">Cancel</button>
                     <button onClick={executeDelete} disabled={isDeleting} className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">
                         {isDeleting ? 'Removing...' : 'Remove Item'}
                     </button>

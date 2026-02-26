@@ -50,7 +50,12 @@ export function GearLocker() {
     } catch (e) {
       if (e?.name !== 'AbortError') {
         console.error(e)
-        setError('Failed to load gear. Check your connection and try again.')
+        const msg = e?.message || ''
+        if (msg.toLowerCase().includes('authentication') || msg.toLowerCase().includes('required')) {
+          setError('Session expired — please sign out and sign back in.')
+        } else {
+          setError(msg || 'Failed to load gear. Check your connection and try again.')
+        }
       }
     }
   }
@@ -154,14 +159,14 @@ export function GearLocker() {
 
         {/* ADD BUTTON (Only visible when form closed) */}
         {!isFormOpen && (
-            <button onClick={handleAddNew} className="w-full py-3 rounded-xl border border-dashed border-zinc-700 text-zinc-500 hover:text-red-400 hover:border-red-500/50 hover:bg-red-900/10 transition flex items-center justify-center gap-2 text-xs font-bold">
+            <button onClick={handleAddNew} className="w-full py-3 rounded border border-dashed border-steel-600 text-steel-400 hover:text-red-400 hover:border-red-500/50 hover:bg-red-900/10 transition flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em]">
                 <Plus size={16} /> Add New Gear
             </button>
         )}
 
         {isFormOpen && (
             <div className="glass p-6 border border-red-500/30 animation-fade-in">
-                <h3 className="text-sm font-bold text-zinc-200 mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2">
+                <h3 className="text-sm font-bold text-steel-100 mb-4 uppercase tracking-widest border-b border-steel-700 pb-2">
                     {editingId ? 'Edit Gear' : 'New Gear'}
                 </h3>
                 
@@ -190,7 +195,7 @@ export function GearLocker() {
                                 type="button" 
                                 onClick={handleAutoFill} 
                                 disabled={scraping || !form.url}
-                                className="px-3 rounded-xl bg-purple-900/30 border border-purple-500/50 text-purple-300 hover:bg-purple-900/50 hover:text-white transition flex items-center gap-2 disabled:opacity-50"
+                                className="rt-btn border-purple-500/50 bg-purple-900/30 text-purple-300 hover:bg-purple-900/50 hover:text-white disabled:opacity-50"
                             >
                                 {scraping ? <Loader2 size={16} className="animate-spin"/> : <Wand2 size={16} />}
                                 <span className="text-[10px] font-bold hidden sm:inline">Auto-Fill</span>
@@ -226,24 +231,24 @@ export function GearLocker() {
             {gearList.map(item => (
                 <div key={item.id} className="rt-card flex flex-col hover:border-steel-600 transition-colors group min-h-[96px]">
                     <div className="flex h-full">
-                        <div className="w-24 bg-black flex-shrink-0 border-r border-zinc-800 relative">
+                        <div className="w-24 bg-black flex-shrink-0 border-r border-steel-700 relative">
                             {item.imageUrl ? (
                                 <img src={item.imageUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-zinc-700"><Box size={24}/></div>
+                                <div className="w-full h-full flex items-center justify-center text-steel-600"><Box size={24}/></div>
                             )}
                             {item.price > 0 && <div className="absolute bottom-1 right-1 bg-black/80 text-[9px] text-emerald-400 px-1.5 rounded border border-emerald-900/50">{formatCurrency(item.price)}</div>}
                         </div>
                         <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
                             <div>
                                 <div className="flex justify-between items-start gap-2">
-                                    <h4 className="text-sm font-bold text-zinc-200 truncate pr-1">{item.name}</h4>
-                                    <span className="text-[9px] uppercase tracking-wider text-zinc-500 border border-zinc-800 px-1.5 rounded bg-black/20 whitespace-nowrap flex-shrink-0">{TYPES.find(t=>t.value===item.type)?.label.split(' ')[0]}</span>
+                                    <h4 className="text-sm font-bold text-steel-100 truncate pr-1">{item.name}</h4>
+                                    <span className="text-[9px] uppercase tracking-wider text-steel-400 border border-steel-700 px-1.5 rounded bg-black/20 whitespace-nowrap flex-shrink-0">{TYPES.find(t=>t.value===item.type)?.label.split(' ')[0]}</span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <p className="text-[10px] text-zinc-400 truncate flex-1">{item.brand} {item.model}</p>
+                                    <p className="text-[10px] text-steel-300 truncate flex-1">{item.brand} {item.model}</p>
                                     {item.ownerName && (
-                                        <span className="text-[8px] px-1.5 py-0.5 rounded bg-zinc-900/80 border border-zinc-700 text-zinc-500 flex items-center gap-1 flex-shrink-0" title={`Added by ${item.ownerName}`}>
+                                        <span className="text-[8px] px-1.5 py-0.5 rounded bg-steel-800/80 border border-steel-600 text-steel-400 flex items-center gap-1 flex-shrink-0" title={`Added by ${item.ownerName}`}>
                                             <User size={8} /> {item.ownerName}
                                         </span>
                                     )}
@@ -252,7 +257,7 @@ export function GearLocker() {
                             
                             <div className="flex justify-between items-end mt-2">
                                 <div className="flex gap-2">
-                                    {item.url && <a href={item.url} target="_blank" className="text-zinc-500 hover:text-red-400 transition"><ExternalLink size={12}/></a>}
+                                    {item.url && <a href={item.url} target="_blank" className="text-steel-400 hover:text-red-400 transition"><ExternalLink size={12}/></a>}
                                 </div>
                                 <div className="flex gap-2 flex-shrink-0">
                                     <button onClick={() => handleEdit(item)} className="rt-btn rt-btn-icon"><Edit size={12}/></button>

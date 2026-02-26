@@ -63,7 +63,7 @@ export default function UploadButton({ onUploadComplete, currentImageUrl }) {
   // --- STATE 1: IMAGE EXISTS (PREVIEW MODE) ---
   if (currentImageUrl) {
     return (
-      <div className="relative group w-full h-32 bg-black/40 rounded-xl border border-slate-700/50 overflow-hidden flex items-center justify-center">
+      <div className="relative group w-full h-32 bg-black/40 rounded-xl border border-steel-600/50 overflow-hidden flex items-center justify-center">
         {/* Background Blur Image */}
         <div 
             className="absolute inset-0 bg-cover bg-center opacity-50 blur-sm"
@@ -93,7 +93,7 @@ export default function UploadButton({ onUploadComplete, currentImageUrl }) {
   // --- STATE 2: UPLOADING (PROGRESS BAR) ---
   if (uploading) {
     return (
-      <div className="w-full h-12 bg-black/40 rounded-xl border border-slate-700/50 flex items-center px-4 gap-3 relative overflow-hidden">
+      <div className="w-full h-12 bg-black/40 rounded-xl border border-steel-600/50 flex items-center px-4 gap-3 relative overflow-hidden">
         {/* Progress Fill */}
         <div 
           className="absolute left-0 top-0 bottom-0 bg-emerald-900/30 transition-all duration-200"
@@ -103,7 +103,7 @@ export default function UploadButton({ onUploadComplete, currentImageUrl }) {
         <Loader2 className="animate-spin text-emerald-400 z-10" size={18} />
         <div className="flex-1 z-10 flex justify-between items-center text-xs">
           <span className="text-emerald-300 font-medium">Uploading target...</span>
-          <span className="text-slate-400">{progress}%</span>
+          <span className="text-steel-400">{progress}%</span>
         </div>
       </div>
     )
@@ -126,7 +126,7 @@ export default function UploadButton({ onUploadComplete, currentImageUrl }) {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex-1 h-12 bg-black/40 hover:bg-slate-900/60 border border-slate-700/70 hover:border-emerald-500/50 border-dashed rounded-xl flex items-center justify-center gap-2 text-slate-400 hover:text-emerald-400 transition group"
+          className="flex-1 h-12 bg-black/40 hover:bg-steel-800/60 border border-steel-600/70 hover:border-emerald-500/50 border-dashed rounded-xl flex items-center justify-center gap-2 text-steel-400 hover:text-emerald-400 transition group"
         >
           <Camera size={18} className="group-hover:scale-110 transition" />
           <span className="text-xs font-semibold">Snap Photo / Upload</span>

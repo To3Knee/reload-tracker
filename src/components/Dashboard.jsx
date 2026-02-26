@@ -336,7 +336,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
             <div>
               <label className="rt-label">Recipe (optional)</label>
               {recipesProp.length === 0 ? (
-                <div className="text-[11px] text-slate-500 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-xl px-3 py-1.5">No recipes found.</div>
+                <div className="text-[11px] text-steel-500 bg-steel-800/40 border border-dashed border-steel-600/60 rounded-xl px-3 py-1.5">No recipes found.</div>
               ) : (
                 <select className={inputClass} value={selectedRecipeId} onChange={handleRecipeSelect}>
                   <option value="">Select a recipe...</option>
@@ -347,7 +347,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           </div>
 
           {/* Inputs Group 2 */}
-          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-800/80">
+          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-steel-700/80">
             <div>
               <label className="rt-label">Charge weight (gr)</label>
               <input type="number" className={inputClass} value={chargeGrains} onChange={e => setChargeGrains(e.target.value)} min="0" step="0.01" />
@@ -359,7 +359,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
           </div>
 
           {/* Inputs Group 3 */}
-          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-800/80">
+          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-steel-700/80">
             <div>
               <label className="rt-label">Powder lot</label>
               <select className={inputClass} value={powderId} onChange={e => setPowderId(e.target.value)}>
@@ -390,7 +390,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-800/80">
+          <div className="pt-4 border-t border-steel-700/80">
              <label className="block text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-500 mb-1 flex items-center gap-1"><DollarSign size={12}/> Compare vs Factory Ammo</label>
              <div className="grid grid-cols-2 gap-3">
                  <select 
@@ -414,11 +414,11 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
                     onChange={e => { setManualFactoryCost(e.target.value); setSelectedFactoryId(''); }}
                  />
              </div>
-             <p className="text-[9px] text-slate-500 mt-1">Select a tracked item OR type a price manually to calculate ROI.</p>
+             <p className="text-[9px] text-steel-500 mt-1">Select a tracked item OR type a price manually to calculate ROI.</p>
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 mt-4">
-            <p className="text-[11px] text-slate-500 min-w-0 mr-2">Save this setup to compare later.</p>
+          <div className="flex items-center justify-between pt-2 border-t border-steel-700/80 mt-4">
+            <p className="text-[11px] text-steel-500 min-w-0 mr-2">Save this setup to compare later.</p>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span onClick={handleSaveScenario} className={saveConfigButtonClass}>+ Save config</span>
             </div>
@@ -431,8 +431,8 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
                 {scenarios.map(s => (
                   <div key={s.id} className="rt-card flex items-center justify-between px-3 py-2 text-[11px] text-steel-300">
                     <div>
-                      <div className="font-semibold text-slate-100">{s.name}</div>
-                      <div className="text-slate-400">{toStandardMoney(s.cost.perRound)} /rnd</div>
+                      <div className="font-semibold text-steel-100">{s.name}</div>
+                      <div className="text-steel-400">{toStandardMoney(s.cost.perRound)} /rnd</div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span onClick={() => handleDeleteScenario(s.id)} className={removeButtonClass}>Remove</span>
@@ -471,16 +471,16 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
               <div className="flex items-center justify-between mb-2">
                    <p className="rt-section-eyebrow">Cost Analysis</p>
                    <div className="group relative">
-                       <Info size={14} className="text-slate-600 hover:text-slate-400 cursor-help"/>
-                       <div className="absolute right-0 bottom-6 w-48 bg-black border border-slate-700 p-2 rounded text-[10px] text-slate-300 opacity-0 group-hover:opacity-100 transition pointer-events-none z-50">
+                       <Info size={14} className="text-steel-500 hover:text-steel-400 cursor-help"/>
+                       <div className="absolute right-0 bottom-6 w-48 bg-black border border-steel-600 p-2 rounded text-[10px] text-steel-300 opacity-0 group-hover:opacity-100 transition pointer-events-none z-50">
                            Exact: {toPrecisionMoney(breakdown?.total.perRound || 0)} / round
                        </div>
                    </div>
               </div>
               
-              <div className="flex items-end justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
+              <div className="flex items-end justify-between gap-4 border-b border-steel-700 pb-6 mb-6">
                 <div>
-                  <p className="text-sm text-slate-400">Per round</p>
+                  <p className="text-sm text-steel-400">Per round</p>
                   <p className="text-5xl font-black text-emerald-400 tracking-tight">
                       {toStandardMoney(breakdown?.total.perRound)}
                   </p>
@@ -502,7 +502,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
                                   {roiStats.isSavings ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}
                                   {roiStats.isSavings ? ' Value Created' : ' Cost Increase'}
                               </p>
-                              <p className="text-xs text-slate-400 mt-0.5 line-clamp-2 leading-tight" title={roiStats.name}>{roiStats.name}</p>
+                              <p className="text-xs text-steel-400 mt-0.5 line-clamp-2 leading-tight" title={roiStats.name}>{roiStats.name}</p>
                           </div>
                           <div className="text-right flex-shrink-0">
                               <p className="text-2xl font-black text-white leading-none">{roiStats.label}</p>
@@ -521,23 +521,23 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
 
               {/* COST TABLE */}
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-steel-400">
                     <span>Per 20</span>
-                    <span className="font-semibold text-slate-200">{toStandardMoney(breakdown?.total.per20)}</span>
+                    <span className="font-semibold text-steel-200">{toStandardMoney(breakdown?.total.per20)}</span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-steel-400">
                     <span>Per 50</span>
-                    <span className="font-semibold text-slate-200">{toStandardMoney(breakdown?.total.per50)}</span>
+                    <span className="font-semibold text-steel-200">{toStandardMoney(breakdown?.total.per50)}</span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-steel-400">
                     <span>Per 100</span>
-                    <span className="font-semibold text-slate-200">{toStandardMoney(breakdown?.total.per100)}</span>
+                    <span className="font-semibold text-steel-200">{toStandardMoney(breakdown?.total.per100)}</span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-steel-400">
                     <span>Per 1,000</span>
-                    <span className="font-semibold text-slate-200">{toStandardMoney(breakdown?.total.per1000)}</span>
+                    <span className="font-semibold text-steel-200">{toStandardMoney(breakdown?.total.per1000)}</span>
                 </div>
-                <div className="flex justify-between text-slate-400 border-t border-slate-800 pt-2 mt-2">
+                <div className="flex justify-between text-steel-400 border-t border-steel-700 pt-2 mt-2">
                     <span>Cost for {lotSize.toLocaleString()} rounds</span>
                     <span className="font-bold text-emerald-500">{toStandardMoney(breakdown?.total.lot)}</span>
                 </div>

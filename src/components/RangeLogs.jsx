@@ -276,7 +276,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     HAPTIC.click()
     const win = window.open('', '_blank')
     if (!win) { alert('Popup blocked. Please allow popups.'); return }
-    win.document.write('<html><body><p>Generating Ballistic Certificate...</p></body></html>')
+    win.document.write('<html><body style="background:#0a0a0a"><p style="color:#4a4844;font-family:monospace;padding:20px;font-size:12px">Generating Ballistic Certificate...</p></body></html>')
 
     const title = getRecipeDisplay(log)
     const [recipeName, caliber] = title.includes('(') ? title.split('(') : [title, '']
@@ -284,114 +284,135 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     const moa = calculateMoa(log.groupSize, log.distance)
     const dateStr = log.date ? log.date.split('T')[0] : 'Unknown Date'
     const logoUrl = `${window.location.origin}/logo.png`
-    const appUrl = window.location.origin
-    const qrUrl = `${appUrl}/?rangeLogId=${log.id}`
+    const qrUrl = `${window.location.origin}/?rangeLogId=${log.id}`
     let qrDataUri = ''
-    try { qrDataUri = await QRCode.toDataURL(qrUrl, { width: 150, margin: 0, color: { dark: '#000000', light: '#ffffff' } }) } catch (e) {}
+    try { qrDataUri = await QRCode.toDataURL(qrUrl, { width: 120, margin: 0, color: { dark: '#d4a843', light: '#060606' } }) } catch (e) {}
 
     const r = recipes.find(x => String(x.id) === String(log.recipeId)) || {}
-    const bullet = r.bulletName ? `${r.bulletWeightGr || '?'}gr ${r.bulletName}` : 'Unknown Bullet'
-    const powder = r.powderName ? `${r.chargeGrains || '?'}gr ${r.powderName}` : 'Unknown Powder'
-    const primer = r.primerName || 'Unknown Primer'
-    const coal = r.coal ? `COAL: ${r.coal}"` : ''
+    const bullet = r.bulletName ? `${r.bulletWeightGr || '?'}gr ${r.bulletName}` : '---'
+    const powder = r.powderName ? `${r.chargeGrains || '?'}gr ${r.powderName}` : '---'
+    const primer = r.primerName || '---'
+    const coal   = r.coal ? `${r.coal}"` : '---'
 
-    const firearmLine = log.firearmName ? `<p style="margin-top:4px;"><strong>RIFLE:</strong> ${esc(log.firearmName)}</p>` : ''
-    const batchLine = log.batchId ? `<p style="margin-top:2px;"><strong>BATCH:</strong> #${log.batchId}</p>` : ''
-    const shotsDisplay = (log.shots && log.shots.length > 0) ? `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;"><span class="stat-label">Shot Data (n=${log.shots.length})</span><div style="font-size:9px; color:#444; margin-top:4px; font-family:monospace; word-wrap:break-word;">${log.shots.join(', ')}</div></div>` : ''
+    const shotsDisplay = (log.shots && log.shots.length > 0)
+      ? `<div class="sect">Shot String (n=${log.shots.length})</div><div class="shots-wrap"><span class="shots-data">${log.shots.map(s => esc(String(s))).join(' · ')}</span></div>`
+      : ''
 
     let weatherHtml = ''
     if (log.weather) {
-        const parts = log.weather.split(',')
-        if (parts.length >= 3 && !log.weather.includes('Wind:')) {
-             weatherHtml = `
-                <div style="margin-top:8px; padding:6px; background:#f9f9f9; border:1px solid #eee; border-radius:4px; display:flex; gap:12px; align-items:center;">
-                    <span style="font-weight:700; color:#b33c3c; font-size:9px; text-transform:uppercase;">Conditions</span>
-                    <span style="font-size:9px; color:#333;"><strong>Wind:</strong> ${esc(parts[0].trim())}</span>
-                    <span style="font-size:9px; color:#333;"><strong>Baro:</strong> ${esc(parts[1].trim())}</span>
-                    <span style="font-size:9px; color:#333;"><strong>Hum:</strong> ${esc(parts[2].trim())}</span>
-                    ${log.temp ? `<span style="font-size:9px; color:#333;"><strong>Temp:</strong> ${esc(String(log.temp))}°F</span>` : ''}
-                </div>
-             `
-        } else {
-            weatherHtml = `
-                <div style="margin-top:8px; padding:6px; background:#f9f9f9; border:1px solid #eee; border-radius:4px;">
-                    <span style="font-weight:700; color:#b33c3c; font-size:9px; text-transform:uppercase;">Conditions:</span>
-                    <span style="font-size:9px; color:#333;">${esc(log.weather)} ${log.temp ? `(${esc(String(log.temp))}°F)` : ''}</span>
-                </div>
-            `
-        }
+      const wParts = log.weather.split(',')
+      const tempStr = log.temp ? ` · ${esc(String(log.temp))}°F` : ''
+      if (wParts.length >= 3 && !log.weather.includes('Wind:')) {
+        weatherHtml = `<div class="wx-row"><span class="wx-tag">Conditions</span><span class="wx-val">Wind: ${esc(wParts[0].trim())} · Baro: ${esc(wParts[1].trim())} · Hum: ${esc(wParts[2].trim())}${tempStr}</span></div>`
+      } else {
+        weatherHtml = `<div class="wx-row"><span class="wx-tag">Conditions</span><span class="wx-val">${esc(log.weather)}${tempStr}</span></div>`
+      }
     }
 
-    const html = `<!DOCTYPE html><html><head><title>Range Log #${log.id}</title><style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
-    @page { margin: 0; size: 4in auto; } 
-    *{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body{ margin:0; padding:0; font-family:'Inter', sans-serif; background:#000; color:#111; }
-    .card{ width:4in; min-height:6in; height:auto; display:flex; flex-direction:column; position:relative; background:#fff; overflow: visible; }
-    .header{ background-color:#0f0f0f !important; color:white !important; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:5px solid #b33c3c !important; }
-    .header-left h1{ font-size:16px; font-weight:900; text-transform:uppercase; margin:0; }
-    .header-left h2{ font-size:11px; font-weight:600; color:#b33c3c !important; margin:2px 0 0 0; text-transform:uppercase; }
-    .header-left p{ font-size:9px; color:#aaa !important; margin:4px 0 0 0; }
-    .header-right{ display:flex; align-items:center; gap:12px; }
-    .logo{ height:40px; width:auto; }
-    .header-qr{ background:white !important; padding:3px; border-radius:3px; display:flex; flex-direction:column; align-items:center; }
-    .qr-img{ width:38px; height:38px; }
-    .qr-label{ font-size:4px; color:black; font-weight:900; text-transform:uppercase; margin-top:1px; }
-    .load-strip { background-color:#f4f4f4 !important; padding:8px 20px; border-bottom:1px solid #e0e0e0; display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; }
-    .load-item { font-size:8px; color:#333; display:flex; flex-direction:column; }
-    .load-label { font-size:6px; font-weight:900; color:#b33c3c; text-transform:uppercase; margin-bottom:1px; }
-    .load-val { font-weight:700; font-family:monospace; font-size:9px; }
-    .content{ padding:15px 20px; flex:1; display:flex; flex-direction:column; }
-    .target-container{ width:100%; height:2.0in; background:#fff !important; border-radius:6px; overflow:hidden; margin-bottom:15px; border:1px solid #ddd; position:relative; }
-    .main-img{ width:100%; height:100%; object-fit:contain; }
-    .no-img{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:10px; font-weight:600; text-transform:uppercase; }
-    .grid-row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px; }
-    .stat-box{ background-color:#f4f4f4 !important; padding:6px 8px; border-radius:4px; border-left:3px solid #ddd !important; }
-    .stat-box.highlight{ border-left-color:#b33c3c !important; background-color:#fff0f0 !important; }
-    .stat-label{ font-size:7px; text-transform:uppercase; color:#666; font-weight:700; display:block; }
-    .stat-val{ font-size:12px; font-weight:800; color:#111; display:block; }
-    .stat-unit{ font-size:8px; font-weight:500; color:#888; margin-left:1px; }
-    .notes-section{ margin-top:8px; background:#fff; border:1px dashed #ccc; padding:10px; border-radius:4px; flex:1 0 auto; }
-    .notes-label{ font-size:8px; font-weight:900; text-transform:uppercase; color:#b33c3c; margin-bottom:4px; display:block; }
-    .notes-text{ font-size:9px; line-height:1.4; color:#333; }
-    .footer{ padding:10px 20px; background:#f4f4f4 !important; border-top:1px solid #e0e0e0; font-size:8px; color:#888; text-transform:uppercase; letter-spacing:0.1em; display:flex; justify-content:space-between; margin-top: auto; }
-    .close-btn{ position:fixed; top:20px; right:20px; z-index:9999; background:rgba(0,0,0,0.8); color:#fff; padding:12px 24px; border-radius:50px; font-family:sans-serif; font-weight:bold; font-size:14px; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); cursor:pointer; backdrop-filter:blur(10px); }
-    @media print{ .close-btn { display:none !important; } }
-    </style></head><body><button onclick="window.close()" class="close-btn">Done / Close</button>
-    <div class="card">
-        <div class="header">
-            <div class="header-left"><h1>${recipeName}</h1><h2>${cleanCaliber}</h2><p>${dateStr} • ${log.location || 'Range'}</p>${firearmLine}${batchLine}</div>
-            <div class="header-right"><div class="header-qr"><img src="${qrDataUri}" class="qr-img" /><span class="qr-label">Scan</span></div><img src="${logoUrl}" class="logo" /></div>
-        </div>
-        <div class="load-strip">
-            <div class="load-item"><span class="load-label">Bullet</span><span class="load-val">${bullet}</span></div>
-            <div class="load-item"><span class="load-label">Powder</span><span class="load-val">${powder}</span></div>
-            <div class="load-item"><span class="load-label">Primer</span><span class="load-val">${primer}</span></div>
-            ${coal ? `<div class="load-item"><span class="load-label">COAL</span><span class="load-val">${r.coal}"</span></div>` : ''}
-        </div>
-        <div class="content">
-            <div class="target-container">${log.imageUrl ? `<img src="${log.imageUrl}" class="main-img" />` : '<div class="no-img">No Image</div>'}</div>
-            <div class="grid-row">
-                <div class="stat-box highlight"><span class="stat-label">Group Size</span><span class="stat-val">${log.groupSize || '--'}<span class="stat-unit">IN</span></span></div>
-                <div class="stat-box"><span class="stat-label">MOA</span><span class="stat-val">${moa}</span></div>
-                <div class="stat-box"><span class="stat-label">Distance</span><span class="stat-val">${log.distance || '--'}<span class="stat-unit">YDS</span></span></div>
-            </div>
-            <div class="grid-row">
-                <div class="stat-box"><span class="stat-label">Avg Velocity</span><span class="stat-val">${log.velocity || '--'}<span class="stat-unit">FPS</span></span></div>
-                <div class="stat-box"><span class="stat-label">SD</span><span class="stat-val">${log.sd || '--'}</span></div>
-                <div class="stat-box"><span class="stat-label">ES</span><span class="stat-val">${log.es || '--'}</span></div>
-            </div>
-            <div class="notes-section">
-                <span class="notes-label">Session Notes</span>
-                <div class="notes-text">${log.notes || 'No notes recorded.'}</div>
-                ${weatherHtml}
-                ${shotsDisplay}
-            </div>
-        </div>
-        <div class="footer"><span>Log ID: ${log.id}</span><span>Reload Tracker</span></div>
+    const html = `<!DOCTYPE html><html><head>
+<meta charset="utf-8"/><title>Ballistic Certificate — Log #${log.id}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+@page { margin: 0; size: 4in auto; }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; }
+.card { width: 4in; min-height: 5in; height: auto; display: flex; flex-direction: column; background: #0a0a0a; }
+/* HEADER */
+.hdr { background: #060606; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; position: relative; border-bottom: 1px solid #2a2a2a; }
+.hdr::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #b87333 20%, #d4a843 50%, #b87333 80%, transparent); }
+.hdr-l { flex: 1; min-width: 0; }
+.rname { font-size: 13px; font-weight: 900; text-transform: uppercase; color: #f0ece4; line-height: 1; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcal { font-size: 8px; font-weight: 700; color: #b87333; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 3px; }
+.rmeta { font-size: 7px; color: #555c6a; margin-top: 2px; letter-spacing: 0.05em; }
+.hdr-r { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: 10px; }
+.logo { height: 34px; width: auto; }
+.qr-box { background: #060606; border: 1px solid #2a2a2a; padding: 2px; border-radius: 2px; }
+.qr-img { width: 34px; height: 34px; display: block; }
+/* LOAD STRIP */
+.load-strip { background: #080808; border-bottom: 1px solid #1e1e1e; padding: 7px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.load-item { display: flex; flex-direction: column; }
+.load-label { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #b87333; margin-bottom: 1px; }
+.load-val { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; font-weight: 700; color: #f0ece4; }
+/* TARGET IMAGE */
+.target-wrap { background: #080808; border-bottom: 1px solid #1e1e1e; height: 1.8in; position: relative; overflow: hidden; }
+.target-img { width: 100%; height: 100%; object-fit: contain; }
+.no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #2a2a2a; }
+/* CONTENT */
+.content { padding: 10px 14px; flex: 1; }
+/* SECTION EYEBROW */
+.sect { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.25em; color: #b87333; display: flex; align-items: center; gap: 6px; margin: 10px 0 6px; }
+.sect:first-child { margin-top: 0; }
+.sect::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #2a2a2a, transparent); }
+/* STAT GRID */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+.stat-box { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 3px; padding: 6px 7px; }
+.stat-box.hi { border-left: 2px solid #b87333; background: #120d06; }
+.slabel { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #4a4844; display: block; margin-bottom: 2px; }
+.sval { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 900; color: #f0ece4; display: block; line-height: 1; }
+.sval.cu { color: #d4a843; }
+.sunit { font-size: 7px; font-weight: 500; color: #555c6a; margin-left: 1px; }
+/* WEATHER */
+.wx-row { display: flex; align-items: baseline; gap: 6px; background: #080808; border: 1px solid #1e1e1e; border-radius: 3px; padding: 5px 8px; margin-bottom: 6px; }
+.wx-tag { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #b87333; flex-shrink: 0; }
+.wx-val { font-family: 'JetBrains Mono', monospace; font-size: 7.5px; color: #7a8190; }
+/* SHOTS */
+.shots-wrap { background: #080808; border: 1px solid #1e1e1e; border-radius: 3px; padding: 6px 8px; margin-bottom: 6px; }
+.shots-data { font-family: 'JetBrains Mono', monospace; font-size: 7.5px; color: #555c6a; line-height: 1.5; word-break: break-all; }
+/* NOTES */
+.notes-box { background: #080808; border: 1px solid #1e1e1e; border-left: 2px solid #b87333; border-radius: 0 3px 3px 0; padding: 6px 10px; }
+.notes-txt { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #7a8190; line-height: 1.5; white-space: pre-wrap; }
+/* FOOTER */
+.footer { padding: 6px 14px; background: #060606; border-top: 1px solid #1a1a1a; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 6.5px; color: #2a2a2a; text-transform: uppercase; letter-spacing: 0.15em; }
+/* CLOSE BTN */
+.close-btn { position: fixed; top: 12px; right: 12px; background: #2a2a2a; color: #ccc; padding: 5px 12px; border-radius: 4px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid #3a3a3a; cursor: pointer; }
+@media print { .close-btn { display: none !important; } }
+</style>
+</head><body>
+<button onclick="window.close()" class="close-btn">✕ Close</button>
+<div class="card">
+  <div class="hdr">
+    <div class="hdr-l">
+      <div class="rname">${esc(recipeName)}</div>
+      <div class="rcal">${esc(cleanCaliber)}</div>
+      <div class="rmeta">${dateStr}${log.location ? ' · ' + esc(log.location) : ''}${log.firearmName ? ' · ' + esc(log.firearmName) : ''}${log.batchId ? ' · Batch #' + log.batchId : ''}</div>
     </div>
-    <script>window.onload = () => { setTimeout(() => window.print(), 500); };</script></body></html>`
-    
+    <div class="hdr-r">
+      ${qrDataUri ? `<div class="qr-box"><img src="${qrDataUri}" class="qr-img"/></div>` : ''}
+      <img src="${logoUrl}" class="logo"/>
+    </div>
+  </div>
+  <div class="load-strip">
+    <div class="load-item"><span class="load-label">Bullet</span><span class="load-val">${esc(bullet)}</span></div>
+    <div class="load-item"><span class="load-label">Powder</span><span class="load-val">${esc(powder)}</span></div>
+    <div class="load-item"><span class="load-label">Primer</span><span class="load-val">${esc(primer)}</span></div>
+    <div class="load-item"><span class="load-label">C.O.A.L.</span><span class="load-val">${esc(coal)}</span></div>
+  </div>
+  <div class="target-wrap">
+    ${log.imageUrl ? `<img src="${log.imageUrl}" class="target-img"/>` : '<div class="no-img">No Target Image</div>'}
+  </div>
+  <div class="content">
+    <div class="sect">Accuracy</div>
+    <div class="stat-grid" style="margin-bottom:6px">
+      <div class="stat-box hi"><span class="slabel">Group Size</span><span class="sval cu">${esc(String(log.groupSize || '--'))}<span class="sunit">IN</span></span></div>
+      <div class="stat-box"><span class="slabel">MOA</span><span class="sval">${moa}</span></div>
+      <div class="stat-box"><span class="slabel">Distance</span><span class="sval">${esc(String(log.distance || '--'))}<span class="sunit">YDS</span></span></div>
+    </div>
+    <div class="sect">Velocity</div>
+    <div class="stat-grid" style="margin-bottom:6px">
+      <div class="stat-box"><span class="slabel">Avg Vel</span><span class="sval cu">${esc(String(log.velocity || '--'))}<span class="sunit">FPS</span></span></div>
+      <div class="stat-box"><span class="slabel">SD</span><span class="sval">${esc(String(log.sd || '--'))}</span></div>
+      <div class="stat-box"><span class="slabel">ES</span><span class="sval">${esc(String(log.es || '--'))}</span></div>
+    </div>
+    ${weatherHtml}
+    ${shotsDisplay}
+    ${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div class="notes-txt">${esc(log.notes)}</div></div>` : ''}
+  </div>
+  <div class="footer"><span>Log #${log.id} · Reload Tracker</span><span>${dateStr}</span></div>
+</div>
+<script>window.onload = () => { setTimeout(() => window.print(), 600); };<\/script>
+</body></html>`
+
     win.document.open()
     win.document.write(html)
     win.document.close()
@@ -410,7 +431,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
         </div>
       </div>
       
-      <div className="flex justify-end border-b border-zinc-800 pb-2 mb-6">
+      <div className="flex justify-end border-b border-steel-700 pb-2 mb-6">
             {canEdit && !isFormOpen && (
                 <button onClick={handleNewLog} className="rt-btn rt-btn-secondary">
                     <Plus size={12} /> New Session
@@ -420,7 +441,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
 
       {isFormOpen && (
         <div className="glass p-6 border border-red-500/30 animation-fade-in">
-            <h3 className="text-sm font-bold text-slate-200 mb-4 flex justify-between items-center">
+            <h3 className="text-sm font-bold text-steel-200 mb-4 flex justify-between items-center">
                 <span>{editingId ? 'Edit Range Log' : 'New Range Session'}</span>
             </h3>
 
@@ -460,16 +481,16 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
                     <div><label className={labelClass}>Date</label><input type="date" className={inputClass} value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
                 </div>
                 
-                <div className="bg-black/30 p-3 rounded-xl border border-slate-800">
+                <div className="bg-black/30 p-3 rounded-xl border border-steel-700">
                     <div className="flex items-center justify-between mb-2">
                         <label className={labelClass}><Calculator size={12} className="inline mr-1"/> Shot String Calculator</label>
-                        <span className="text-[9px] text-slate-500">{shotString.length} shots recorded</span>
+                        <span className="text-[9px] text-steel-500">{shotString.length} shots recorded</span>
                     </div>
                     <div className="flex gap-2">
                         <input type="number" className={inputClass.replace("w-full", "") + " flex-1 min-w-0"} placeholder="Enter velocity (fps)..." value={shotInput} onChange={e => setShotInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addShot())} />
-                        <button type="button" onClick={addShot} className="px-3 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition flex-shrink-0"><Plus size={14}/></button>
+                        <button type="button" onClick={addShot} className="rt-btn rt-btn-icon flex-shrink-0"><Plus size={14}/></button>
                     </div>
-                    {shotString.length > 0 && (<div className="flex flex-wrap gap-2 mt-2 max-h-20 overflow-y-auto custom-scrollbar">{shotString.map((s, i) => (<span key={i} onClick={() => removeShot(i)} className="px-2 py-1 rounded bg-slate-800/50 text-[10px] text-slate-300 border border-slate-700 hover:border-red-500/50 hover:text-red-400 cursor-pointer transition flex items-center gap-1">{s}</span>))}</div>)}
+                    {shotString.length > 0 && (<div className="flex flex-wrap gap-2 mt-2 max-h-20 overflow-y-auto custom-scrollbar">{shotString.map((s, i) => (<span key={i} onClick={() => removeShot(i)} className="px-2 py-1 rounded bg-steel-700/50 text-[10px] text-steel-300 border border-steel-600 hover:border-red-500/50 hover:text-red-400 cursor-pointer transition flex items-center gap-1">{s}</span>))}</div>)}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-2">
@@ -499,7 +520,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
                             <div className="flex gap-2 items-center">
                                 {/* Flex-1 prevents layout fighting */}
                                 <input placeholder="Conditions (Auto-fill)" className={inputClass.replace("w-full", "") + " flex-1 min-w-0"} value={form.weather} onChange={e => setForm({...form, weather: e.target.value})} />
-                                <button type="button" onClick={handleAutoWeather} className="w-10 h-[34px] flex-shrink-0 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition shadow-sm" title="Auto-Locate Weather">
+                                <button type="button" onClick={handleAutoWeather} className="rt-btn rt-btn-icon w-10 h-[34px] flex-shrink-0" title="Auto-Locate Weather">
                                     <MapPin size={16}/>
                                 </button>
                                 <input placeholder="°F" className={inputClass.replace("w-full", "") + " w-20 flex-shrink-0 text-center"} type="number" value={form.temp} onChange={e => setForm({...form, temp: e.target.value})} />
@@ -508,7 +529,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
                         
                         <div>
                             <label className={labelClass}>Target Image</label>
-                            <div className="bg-black/20 rounded-xl p-3 border border-slate-800 flex flex-col justify-center h-[100px]">
+                            <div className="bg-black/20 rounded-xl p-3 border border-steel-700 flex flex-col justify-center h-[100px]">
                                 <UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} />
                             </div>
                         </div>
@@ -522,19 +543,19 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
       )}
       
       <div className="grid gap-4">
-        {logs.length === 0 && !isFormOpen && (<div className="text-center p-12 border border-dashed border-slate-800 rounded-2xl"><Target size={48} className="mx-auto mb-3 text-slate-700" /><p className="text-slate-500 text-sm">No range logs recorded yet.</p><p className="text-[11px] text-slate-600 mt-1">Log your first trip to track groups and velocity.</p></div>)}
+        {logs.length === 0 && !isFormOpen && (<div className="text-center p-12 border border-dashed border-steel-700 rounded-2xl"><Target size={48} className="mx-auto mb-3 text-steel-600" /><p className="text-steel-500 text-sm">No range logs recorded yet.</p><p className="text-[11px] text-steel-500 mt-1">Log your first trip to track groups and velocity.</p></div>)}
         {logs.map(log => {
             const isHighlighted = String(highlightId) === String(log.id)
-            return (<div id={`rangelog-${log.id}`} key={log.id} className={`glass p-0 flex flex-col md:flex-row items-stretch overflow-hidden group transition duration-500 ${isHighlighted ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'border-red-500/20'}`}><div className="w-full md:w-48 h-48 md:h-auto bg-black/40 relative flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-800">{log.imageUrl ? (<div className="relative w-full h-full group-image"><img src={log.imageUrl} alt="Target" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" /><a href={log.imageUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 bg-black/60 p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-black/90 transition opacity-0 group-hover:opacity-100"><ExternalLink size={12} /></a></div>) : (<div className="w-full h-full flex items-center justify-center text-slate-800"><Target size={32} /></div>)}{log.groupSize && (<div className="absolute top-2 left-2 bg-black/80 backdrop-blur border border-emerald-500/30 px-2 py-1 rounded-md shadow-lg"><span className="text-xs font-bold text-emerald-400">{log.groupSize}"</span></div>)}</div>
+            return (<div id={`rangelog-${log.id}`} key={log.id} className={`glass p-0 flex flex-col md:flex-row items-stretch overflow-hidden group transition duration-500 ${isHighlighted ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'border-red-500/20'}`}><div className="w-full md:w-48 h-48 md:h-auto bg-black/40 relative flex-shrink-0 border-b md:border-b-0 md:border-r border-steel-700">{log.imageUrl ? (<div className="relative w-full h-full group-image"><img src={log.imageUrl} alt="Target" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" /><a href={log.imageUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 bg-black/60 p-1.5 rounded-full text-steel-300 hover:text-white hover:bg-black/90 transition opacity-0 group-hover:opacity-100"><ExternalLink size={12} /></a></div>) : (<div className="w-full h-full flex items-center justify-center text-steel-700"><Target size={32} /></div>)}{log.groupSize && (<div className="absolute top-2 left-2 bg-black/80 backdrop-blur border border-emerald-500/30 px-2 py-1 rounded-md shadow-lg"><span className="text-xs font-bold text-emerald-400">{log.groupSize}"</span></div>)}</div>
             <div className="flex-1 p-4 md:p-5 flex flex-col">
                 <div className="flex justify-between items-start mb-3">
                     <div>
-                        <h3 className="text-sm font-bold text-slate-100">{getRecipeDisplay(log)}</h3>
+                        <h3 className="text-sm font-bold text-steel-100">{getRecipeDisplay(log)}</h3>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <span className="text-[10px] text-slate-500 flex items-center gap-1"><Calendar size={10} /> {log.date ? log.date.split('T')[0] : 'No Date'}</span>
-                            {log.batchId && (<span className="px-1.5 py-[1px] rounded bg-slate-800 text-slate-400 border border-slate-700 text-[9px]">Batch #{log.batchId}</span>)}
+                            <span className="text-[10px] text-steel-500 flex items-center gap-1"><Calendar size={10} /> {log.date ? log.date.split('T')[0] : 'No Date'}</span>
+                            {log.batchId && (<span className="px-1.5 py-[1px] rounded bg-steel-700 text-steel-400 border border-steel-600 text-[9px]">Batch #{log.batchId}</span>)}
                             {log.firearmName && (<span className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-red-900/20 text-red-400 border border-red-900/30"><Crosshair size={10} /> {log.firearmName}</span>)}
-                            {log.location && (<span className="text-[10px] text-slate-500 flex items-center gap-1 ml-2"><MapPin size={10} /> {log.location}</span>)}
+                            {log.location && (<span className="text-[10px] text-steel-500 flex items-center gap-1 ml-2"><MapPin size={10} /> {log.location}</span>)}
                         </div>
                     </div>
                     <div className="flex gap-2 items-center">
@@ -554,19 +575,19 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
                     </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="bg-black/40 rounded p-2 border border-slate-800/60 text-center"><span className="block text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Performance</span><span className="block text-[10px] font-mono text-emerald-500">{calculateMoa(log.groupSize, log.distance)}</span></div>
-                    <div className="bg-black/40 rounded p-2 border border-slate-800/60 text-center"><span className="block text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Velocity</span><span className="block text-sm font-bold text-slate-200">{log.velocity || '---'}</span><span className="block text-[9px] text-slate-600">fps</span></div>
-                    <div className="bg-black/40 rounded p-2 border border-slate-800/60 text-center flex flex-col justify-center"><div className="flex justify-between px-2 text-[10px] border-b border-slate-800/50 pb-0.5 mb-0.5"><span className="text-slate-500">SD</span><span className="text-slate-300 font-mono">{log.sd || '-'}</span></div><div className="flex justify-between px-2 text-[10px]"><span className="text-slate-500">ES</span><span className="text-slate-300 font-mono">{log.es || '-'}</span></div></div>
+                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center"><span className="block text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">Performance</span><span className="block text-[10px] font-mono text-emerald-500">{calculateMoa(log.groupSize, log.distance)}</span></div>
+                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center"><span className="block text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">Velocity</span><span className="block text-sm font-bold text-steel-200">{log.velocity || '---'}</span><span className="block text-[9px] text-steel-500">fps</span></div>
+                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center flex flex-col justify-center"><div className="flex justify-between px-2 text-[10px] border-b border-steel-700/50 pb-0.5 mb-0.5"><span className="text-steel-500">SD</span><span className="text-steel-300 font-mono">{log.sd || '-'}</span></div><div className="flex justify-between px-2 text-[10px]"><span className="text-steel-500">ES</span><span className="text-steel-300 font-mono">{log.es || '-'}</span></div></div>
                 </div>
-                <div className="flex flex-wrap gap-4 text-[10px] text-slate-400 border-t border-slate-800/50 pt-2 mt-auto">
-                    {log.distance && <span className="flex items-center gap-1.5"><Target size={12} className="text-slate-600" /> {log.distance} yds</span>}
-                    {(log.weather || log.temp) && (<span className="flex items-center gap-1.5"><Thermometer size={12} className="text-slate-600" /> {log.weather ? `${log.weather}, ` : ''}{log.temp ? `${log.temp}°` : ''}</span>)}
+                <div className="flex flex-wrap gap-4 text-[10px] text-steel-400 border-t border-steel-700/50 pt-2 mt-auto">
+                    {log.distance && <span className="flex items-center gap-1.5"><Target size={12} className="text-steel-500" /> {log.distance} yds</span>}
+                    {(log.weather || log.temp) && (<span className="flex items-center gap-1.5"><Thermometer size={12} className="text-steel-500" /> {log.weather ? `${log.weather}, ` : ''}{log.temp ? `${log.temp}°` : ''}</span>)}
                 </div>
-                {log.notes && <p className="mt-2 text-[11px] text-slate-500 italic border-l-2 border-slate-800 pl-2">"{log.notes}"</p>}
+                {log.notes && <p className="mt-2 text-[11px] text-steel-500 italic border-l-2 border-steel-700 pl-2">"{log.notes}"</p>}
                 
-                <div className="flex flex-wrap gap-3 mt-3 pt-2 border-t border-slate-800/50">
-                    {log.createdBy && (<span className="flex items-center gap-1 text-[9px] text-slate-500"><User size={10} /> Created by {log.createdBy}</span>)}
-                    {log.updatedBy && (<span className="flex items-center gap-1 text-[9px] text-slate-500"><Clock size={10} /> Modified by {log.updatedBy}</span>)}
+                <div className="flex flex-wrap gap-3 mt-3 pt-2 border-t border-steel-700/50">
+                    {log.createdBy && (<span className="flex items-center gap-1 text-[9px] text-steel-500"><User size={10} /> Created by {log.createdBy}</span>)}
+                    {log.updatedBy && (<span className="flex items-center gap-1 text-[9px] text-steel-500"><Clock size={10} /> Modified by {log.updatedBy}</span>)}
                 </div>
             </div>
             </div>)

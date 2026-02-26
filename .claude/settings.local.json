@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(winget upgrade:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cd:*)",
+      "Bash(cd /c/reload-tracker && GIT_EDITOR=true git rebase --continue 2>&1)",
+      "Bash(cd /c/reload-tracker && git push origin demo 2>&1)",
+      "Bash(done)",
+      "Bash(cd /c/reload-tracker && git push origin demo:main 2>&1)",
+      "Bash(cd /c/reload-tracker && node scripts/fix-buttons.mjs 2>&1)"
+    ]
+  }
+}

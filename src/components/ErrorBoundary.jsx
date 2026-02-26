@@ -32,7 +32,7 @@ export class ErrorBoundary extends React.Component {
             </div>
             <div>
               <h2 className="text-xl font-black text-white uppercase tracking-wide mb-2">System Fault</h2>
-              <p className="text-sm text-zinc-400">An unexpected error occurred. Your data is safe.</p>
+              <p className="text-sm text-steel-300">An unexpected error occurred. Your data is safe.</p>
             </div>
             <button
               onClick={() => window.location.reload()}

@@ -21,8 +21,8 @@ async function getCurrentUser(event) {
   const cookieHeader = event.headers.cookie || event.headers.Cookie || ''
   const cookies = {}
   cookieHeader.split(';').forEach(c => {
-    const [k, v] = c.trim().split('=');
-    if (k) cookies[k] = decodeURIComponent(v || '');
+    const [k, ...rest] = c.trim().split('=');
+    if (k) cookies[k] = decodeURIComponent(rest.join('=') || '');
   });
   const token = cookies[SESSION_COOKIE_NAME];
   if (!token) return null;
@@ -43,7 +43,7 @@ export async function handler(event) {
     const currentUser = await getCurrentUser(event)
     if (!currentUser) return jsonResponse(401, { message: 'Authentication required.' })
     if (currentUser.role !== 'admin') {
-        return jsonResponse(403, { message: 'Gear access restricted to Reloaders.' })
+        return jsonResponse(403, { message: 'Gear Locker requires Admin privileges.' })
     }
 
     const id = extractId(event.path)

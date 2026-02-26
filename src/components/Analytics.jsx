@@ -43,7 +43,7 @@ const itemStyle = { color: '#f4f4f5' }
 
 function NoData({ message = "No data recorded" }) {
     return (
-        <div className="flex flex-col items-center justify-center h-full text-slate-600 space-y-2">
+        <div className="flex flex-col items-center justify-center h-full text-steel-500 space-y-2">
             <AlertCircle size={24} className="opacity-50" />
             <span className="text-xs font-mono uppercase">{message}</span>
         </div>
@@ -56,14 +56,14 @@ function ForecastItem({ item }) {
     else if (item.days < 90) colorClass = "bg-amber-500"
 
     return (
-        <div className="flex items-center justify-between p-3 bg-black/40 border border-zinc-800 rounded-xl mb-2 last:mb-0">
+        <div className="flex items-center justify-between p-3 bg-black/40 border border-steel-700 rounded-xl mb-2 last:mb-0">
             <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full ${colorClass}`} />
                 <div>
-                    <div className="text-xs font-bold text-slate-200">{item.name}</div>
-                    <div className="text-[10px] text-slate-500 flex items-center gap-2">
+                    <div className="text-xs font-bold text-steel-200">{item.name}</div>
+                    <div className="text-[10px] text-steel-500 flex items-center gap-2">
                         <span>{item.rounds.toLocaleString()} rnds left</span>
-                        <span className="text-slate-600">•</span>
+                        <span className="text-steel-500">•</span>
                         <span className="text-orange-400 font-mono flex items-center gap-0.5">
                             <Flame size={8}/> {item.burnRate}/mo
                         </span>
@@ -71,8 +71,8 @@ function ForecastItem({ item }) {
                 </div>
             </div>
             <div className="text-right">
-                <div className="text-xs font-mono font-bold text-slate-300">{item.days} Days</div>
-                <div className="text-[10px] text-slate-600">Supply</div>
+                <div className="text-xs font-mono font-bold text-steel-300">{item.days} Days</div>
+                <div className="text-[10px] text-steel-500">Supply</div>
             </div>
         </div>
     )
@@ -130,7 +130,7 @@ export function Analytics() {
     return () => controller.abort()
   }, [])
 
-  if (loading) return <div className="p-8 text-center text-xs text-slate-500 animate-pulse">Running Ballistics Calculations...</div>
+  if (loading) return <div className="p-8 text-center text-xs text-steel-500 animate-pulse">Running Ballistics Calculations...</div>
 
   return (
     <div className="space-y-6 pb-12">
@@ -147,8 +147,8 @@ export function Analytics() {
       <div className="grid lg:grid-cols-2 gap-6">
           
           {/* 1. SPEND HISTORY */}
-          <div className="glass rounded-2xl p-6 border border-zinc-800/50">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <div className="glass rounded-2xl p-6 border border-steel-700/50">
+            <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Coins size={14} className="text-emerald-500"/> Monthly Spend
             </h3>
             <div className="h-[250px] w-full">
@@ -172,15 +172,15 @@ export function Analytics() {
           </div>
 
           {/* 2. COST PER ROUND */}
-          <div className="glass rounded-2xl p-6 border border-zinc-800/50">
+          <div className="glass rounded-2xl p-6 border border-steel-700/50">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest flex items-center gap-2">
                     <TrendingUp size={14} className="text-blue-500"/> Cost Per Round History
                 </h3>
                 <div className="flex items-center gap-2">
                     <button 
                         onClick={() => setShowFactoryLine(!showFactoryLine)}
-                        className={`px-2 py-1 rounded text-[9px] font-bold uppercase transition ${showFactoryLine ? 'bg-blue-900/30 text-blue-400 border border-blue-500/30' : 'bg-zinc-800 text-zinc-500 border border-zinc-700'}`}
+                        className={`px-2 py-1 rounded text-[9px] font-bold uppercase transition ${showFactoryLine ? 'bg-blue-900/30 text-blue-400 border border-blue-500/30' : 'bg-steel-700 text-steel-400 border border-steel-600'}`}
                     >
                         Vs Factory
                     </button>
@@ -235,8 +235,8 @@ export function Analytics() {
           </div>
 
           {/* 3. INVENTORY VALUE (Pie) */}
-          <div className="glass rounded-2xl p-6 border border-zinc-800/50">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <div className="glass rounded-2xl p-6 border border-steel-700/50">
+            <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Package size={14} className="text-amber-500"/> Inventory Value
             </h3>
             <div className="h-[250px] w-full flex items-center justify-center">
@@ -271,8 +271,8 @@ export function Analytics() {
           </div>
 
           {/* 4. SUPPLY FORECAST */}
-          <div className="glass rounded-2xl p-6 border border-zinc-800/50 flex flex-col">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <div className="glass rounded-2xl p-6 border border-steel-700/50 flex flex-col">
+            <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Flame size={14} className="text-orange-500"/> Supply Forecast
             </h3>
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-[250px]">
@@ -285,8 +285,8 @@ export function Analytics() {
           </div>
 
           {/* 5. VELOCITY CONSISTENCY */}
-          <div className="glass rounded-2xl p-6 border border-zinc-800/50 lg:col-span-2">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <div className="glass rounded-2xl p-6 border border-steel-700/50 lg:col-span-2">
+            <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Clock size={14} className="text-purple-500"/> Velocity Consistency (SD)
             </h3>
             <div className="h-[250px] w-full">
@@ -312,8 +312,8 @@ export function Analytics() {
           </div>
 
           {/* 6. TOP CALIBERS */}
-          <div className="glass rounded-2xl p-6 border border-zinc-800/50 lg:col-span-2">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <div className="glass rounded-2xl p-6 border border-steel-700/50 lg:col-span-2">
+            <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Crosshair size={14} className="text-red-500"/> Production Volume
             </h3>
             <div className="h-[200px] w-full">

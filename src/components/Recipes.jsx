@@ -50,17 +50,17 @@ function FieldLabel({ label, help }) {
     const [show, setShow] = useState(false)
     return (
         <div className="flex items-center gap-1 mb-1">
-            <label className="block text-xs font-semibold text-slate-400">{label}</label>
+            <label className="block text-xs font-semibold text-steel-400">{label}</label>
             <div className="relative">
                 <Info 
                     size={10} 
-                    className="text-slate-600 hover:text-cyan-400 cursor-help transition" 
+                    className="text-steel-500 hover:text-cyan-400 cursor-help transition" 
                     onClick={(e) => { e.stopPropagation(); setShow(!show); }}
                 />
                 {show && (
                     <>
                         <div className="fixed inset-0 z-40" onClick={() => setShow(false)}></div>
-                        <div className="absolute left-0 bottom-4 w-48 bg-slate-900 border border-slate-700 p-2 rounded-lg shadow-xl z-50 text-[10px] text-slate-300 leading-relaxed">
+                        <div className="absolute left-0 bottom-4 w-48 bg-steel-800 border border-steel-600 p-2 rounded-lg shadow-xl z-50 text-[10px] text-steel-300 leading-relaxed">
                             {help}
                         </div>
                     </>
@@ -508,7 +508,7 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
       </div>
 
       <div className="glass p-6 space-y-4">
-        <div><h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest border-b border-slate-800 pb-2 mb-4">{editingRecipe ? 'MODIFY LOAD DATA' : 'NEW LOAD DEFINITION'}</h3></div>
+        <div><h3 className="text-sm font-bold text-steel-200 uppercase tracking-widest border-b border-steel-700 pb-2 mb-4">{editingRecipe ? 'MODIFY LOAD DATA' : 'NEW LOAD DEFINITION'}</h3></div>
         {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
 
         {canEdit ? (
@@ -530,7 +530,7 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
 
                 {/* 2. INGREDIENTS */}
                 <div className="flex-1 space-y-4 rt-card p-4">
-                    <p className="text-[10px] uppercase text-slate-500 tracking-[0.2em] mb-2 border-b border-slate-800 pb-1">Ingredients</p>
+                    <p className="text-[10px] uppercase text-steel-500 tracking-[0.2em] mb-2 border-b border-steel-700 pb-1">Ingredients</p>
                     <div><FieldLabel label="Powder" help="Select from Inventory." /><select className={inputClass} value={form.powderLotId} onChange={e => updateField('powderLotId', e.target.value)}><option value="">Select Powder...</option>{powders.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}</select></div>
                     <div><FieldLabel label="Charge (gr)" help="Powder weight." /><input type="number" min="0" step="0.01" className={inputClass} value={form.chargeGrains} onChange={e => updateField('chargeGrains', e.target.value)} /></div>
                     <div><FieldLabel label="Bullet" help="Select projectile." /><select className={inputClass} value={form.bulletLotId} onChange={e => updateField('bulletLotId', e.target.value)}><option value="">Select Bullet...</option>{bullets.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}</select></div>
@@ -549,7 +549,7 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
                     <div><FieldLabel label="Caliber" help="The cartridge type." /><input className={inputClass} placeholder="9mm, .223..." value={form.caliber} onChange={e => updateField('caliber', e.target.value)} /></div>
                     <div><FieldLabel label="Profile Type" help="Categorizes the load." /><select className={inputClass} value={form.profileType} onChange={e => updateField('profileType', e.target.value)}>{PROFILE_TYPES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select></div>
                     
-                    <div className="md:col-span-2 pt-2 border-t border-slate-800/50"><p className="text-[10px] uppercase text-slate-500 tracking-[0.2em]">Geometry & Ballistics</p></div>
+                    <div className="md:col-span-2 pt-2 border-t border-steel-700/50"><p className="text-[10px] uppercase text-steel-500 tracking-[0.2em]">Geometry & Ballistics</p></div>
                     <div><FieldLabel label="C.O.A.L (in)" help="Cartridge Overall Length." /><input type="number" step="0.001" className={inputClass} placeholder="2.800" value={form.coal} onChange={e => updateField('coal', e.target.value)} /></div>
                     <div><FieldLabel label="Case Vol (gr H2O)" help="Internal capacity." /><input type="number" step="0.1" className={inputClass} placeholder="56.0" value={form.caseCapacity} onChange={e => updateField('caseCapacity', e.target.value)} /></div>
                     <div><FieldLabel label="Intended Zero (yds)" help="Distance aimed for." /><input type="number" className={inputClass} placeholder="100" value={form.zeroDistanceYards} onChange={e => updateField('zeroDistanceYards', e.target.value)} /></div>
@@ -558,12 +558,12 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
 
                 {/* STABILITY ANALYSIS CARD */}
                 <div className="pt-2">
-                    <div className={`border rounded-xl transition-all duration-300 ${stability ? stability.border + ' ' + stability.bg : 'border-slate-800 bg-black/40'}`}>
-                        <div className="p-3 flex items-center justify-between border-b border-slate-800/50">
-                            <div className="flex items-center gap-2"><Crosshair size={14} className={stability ? stability.color : "text-slate-500"} /><span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400">Stability Analysis</span></div>
-                            <div className="flex items-center gap-2">{stability && (<span className={`text-[10px] font-black uppercase tracking-wider ${stability.color}`}>{stability.status} (SG: {stability.sg})</span>)}<button type="button" onClick={() => setShowStabilityHelp(!showStabilityHelp)} className="text-slate-600 hover:text-white transition"><HelpCircle size={14}/></button></div>
+                    <div className={`border rounded-xl transition-all duration-300 ${stability ? stability.border + ' ' + stability.bg : 'border-steel-700 bg-black/40'}`}>
+                        <div className="p-3 flex items-center justify-between border-b border-steel-700/50">
+                            <div className="flex items-center gap-2"><Crosshair size={14} className={stability ? stability.color : "text-steel-500"} /><span className="text-[10px] uppercase tracking-[0.2em] font-bold text-steel-400">Stability Analysis</span></div>
+                            <div className="flex items-center gap-2">{stability && (<span className={`text-[10px] font-black uppercase tracking-wider ${stability.color}`}>{stability.status} (SG: {stability.sg})</span>)}<button type="button" onClick={() => setShowStabilityHelp(!showStabilityHelp)} className="text-steel-500 hover:text-white transition"><HelpCircle size={14}/></button></div>
                         </div>
-                        {showStabilityHelp && (<div className="px-3 py-2 bg-black/40 text-[10px] text-slate-400 border-b border-slate-800/50"><strong>Miller Stability:</strong> Uses Bullet Length, Weight, and Twist Rate.<br/><span className="text-emerald-400">1.4+ (Green)</span> = Safe. <span className="text-red-400">&lt;1.0 (Red)</span> = Unstable.</div>)}
+                        {showStabilityHelp && (<div className="px-3 py-2 bg-black/40 text-[10px] text-steel-400 border-b border-steel-700/50"><strong>Miller Stability:</strong> Uses Bullet Length, Weight, and Twist Rate.<br/><span className="text-emerald-400">1.4+ (Green)</span> = Safe. <span className="text-red-400">&lt;1.0 (Red)</span> = Unstable.</div>)}
                         <div className="p-3 grid grid-cols-2 gap-3">
                             <div><FieldLabel label="Bullet Wt (gr)" help="Weight of projectile." /><input type="number" className={inputClass} placeholder="e.g. 168" value={form.bulletWeightGr} onChange={e => updateField('bulletWeightGr', e.target.value)} /></div>
                             <div><FieldLabel label="Velocity (fps)" help="Estimated muzzle velocity." /><input type="number" className={inputClass} placeholder="e.g. 2650" value={form.muzzleVelocityFps} onChange={e => updateField('muzzleVelocityFps', e.target.value)} /></div>
@@ -579,18 +579,18 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
                 </div>
             </div>
 
-            <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 pt-2 border-t border-slate-800/50">
+            <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 pt-2 border-t border-steel-700/50">
               {editingRecipe ? (<button type="button" onClick={resetForm} className="inline-flex items-center rt-btn rt-btn-secondary">Cancel edit</button>) : (<button type="button" onClick={resetForm} className="inline-flex items-center rt-btn rt-btn-secondary">Clear</button>)}
               <button type="submit" disabled={saving} className="rt-btn rt-btn-primary disabled:opacity-60">{saving ? 'Saving…' : 'Save Recipe'}</button>
             </div>
           </form>
-        ) : (<div className="mt-3 text-xs text-slate-400 border border-dashed border-slate-700/70 rounded-xl px-3 py-3 bg-black/30">Read-only mode. Sign in as a Reloader.</div>)}
+        ) : (<div className="mt-3 text-xs text-steel-400 border border-dashed border-steel-600/70 rounded-xl px-3 py-3 bg-black/30">Read-only mode. Sign in as a Reloader.</div>)}
       </div>
 
       {/* List */}
       <div className="glass p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-          <div><p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-1">Saved Recipes</p><p className="text-xs text-slate-400">{recipes.length === 0 ? 'No recipes yet.' : `${recipes.length} recipe${recipes.length !== 1 ? 's' : ''} saved.`}</p></div>
+        <div className="flex items-center justify-between border-b border-steel-700 pb-2">
+          <div><p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-1">Saved Recipes</p><p className="text-xs text-steel-400">{recipes.length === 0 ? 'No recipes yet.' : `${recipes.length} recipe${recipes.length !== 1 ? 's' : ''} saved.`}</p></div>
           {recipes.length > 0 && (<button type="button" onClick={() => handleExportExcel(recipes, 'all')} className="rt-btn rt-btn-ghost text-emerald-500 hover:text-emerald-400 hover:border-emerald-700"><FileText size={10} /> Download All (Excel)</button>)}
         </div>
 
@@ -607,29 +607,29 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
               const updatedStr = r.updatedByUsername ? `Mod by ${r.updatedByUsername}` : null
 
               return (
-                <div key={r.id} className={`group bg-black/40 border rounded-xl p-4 flex flex-col gap-3 transition-all hover:bg-black/60 min-w-0 ${isEditing ? 'border-red-500 ring-1 ring-red-500/50 shadow-red-900/20 shadow-lg' : 'border-slate-800 hover:border-slate-700'}`}>
+                <div key={r.id} className={`group bg-black/40 border rounded-xl p-4 flex flex-col gap-3 transition-all hover:bg-black/60 min-w-0 ${isEditing ? 'border-red-500 ring-1 ring-red-500/50 shadow-red-900/20 shadow-lg' : 'border-steel-700 hover:border-steel-600'}`}>
                   <div className="flex justify-between items-start min-w-0">
                     <div className="min-w-0">
-                        <div className="text-sm font-bold text-slate-100 flex flex-wrap items-center gap-2">
+                        <div className="text-sm font-bold text-steel-100 flex flex-wrap items-center gap-2">
                             <span className="truncate">{r.name}</span>
-                            {r.caliber && <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-medium whitespace-nowrap">{r.caliber}</span>}
+                            {r.caliber && <span className="px-1.5 py-0.5 rounded bg-steel-700 text-[10px] text-steel-300 font-medium whitespace-nowrap">{r.caliber}</span>}
                             {isArchived && <span className="px-1.5 py-0.5 rounded bg-amber-900/30 border border-amber-700/50 text-[9px] uppercase tracking-wider text-amber-500">Archived</span>}
                         </div>
-                        <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap gap-2 items-center"><span className="text-slate-500">{profileLabel}</span><span className="w-1 h-1 rounded-full bg-slate-700"></span><span className="text-slate-300 font-medium">{r.chargeGrains} gr Charge</span></div>
+                        <div className="text-[11px] text-steel-400 mt-1 flex flex-wrap gap-2 items-center"><span className="text-steel-500">{profileLabel}</span><span className="w-1 h-1 rounded-full bg-steel-600"></span><span className="text-steel-300 font-medium">{r.chargeGrains} gr Charge</span></div>
                     </div>
-                    {r.source && <div className="text-[9px] text-slate-600 uppercase tracking-wide border border-slate-800 px-2 py-0.5 rounded whitespace-nowrap ml-2">{r.source}</div>}
+                    {r.source && <div className="text-[9px] text-steel-500 uppercase tracking-wide border border-steel-700 px-2 py-0.5 rounded whitespace-nowrap ml-2">{r.source}</div>}
                   </div>
 
-                  {(powder || bullet) && (<div className="text-[10px] text-slate-500 bg-black/20 rounded-lg px-2 py-1.5 border border-slate-800/50">{powder && <span>{powder}</span>}{powder && bullet && <span className="mx-1.5 text-slate-700">•</span>}{bullet && <span>{bullet}</span>}</div>)}
+                  {(powder || bullet) && (<div className="text-[10px] text-steel-500 bg-black/20 rounded-lg px-2 py-1.5 border border-steel-700/50">{powder && <span>{powder}</span>}{powder && bullet && <span className="mx-1.5 text-steel-600">•</span>}{bullet && <span>{bullet}</span>}</div>)}
 
                   {(r.notes || r.rangeNotes) && (
-                      <div className="bg-black/20 rounded-lg p-2 border border-slate-800/50 text-[10px] text-slate-400 min-w-0">
-                          {r.notes && (<div className="flex items-start gap-1.5 mb-1 last:mb-0"><AlignLeft size={10} className="mt-0.5 text-slate-600 flex-shrink-0" /><span className="line-clamp-2 break-all">{r.notes}</span></div>)}
-                          {r.rangeNotes && (<div className="flex items-start gap-1.5 border-t border-slate-800/50 pt-1 mt-1"><Crosshair size={10} className="mt-0.5 text-emerald-600 flex-shrink-0" /><span className="line-clamp-2 text-emerald-500/80 break-all">{r.rangeNotes}</span></div>)}
+                      <div className="bg-black/20 rounded-lg p-2 border border-steel-700/50 text-[10px] text-steel-400 min-w-0">
+                          {r.notes && (<div className="flex items-start gap-1.5 mb-1 last:mb-0"><AlignLeft size={10} className="mt-0.5 text-steel-500 flex-shrink-0" /><span className="line-clamp-2 break-all">{r.notes}</span></div>)}
+                          {r.rangeNotes && (<div className="flex items-start gap-1.5 border-t border-steel-700/50 pt-1 mt-1"><Crosshair size={10} className="mt-0.5 text-emerald-600 flex-shrink-0" /><span className="line-clamp-2 text-emerald-500/80 break-all">{r.rangeNotes}</span></div>)}
                       </div>
                   )}
 
-                  <div className="flex flex-wrap items-center justify-between pt-2 border-t border-slate-800/50 mt-1 gap-y-2">
+                  <div className="flex flex-wrap items-center justify-between pt-2 border-t border-steel-700/50 mt-1 gap-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                         {onUseRecipe && !isArchived && (<span onClick={() => onUseRecipe(r)} className="rt-btn rt-btn-confirm">Use in Calculator</span>)}
                         {canEdit && (<span onClick={() => openBatchModal(r)} className="rt-btn rt-btn-danger"><ClipboardList size={12} /> Load Batch</span>)}
@@ -639,8 +639,8 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
                     </div>
                     
                     <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity min-w-0">
-                        {createdStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded border border-slate-800 text-slate-500 bg-black/40 text-[9px] truncate max-w-[150px]"><User size={9} /> {createdStr}</span>)}
-                        {updatedStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded border border-slate-800 text-slate-500 bg-black/40 text-[9px] truncate max-w-[150px]"><Clock size={9} /> {updatedStr}</span>)}
+                        {createdStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded border border-steel-700 text-steel-500 bg-black/40 text-[9px] truncate max-w-[150px]"><User size={9} /> {createdStr}</span>)}
+                        {updatedStr && (<span className="flex items-center gap-1 px-2 py-[2px] rounded border border-steel-700 text-steel-500 bg-black/40 text-[9px] truncate max-w-[150px]"><Clock size={9} /> {updatedStr}</span>)}
                     </div>
                   </div>
                 </div>
@@ -654,8 +654,8 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
             <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
                 <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto"><Trash2 className="text-red-500" size={24} /></div>
-                <div><h3 className="text-lg font-bold text-white">Delete Recipe?</h3><p className="text-sm text-slate-400 mt-1">Are you sure you want to delete <span className="text-white font-medium">"{recipeToDelete.name}"</span>?<br/>This action cannot be undone.</p></div>
-                <div className="grid grid-cols-2 gap-3 pt-2"><button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 font-medium text-sm transition">Cancel</button><button onClick={() => executeDelete(false)} disabled={isDeleting} className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button></div>
+                <div><h3 className="text-lg font-bold text-white">Delete Recipe?</h3><p className="text-sm text-steel-400 mt-1">Are you sure you want to delete <span className="text-white font-medium">"{recipeToDelete.name}"</span>?<br/>This action cannot be undone.</p></div>
+                <div className="grid grid-cols-2 gap-3 pt-2"><button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-xl border border-steel-600 text-steel-300 hover:bg-steel-700 font-medium text-sm transition">Cancel</button><button onClick={() => executeDelete(false)} disabled={isDeleting} className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button></div>
             </div>
         </div>
       )}
@@ -664,24 +664,24 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
       {conflictModalOpen && recipeToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4 pt-[env(safe-area-inset-top)] animate-in zoom-in-95 duration-200">
             <div className="bg-[#0f0f10] border border-amber-500/50 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4 relative">
-                <button onClick={() => setConflictModalOpen(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X size={20} /></button>
+                <button onClick={() => setConflictModalOpen(false)} className="absolute top-4 right-4 text-steel-500 hover:text-white"><X size={20} /></button>
                 <div className="flex items-center gap-4">
                     <div className="w-14 h-14 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0 border border-amber-500/50">
                         <AlertTriangle className="text-amber-500" size={28} />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-white">Recipe In Use</h3>
-                        <p className="text-xs text-slate-400 leading-relaxed mt-1">The recipe <span className="text-amber-400 font-medium">"{recipeToDelete.name}"</span> has batches associated with it. You cannot delete it without losing that history.</p>
+                        <p className="text-xs text-steel-400 leading-relaxed mt-1">The recipe <span className="text-amber-400 font-medium">"{recipeToDelete.name}"</span> has batches associated with it. You cannot delete it without losing that history.</p>
                     </div>
                 </div>
                 
-                <div className="rt-card p-4 border border-slate-800 text-sm text-slate-300">
-                    <p className="mb-2 font-bold text-slate-200">Recommended Action:</p>
-                    <p className="text-xs text-slate-400 mb-4">Archive the recipe instead. It will be hidden from the active list but your batch history will be preserved.</p>
+                <div className="rt-card p-4 border border-steel-700 text-sm text-steel-300">
+                    <p className="mb-2 font-bold text-steel-200">Recommended Action:</p>
+                    <p className="text-xs text-steel-400 mb-4">Archive the recipe instead. It will be hidden from the active list but your batch history will be preserved.</p>
                     <button onClick={() => handleResolveConflict('archive')} className="w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-900/20"><Archive size={14} /> Archive Recipe (Safe)</button>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/50">
+                <div className="pt-2 border-t border-steel-700/50">
                     <button onClick={() => handleResolveConflict('cascade')} className="w-full py-2 rounded-lg border border-red-900/50 text-red-500 hover:bg-red-900/20 hover:text-red-400 font-bold text-[10px] uppercase tracking-wide transition flex items-center justify-center gap-2">I don't care, delete everything (Destructive)</button>
                 </div>
             </div>
@@ -690,8 +690,8 @@ body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; -w
 
       {batchModalOpen && batchRecipe && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)]">
-            <div className="bg-[#0f0f10] border border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/40"><h3 className="text-sm font-bold text-slate-200">Load Batch: {batchRecipe.name}</h3><button onClick={() => setBatchModalOpen(false)} className="text-slate-500 hover:text-white"><X size={16} /></button></div>
+            <div className="bg-[#0f0f10] border border-steel-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-4 border-b border-steel-700 flex justify-between items-center bg-black/40"><h3 className="text-sm font-bold text-steel-200">Load Batch: {batchRecipe.name}</h3><button onClick={() => setBatchModalOpen(false)} className="text-steel-500 hover:text-white"><X size={16} /></button></div>
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4"><div><label className={labelClass}>Rounds Loaded</label><input type="number" className={inputClass} value={batchForm.rounds} onChange={e => setBatchForm(p => ({ ...p, rounds: e.target.value }))} /></div><div><label className={labelClass}>Powder Lot</label><select className={inputClass} value={batchForm.powderLotId} onChange={e => setBatchForm(p => ({ ...p, powderLotId: e.target.value }))}><option value="">Select Powder...</option>{powders.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div></div>
                      <div className="grid grid-cols-3 gap-4"><div><label className={labelClass}>Bullet Lot</label><select className={inputClass} value={batchForm.bulletLotId} onChange={e => setBatchForm(p => ({ ...p, bulletLotId: e.target.value }))}><option value="">Select...</option>{bullets.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div><div><label className={labelClass}>Primer Lot</label><select className={inputClass} value={batchForm.primerLotId} onChange={e => setBatchForm(p => ({ ...p, primerLotId: e.target.value }))}><option value="">Select...</option>{primers.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div><div><label className={labelClass}>Brass Lot</label><select className={inputClass} value={batchForm.caseLotId} onChange={e => setBatchForm(p => ({ ...p, caseLotId: e.target.value }))}><option value="">Select Brass...</option>{cases.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div></div>

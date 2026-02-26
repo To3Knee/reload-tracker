@@ -86,14 +86,14 @@ export function ScannerModal({ isOpen, onClose, onScan }) {
 
     return createPortal(
         <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-md bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl relative">
+            <div className="w-full max-w-md bg-steel-800 rounded-2xl overflow-hidden border border-steel-700 shadow-2xl relative">
                 
                 {/* HEADER */}
-                <div className="p-4 flex items-center justify-between border-b border-zinc-800 bg-black/40">
-                    <h3 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
+                <div className="p-4 flex items-center justify-between border-b border-steel-700 bg-black/40">
+                    <h3 className="text-sm font-bold text-steel-100 flex items-center gap-2">
                         <Camera size={16} className="text-red-500"/> Scan Barcode
                     </h3>
-                    <button onClick={onClose} className="p-2 bg-zinc-800 rounded-full text-zinc-400 hover:text-white">
+                    <button onClick={onClose} className="p-2 bg-steel-700 rounded-full text-steel-300 hover:text-white">
                         <X size={16} />
                     </button>
                 </div>
@@ -107,23 +107,23 @@ export function ScannerModal({ isOpen, onClose, onScan }) {
                     {initializing && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-20">
                             <Loader2 className="animate-spin text-red-500 mb-2" size={32} />
-                            <p className="text-xs text-zinc-500">Starting Camera...</p>
+                            <p className="text-xs text-steel-400">Starting Camera...</p>
                         </div>
                     )}
 
                     {error && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/90 z-30 p-6 text-center">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-steel-800/90 z-30 p-6 text-center">
                             <AlertTriangle className="text-amber-500 mb-2" size={32} />
-                            <p className="text-sm text-zinc-200 font-bold mb-1">Scanner Error</p>
-                            <p className="text-xs text-zinc-500">{error}</p>
-                            <button onClick={onClose} className="mt-4 px-4 py-2 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-300">Close</button>
+                            <p className="text-sm text-steel-100 font-bold mb-1">Scanner Error</p>
+                            <p className="text-xs text-steel-400">{error}</p>
+                            <button onClick={onClose} className="mt-4 px-4 py-2 bg-steel-700 rounded-lg text-xs font-bold text-steel-200">Close</button>
                         </div>
                     )}
                 </div>
 
                 {/* FOOTER */}
-                <div className="p-4 bg-zinc-900 text-center">
-                    <p className="text-[10px] text-zinc-500">
+                <div className="p-4 bg-steel-800 text-center">
+                    <p className="text-[10px] text-steel-400">
                         Point camera at a UPC or Component Label
                     </p>
                 </div>

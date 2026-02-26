@@ -120,16 +120,16 @@ export function SupplyChain() {
             )}
             
             <div className="glass p-6 rounded-2xl flex gap-2 border border-red-500/30">
-                <input 
-                    className="flex-1 bg-black/50 border border-zinc-700 rounded-xl px-4 text-sm text-white focus:border-red-500 focus:outline-none" 
+                <input
+                    className="rt-input flex-1"
                     placeholder="Paste Product URL (Midway, Brownells, etc)..."
                     value={url}
                     onChange={e => setUrl(e.target.value)}
                 />
-                <button 
-                    onClick={handleAdd} 
+                <button
+                    onClick={handleAdd}
                     disabled={loading}
-                    className="px-6 py-3 bg-red-700 hover:bg-red-600 text-white font-bold rounded-xl flex items-center gap-2 transition shadow-lg shadow-red-900/20"
+                    className="rt-btn rt-btn-primary disabled:opacity-50 px-5"
                 >
                     {loading ? <RefreshCw className="animate-spin" size={18}/> : <Plus size={18}/>}
                     <span>Track</span>
@@ -140,18 +140,18 @@ export function SupplyChain() {
                 if (!grouped[cat]?.length) return null
                 return (
                     <div key={cat}>
-                        <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2 mb-4">{cat}</h3>
+                        <h3 className="text-sm font-bold text-steel-300 uppercase tracking-widest border-b border-steel-700 pb-2 mb-4">{cat}</h3>
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {grouped[cat].map(item => {
                                 const isRefreshing = refreshingId === item.id
                                 return (
-                                    <div key={item.id} className="bg-black/40 border border-zinc-800 rounded-xl overflow-hidden flex flex-col justify-between hover:border-red-500/30 transition group">
+                                    <div key={item.id} className="rt-card flex flex-col justify-between hover:border-red-500/30 transition-colors group">
                                         <div className="flex h-28 relative">
-                                            <div className="w-28 bg-white/5 flex-shrink-0 relative border-r border-zinc-800">
+                                            <div className="w-28 bg-white/5 flex-shrink-0 relative border-r border-steel-700">
                                                 {item.image_url ? (
                                                     <img src={item.image_url} className={`w-full h-full object-cover transition ${isRefreshing ? 'opacity-50 blur-sm' : ''}`} />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-zinc-700"><ShoppingCart size={24}/></div>
+                                                    <div className="w-full h-full flex items-center justify-center text-steel-600"><ShoppingCart size={24}/></div>
                                                 )}
                                                 {isRefreshing && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="animate-spin text-red-500" size={24}/></div>}
                                                 <div className={`absolute top-0 left-0 w-full h-1 ${item.in_stock ? 'bg-emerald-500' : 'bg-red-500'}`} />
@@ -160,17 +160,17 @@ export function SupplyChain() {
                                             <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
                                                 <div>
                                                     <div className="flex justify-between items-start gap-3">
-                                                        <h4 className="text-xs font-bold text-zinc-100 line-clamp-2 leading-tight flex-1" title={item.name}>{item.name}</h4>
+                                                        <h4 className="text-xs font-bold text-steel-100 line-clamp-2 leading-tight flex-1" title={item.name}>{item.name}</h4>
                                                         <span className={`flex-shrink-0 px-2 py-0.5 rounded text-[9px] font-bold uppercase whitespace-nowrap ${item.in_stock ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-900/50' : 'bg-red-900/30 text-red-400 border border-red-900/50'}`}>
                                                             {item.in_stock ? 'In Stock' : 'OOS'}
                                                         </span>
                                                     </div>
-                                                    <div className="text-[10px] text-zinc-500 mt-2">{item.vendor}</div>
+                                                    <div className="text-[10px] text-steel-400 mt-2">{item.vendor}</div>
                                                 </div>
                                                 <div className="flex justify-between items-end">
                                                     <div className="text-lg font-black text-white">{formatCurrency(item.price)}</div>
                                                     {(item.qty_per_unit > 1 && item.price > 0) && (
-                                                        <div className="text-[10px] text-zinc-500">
+                                                        <div className="text-[10px] text-steel-400">
                                                             {formatCurrency(item.price / item.qty_per_unit)} / unit
                                                         </div>
                                                     )}
@@ -178,11 +178,11 @@ export function SupplyChain() {
                                             </div>
                                         </div>
 
-                                        <div className="flex border-t border-zinc-800 divide-x divide-zinc-800 bg-black/60">
-                                            <a href={item.url} target="_blank" className="flex-1 py-2 flex items-center justify-center text-zinc-500 hover:text-blue-400 hover:bg-blue-900/10 transition" title="Visit Link"><ExternalLink size={14}/></a>
-                                            <button onClick={() => handleRefresh(item.id)} disabled={isRefreshing} className="flex-1 py-2 flex items-center justify-center text-zinc-500 hover:text-emerald-400 hover:bg-emerald-900/10 transition" title="Refresh Price"><RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""}/></button>
-                                            <button onClick={() => setEditItem(item)} className="flex-1 py-2 flex items-center justify-center text-zinc-500 hover:text-amber-400 hover:bg-amber-900/10 transition" title="Edit Item"><Edit size={14}/></button>
-                                            <button onClick={() => setDeleteId(item.id)} className="flex-1 py-2 flex items-center justify-center text-zinc-500 hover:text-red-500 hover:bg-red-900/10 transition" title="Delete Tracker"><Trash2 size={14}/></button>
+                                        <div className="flex border-t border-steel-700 divide-x divide-steel-700 bg-black/60">
+                                            <a href={item.url} target="_blank" className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-blue-400 hover:bg-blue-900/10 transition" title="Visit Link"><ExternalLink size={14}/></a>
+                                            <button onClick={() => handleRefresh(item.id)} disabled={isRefreshing} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-emerald-400 hover:bg-emerald-900/10 transition" title="Refresh Price"><RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""}/></button>
+                                            <button onClick={() => setEditItem(item)} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-amber-400 hover:bg-amber-900/10 transition" title="Edit Item"><Edit size={14}/></button>
+                                            <button onClick={() => setDeleteId(item.id)} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-red-500 hover:bg-red-900/10 transition" title="Delete Tracker"><Trash2 size={14}/></button>
                                         </div>
                                     </div>
                                 )
@@ -194,38 +194,38 @@ export function SupplyChain() {
 
             {editItem && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-[#0f0f10] border border-zinc-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+                    <div className="bg-[#0f0f10] border border-steel-600 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
                         <h3 className="text-lg font-bold text-white">Edit Listing</h3>
                         
-                        <div><label className="text-xs text-zinc-500 block mb-1">Name</label>
-                        <input className="w-full bg-black border border-zinc-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editItem.name} onChange={e => setEditItem({...editItem, name: e.target.value})} /></div>
+                        <div><label className="rt-label">Name</label>
+                        <input className="rt-input" value={editItem.name} onChange={e => setEditItem({...editItem, name: e.target.value})} /></div>
                         
                         <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-xs text-zinc-500 block mb-1">Price ($)</label>
-                            <input type="number" step="0.01" className="w-full bg-black border border-zinc-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editItem.price} onChange={e => setEditItem({...editItem, price: e.target.value})} /></div>
+                            <div><label className="rt-label">Price ($)</label>
+                            <input type="number" step="0.01" className="rt-input" value={editItem.price} onChange={e => setEditItem({...editItem, price: e.target.value})} /></div>
                             
-                            <div><label className="text-xs text-zinc-500 block mb-1">Stock Status</label>
-                            <select className="w-full bg-black border border-zinc-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editItem.in_stock} onChange={e => setEditItem({...editItem, in_stock: e.target.value === 'true'})}>
+                            <div><label className="rt-label">Stock Status</label>
+                            <select className="rt-input" value={editItem.in_stock} onChange={e => setEditItem({...editItem, in_stock: e.target.value === 'true'})}>
                                 <option value="true">In Stock</option>
                                 <option value="false">Out of Stock</option>
                             </select></div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-xs text-zinc-500 block mb-1">Quantity (in Pack)</label>
-                            <input type="number" step="0.01" className="w-full bg-black border border-zinc-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editItem.qty_per_unit} onChange={e => setEditItem({...editItem, qty_per_unit: e.target.value})} />
-                            <p className="text-[9px] text-zinc-600 mt-1">e.g. 8 for 8lbs, 1000 for primers</p>
+                            <div><label className="rt-label">Quantity (in Pack)</label>
+                            <input type="number" step="0.01" className="rt-input" value={editItem.qty_per_unit} onChange={e => setEditItem({...editItem, qty_per_unit: e.target.value})} />
+                            <p className="text-[9px] text-steel-500 mt-1">e.g. 8 for 8lbs, 1000 for primers</p>
                             </div>
                             
-                            <div><label className="text-xs text-zinc-500 block mb-1">Category</label>
-                            <select className="w-full bg-black border border-zinc-700 rounded-lg p-2 text-sm text-white focus:border-red-500 focus:outline-none" value={editItem.category} onChange={e => setEditItem({...editItem, category: e.target.value})}>
+                            <div><label className="rt-label">Category</label>
+                            <select className="rt-input" value={editItem.category} onChange={e => setEditItem({...editItem, category: e.target.value})}>
                                 {CATEGORIES.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
                             </select></div>
                         </div>
 
                         <div className="flex gap-3 pt-2">
-                            <button onClick={() => setEditItem(null)} className="flex-1 py-2 rounded-lg border border-zinc-700 text-zinc-400 hover:text-white transition">Cancel</button>
-                            <button onClick={handleSaveEdit} className="flex-1 py-2 rounded-lg bg-red-700 text-white font-bold hover:bg-red-600 transition">Save Changes</button>
+                            <button onClick={() => setEditItem(null)} className="rt-btn rt-btn-ghost flex-1">Cancel</button>
+                            <button onClick={handleSaveEdit} className="rt-btn rt-btn-primary flex-1">Save Changes</button>
                         </div>
                     </div>
                 </div>
@@ -235,10 +235,10 @@ export function SupplyChain() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
                     <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl w-full max-w-sm p-6 text-center space-y-4 shadow-xl">
                         <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto text-red-500"><Trash2 size={24}/></div>
-                        <div><h3 className="text-lg font-bold text-white">Stop Tracking?</h3><p className="text-sm text-zinc-400 mt-1">This will remove the item from your Supply Chain.</p></div>
+                        <div><h3 className="text-lg font-bold text-white">Stop Tracking?</h3><p className="text-sm text-steel-300 mt-1">This will remove the item from your Supply Chain.</p></div>
                         <div className="flex gap-3 justify-center pt-2">
-                            <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition text-sm font-bold">Cancel</button>
-                            <button onClick={confirmDelete} className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold hover:bg-red-500 transition text-sm shadow-lg shadow-red-900/20">Remove Tracker</button>
+                            <button onClick={() => setDeleteId(null)} className="rt-btn rt-btn-ghost">Cancel</button>
+                            <button onClick={confirmDelete} className="rt-btn rt-btn-danger">Remove Tracker</button>
                         </div>
                     </div>
                 </div>

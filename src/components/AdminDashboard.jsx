@@ -27,7 +27,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* TABS */}
-      <div className="flex border-b border-zinc-800">
+      <div className="flex border-b border-steel-700">
           <TabButton id="users" label="User Management" icon={Users} active={activeTab} set={setActiveTab} />
           <TabButton id="sql" label="SQL Console" icon={Terminal} active={activeTab} set={setActiveTab} />
           <TabButton id="config" label="Configuration" icon={Settings} active={activeTab} set={setActiveTab} />
@@ -46,7 +46,7 @@ function TabButton({ id, label, icon: Icon, active, set }) {
     return (
         <button 
             onClick={() => set(id)}
-            className={`flex items-center gap-2 px-6 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition ${active === id ? 'border-purple-500 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex items-center gap-2 px-6 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition ${active === id ? 'border-purple-500 text-white' : 'border-transparent text-steel-400 hover:text-steel-200'}`}
         >
             <Icon size={16} /> {label}
         </button>
@@ -87,7 +87,7 @@ function SqlConsole() {
             </div>
 
             <textarea 
-                className="w-full h-48 bg-zinc-950 border border-zinc-700 rounded-xl p-4 font-mono text-xs text-emerald-400 focus:border-purple-500 focus:outline-none"
+                className="w-full h-48 bg-steel-900 border border-steel-600 rounded-xl p-4 font-mono text-xs text-emerald-400 focus:border-purple-500 focus:outline-none"
                 placeholder="SELECT * FROM users;"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
@@ -101,24 +101,24 @@ function SqlConsole() {
 
             {/* RESULTS */}
             {result && (
-                <div className={`p-4 rounded-xl border ${result.success ? 'bg-zinc-900/50 border-zinc-700' : 'bg-red-900/20 border-red-500/50'}`}>
+                <div className={`p-4 rounded-xl border ${result.success ? 'bg-steel-800/50 border-steel-600' : 'bg-red-900/20 border-red-500/50'}`}>
                     <div className="flex items-center gap-2 mb-2">
                         {result.success ? <CheckCircle size={16} className="text-emerald-500"/> : <AlertTriangle size={16} className="text-red-500"/>}
-                        <span className="text-xs font-bold text-zinc-200">{result.success ? 'Success' : 'Error'}</span>
-                        <span className="text-[10px] text-zinc-500 ml-auto">{result.message || ''}</span>
+                        <span className="text-xs font-bold text-steel-100">{result.success ? 'Success' : 'Error'}</span>
+                        <span className="text-[10px] text-steel-400 ml-auto">{result.message || ''}</span>
                     </div>
                     
                     {result.error && <pre className="text-[10px] text-red-400 whitespace-pre-wrap">{result.error}</pre>}
                     
                     {result.rows && (
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-[10px] text-zinc-300">
-                                <thead className="border-b border-zinc-700 text-zinc-500">
+                            <table className="w-full text-left text-[10px] text-steel-200">
+                                <thead className="border-b border-steel-600 text-steel-400">
                                     <tr>{Object.keys(result.rows[0] || {}).map(k => <th key={k} className="p-2">{k}</th>)}</tr>
                                 </thead> {/* FIXED CLOSING TAG */}
                                 <tbody>
                                     {result.rows.map((row, i) => (
-                                        <tr key={i} className="border-b border-zinc-800/50 hover:bg-white/5">
+                                        <tr key={i} className="border-b border-steel-700/50 hover:bg-white/5">
                                             {Object.values(row).map((v, j) => <td key={j} className="p-2 truncate max-w-[200px]">{String(v)}</td>)}
                                         </tr>
                                     ))}
@@ -133,5 +133,5 @@ function SqlConsole() {
 }
 
 // --- PLACEHOLDERS FOR OTHER TABS ---
-function UserManager() { return <div className="text-zinc-500 text-sm">User Management Module Loading...</div> }
-function ConfigManager() { return <div className="text-zinc-500 text-sm">System Config Module Loading...</div> }
+function UserManager() { return <div className="text-steel-400 text-sm">User Management Module Loading...</div> }
+function ConfigManager() { return <div className="text-steel-400 text-sm">System Config Module Loading...</div> }
