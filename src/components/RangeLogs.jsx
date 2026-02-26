@@ -276,7 +276,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     HAPTIC.click()
     const win = window.open('', '_blank')
     if (!win) { alert('Popup blocked. Please allow popups.'); return }
-    win.document.write('<html><body style="background:#0a0a0a"><p style="color:#4a4844;font-family:monospace;padding:20px;font-size:12px">Generating Ballistic Certificate...</p></body></html>')
+    win.document.write('<html><body style="background:#fff"><p style="color:#aaa;font-family:monospace;padding:20px;font-size:12px">Generating Ballistic Certificate...</p></body></html>')
 
     const title = getRecipeDisplay(log)
     const [recipeName, caliber] = title.includes('(') ? title.split('(') : [title, '']
@@ -286,7 +286,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     const logoUrl = `${window.location.origin}/logo.png`
     const qrUrl = `${window.location.origin}/?rangeLogId=${log.id}`
     let qrDataUri = ''
-    try { qrDataUri = await QRCode.toDataURL(qrUrl, { width: 120, margin: 0, color: { dark: '#d4a843', light: '#060606' } }) } catch (e) {}
+    try { qrDataUri = await QRCode.toDataURL(qrUrl, { width: 120, margin: 1, color: { dark: '#1a1a1a', light: '#ffffff' } }) } catch (e) {}
 
     const r = recipes.find(x => String(x.id) === String(log.recipeId)) || {}
     const bullet = r.bulletName ? `${r.bulletWeightGr || '?'}gr ${r.bulletName}` : '---'
@@ -314,102 +314,93 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-@page { margin: 0; size: 4in auto; }
-*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e8e1d4; }
-.card { width: 4in; min-height: 5in; height: auto; display: flex; flex-direction: column; background: #0a0a0a; }
+@page { size: letter portrait; margin: 0.5in; }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: 'Inter', sans-serif; background: #fff; color: #111; font-size: 10px; }
 /* HEADER */
-.hdr { background: #060606; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; position: relative; border-bottom: 1px solid #2a2a2a; }
-.hdr::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #b87333 20%, #d4a843 50%, #b87333 80%, transparent); }
+.hdr { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; border-bottom: 2px solid #b87333; margin-bottom: 16px; }
 .hdr-l { flex: 1; min-width: 0; }
-.rname { font-size: 13px; font-weight: 900; text-transform: uppercase; color: #f0ece4; line-height: 1; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rcal { font-size: 8px; font-weight: 700; color: #b87333; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 3px; }
-.rmeta { font-size: 7px; color: #555c6a; margin-top: 2px; letter-spacing: 0.05em; }
-.hdr-r { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: 10px; }
-.logo { height: 34px; width: auto; }
-.qr-box { background: #060606; border: 1px solid #2a2a2a; padding: 2px; border-radius: 2px; }
-.qr-img { width: 34px; height: 34px; display: block; }
+.eyebrow { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: #b87333; margin-bottom: 4px; }
+.rname { font-size: 20px; font-weight: 900; text-transform: uppercase; color: #111; line-height: 1; letter-spacing: -0.01em; }
+.rcal { font-size: 9px; font-weight: 700; color: #b87333; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 3px; }
+.rmeta { font-size: 8px; color: #777; margin-top: 3px; letter-spacing: 0.04em; }
+.hdr-r { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 16px; }
+.logo { height: 44px; width: auto; filter: invert(1) brightness(0); }
+.qr-img { width: 54px; height: 54px; display: block; border: 1px solid #ddd; padding: 2px; }
 /* LOAD STRIP */
-.load-strip { background: #080808; border-bottom: 1px solid #1e1e1e; padding: 7px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.load-strip { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 8px 14px; display: flex; flex-wrap: wrap; gap: 6px 24px; margin-bottom: 16px; }
 .load-item { display: flex; flex-direction: column; }
-.load-label { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #b87333; margin-bottom: 1px; }
-.load-val { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; font-weight: 700; color: #f0ece4; }
+.load-label { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #b87333; margin-bottom: 2px; }
+.load-val { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; color: #111; }
 /* TARGET IMAGE */
-.target-wrap { background: #080808; border-bottom: 1px solid #1e1e1e; height: 1.8in; position: relative; overflow: hidden; }
-.target-img { width: 100%; height: 100%; object-fit: contain; }
-.no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #2a2a2a; }
-/* CONTENT */
-.content { padding: 10px 14px; flex: 1; }
+.target-wrap { border: 1px solid #e0d8cf; border-radius: 3px; height: 2.8in; overflow: hidden; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; background: #faf8f6; }
+.target-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.no-img { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #ccc; }
 /* SECTION EYEBROW */
-.sect { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.25em; color: #b87333; display: flex; align-items: center; gap: 6px; margin: 10px 0 6px; }
+.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.25em; color: #b87333; display: flex; align-items: center; gap: 8px; margin: 14px 0 8px; }
 .sect:first-child { margin-top: 0; }
-.sect::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #2a2a2a, transparent); }
+.sect::after { content: ''; flex: 1; height: 1px; background: #e0d8cf; }
 /* STAT GRID */
-.stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
-.stat-box { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 3px; padding: 6px 7px; }
-.stat-box.hi { border-left: 2px solid #b87333; background: #120d06; }
-.slabel { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #4a4844; display: block; margin-bottom: 2px; }
-.sval { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 900; color: #f0ece4; display: block; line-height: 1; }
-.sval.cu { color: #d4a843; }
-.sunit { font-size: 7px; font-weight: 500; color: #555c6a; margin-left: 1px; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.stat-box { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 8px 10px; }
+.stat-box.hi { border-left: 3px solid #b87333; }
+.slabel { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #999; display: block; margin-bottom: 3px; }
+.sval { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 900; color: #111; display: block; line-height: 1; }
+.sval.cu { color: #b87333; }
+.sunit { font-size: 8px; font-weight: 500; color: #aaa; margin-left: 2px; }
 /* WEATHER */
-.wx-row { display: flex; align-items: baseline; gap: 6px; background: #080808; border: 1px solid #1e1e1e; border-radius: 3px; padding: 5px 8px; margin-bottom: 6px; }
-.wx-tag { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #b87333; flex-shrink: 0; }
-.wx-val { font-family: 'JetBrains Mono', monospace; font-size: 7.5px; color: #7a8190; }
+.wx-row { display: flex; align-items: baseline; gap: 8px; background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 6px 10px; margin-bottom: 8px; }
+.wx-tag { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #b87333; flex-shrink: 0; }
+.wx-val { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #444; }
 /* SHOTS */
-.shots-wrap { background: #080808; border: 1px solid #1e1e1e; border-radius: 3px; padding: 6px 8px; margin-bottom: 6px; }
-.shots-data { font-family: 'JetBrains Mono', monospace; font-size: 7.5px; color: #555c6a; line-height: 1.5; word-break: break-all; }
+.shots-wrap { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 7px 10px; margin-bottom: 8px; }
+.shots-data { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #555; line-height: 1.6; word-break: break-all; }
 /* NOTES */
-.notes-box { background: #080808; border: 1px solid #1e1e1e; border-left: 2px solid #b87333; border-radius: 0 3px 3px 0; padding: 6px 10px; }
-.notes-txt { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #7a8190; line-height: 1.5; white-space: pre-wrap; }
+.notes-box { background: #faf8f6; border: 1px solid #e0d8cf; border-left: 3px solid #b87333; border-radius: 0 3px 3px 0; padding: 8px 12px; }
+.notes-txt { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: #444; line-height: 1.6; white-space: pre-wrap; }
 /* FOOTER */
-.footer { padding: 6px 14px; background: #060606; border-top: 1px solid #1a1a1a; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 6.5px; color: #2a2a2a; text-transform: uppercase; letter-spacing: 0.15em; }
+.footer { display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid #e0d8cf; margin-top: 18px; font-family: 'JetBrains Mono', monospace; font-size: 7px; color: #aaa; text-transform: uppercase; letter-spacing: 0.12em; }
 /* CLOSE BTN */
-.close-btn { position: fixed; top: 12px; right: 12px; background: #2a2a2a; color: #ccc; padding: 5px 12px; border-radius: 4px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid #3a3a3a; cursor: pointer; }
+.close-btn { position: fixed; top: 12px; right: 12px; background: #f0ede8; color: #333; padding: 5px 12px; border-radius: 4px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid #d0c8bf; cursor: pointer; }
 @media print { .close-btn { display: none !important; } }
 </style>
 </head><body>
 <button onclick="window.close()" class="close-btn">✕ Close</button>
-<div class="card">
-  <div class="hdr">
-    <div class="hdr-l">
-      <div class="rname">${esc(recipeName)}</div>
-      <div class="rcal">${esc(cleanCaliber)}</div>
-      <div class="rmeta">${dateStr}${log.location ? ' · ' + esc(log.location) : ''}${log.firearmName ? ' · ' + esc(log.firearmName) : ''}${log.batchId ? ' · Batch #' + log.batchId : ''}</div>
-    </div>
-    <div class="hdr-r">
-      ${qrDataUri ? `<div class="qr-box"><img src="${qrDataUri}" class="qr-img"/></div>` : ''}
-      <img src="${logoUrl}" class="logo"/>
-    </div>
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="eyebrow">Ballistic Certificate · Reload Tracker</div>
+    <div class="rname">${esc(recipeName)}</div>
+    <div class="rcal">${esc(cleanCaliber)}</div>
+    <div class="rmeta">${dateStr}${log.location ? ' · ' + esc(log.location) : ''}${log.firearmName ? ' · ' + esc(log.firearmName) : ''}${log.batchId ? ' · Batch #' + log.batchId : ''}</div>
   </div>
-  <div class="load-strip">
-    <div class="load-item"><span class="load-label">Bullet</span><span class="load-val">${esc(bullet)}</span></div>
-    <div class="load-item"><span class="load-label">Powder</span><span class="load-val">${esc(powder)}</span></div>
-    <div class="load-item"><span class="load-label">Primer</span><span class="load-val">${esc(primer)}</span></div>
-    <div class="load-item"><span class="load-label">C.O.A.L.</span><span class="load-val">${esc(coal)}</span></div>
+  <div class="hdr-r">
+    ${qrDataUri ? `<img src="${qrDataUri}" class="qr-img"/>` : ''}
+    <img src="${logoUrl}" class="logo"/>
   </div>
-  <div class="target-wrap">
-    ${log.imageUrl ? `<img src="${log.imageUrl}" class="target-img"/>` : '<div class="no-img">No Target Image</div>'}
-  </div>
-  <div class="content">
-    <div class="sect">Accuracy</div>
-    <div class="stat-grid" style="margin-bottom:6px">
-      <div class="stat-box hi"><span class="slabel">Group Size</span><span class="sval cu">${esc(String(log.groupSize || '--'))}<span class="sunit">IN</span></span></div>
-      <div class="stat-box"><span class="slabel">MOA</span><span class="sval">${moa}</span></div>
-      <div class="stat-box"><span class="slabel">Distance</span><span class="sval">${esc(String(log.distance || '--'))}<span class="sunit">YDS</span></span></div>
-    </div>
-    <div class="sect">Velocity</div>
-    <div class="stat-grid" style="margin-bottom:6px">
-      <div class="stat-box"><span class="slabel">Avg Vel</span><span class="sval cu">${esc(String(log.velocity || '--'))}<span class="sunit">FPS</span></span></div>
-      <div class="stat-box"><span class="slabel">SD</span><span class="sval">${esc(String(log.sd || '--'))}</span></div>
-      <div class="stat-box"><span class="slabel">ES</span><span class="sval">${esc(String(log.es || '--'))}</span></div>
-    </div>
-    ${weatherHtml}
-    ${shotsDisplay}
-    ${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div class="notes-txt">${esc(log.notes)}</div></div>` : ''}
-  </div>
-  <div class="footer"><span>Log #${log.id} · Reload Tracker</span><span>${dateStr}</span></div>
 </div>
+<div class="load-strip">
+  <div class="load-item"><span class="load-label">Bullet</span><span class="load-val">${esc(bullet)}</span></div>
+  <div class="load-item"><span class="load-label">Powder</span><span class="load-val">${esc(powder)}</span></div>
+  <div class="load-item"><span class="load-label">Primer</span><span class="load-val">${esc(primer)}</span></div>
+  <div class="load-item"><span class="load-label">C.O.A.L.</span><span class="load-val">${esc(coal)}</span></div>
+</div>
+${log.imageUrl ? `<div class="target-wrap"><img src="${log.imageUrl}" class="target-img"/></div>` : ''}
+<div class="sect">Accuracy</div>
+<div class="stat-grid" style="margin-bottom:14px">
+  <div class="stat-box hi"><span class="slabel">Group Size</span><span class="sval cu">${esc(String(log.groupSize || '--'))}<span class="sunit">IN</span></span></div>
+  <div class="stat-box"><span class="slabel">MOA</span><span class="sval">${moa}</span></div>
+  <div class="stat-box"><span class="slabel">Distance</span><span class="sval">${esc(String(log.distance || '--'))}<span class="sunit">YDS</span></span></div>
+</div>
+<div class="sect">Velocity</div>
+<div class="stat-grid" style="margin-bottom:14px">
+  <div class="stat-box hi"><span class="slabel">Avg Velocity</span><span class="sval cu">${esc(String(log.velocity || '--'))}<span class="sunit">FPS</span></span></div>
+  <div class="stat-box"><span class="slabel">Std Dev (SD)</span><span class="sval">${esc(String(log.sd || '--'))}</span></div>
+  <div class="stat-box"><span class="slabel">Ext Spread (ES)</span><span class="sval">${esc(String(log.es || '--'))}</span></div>
+</div>
+${weatherHtml}
+${shotsDisplay}
+${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div class="notes-txt">${esc(log.notes)}</div></div>` : ''}
+<div class="footer"><span>Log #${log.id} · Reload Tracker</span><span>${dateStr}</span></div>
 <script>window.onload = () => { setTimeout(() => window.print(), 600); };<\/script>
 </body></html>`
 

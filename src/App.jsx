@@ -170,7 +170,7 @@ export default function App() {
   }
 
   if (!ageConfirmed) return (
-      <div className="min-h-[100dvh] bg-gradient-to-b from-black via-steel-900 to-black text-gray-100 flex items-center justify-center px-4">
+      <div className="min-h-[100dvh] bg-[#080808] text-gray-100 flex items-center justify-center px-4">
         <div className="glass max-w-lg w-full text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-4">Reload Tracker</p>
           <h1 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-[0.1em] text-white">For Responsible <span className="text-red-600">Adult Reloaders</span> Only.</h1>
@@ -183,7 +183,7 @@ export default function App() {
 
   return (
     <div 
-      className="min-h-[100dvh] bg-gradient-to-b from-black via-steel-900 to-black text-gray-100"
+      className="min-h-[100dvh] bg-[#080808] text-gray-100"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
