@@ -170,20 +170,20 @@ export default function App() {
   }
 
   if (!ageConfirmed) return (
-      <div className="min-h-[100dvh] bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100 flex items-center justify-center px-4">
+      <div className="min-h-[100dvh] bg-gradient-to-b from-black via-steel-900 to-black text-gray-100 flex items-center justify-center px-4">
         <div className="glass max-w-lg w-full text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-4">Reload Tracker</p>
           <h1 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-[0.1em] text-white">For Responsible <span className="text-red-600">Adult Reloaders</span> Only.</h1>
-          <p className="text-sm text-slate-400 mb-8">By continuing you confirm you are of legal age.</p>
+          <p className="text-sm text-steel-400 mb-8">By continuing you confirm you are of legal age.</p>
           <button onClick={confirmAge} className="rt-btn rt-btn-primary px-8 py-3 text-sm font-semibold shadow-lg shadow-red-900/40 active:scale-95">I am 21 or older</button>
-          <div className="mt-4 text-[10px] text-slate-600">Reload Tracker {APP_VERSION_LABEL}</div>
+          <div className="mt-4 text-[10px] text-steel-500">Reload Tracker {APP_VERSION_LABEL}</div>
         </div>
       </div>
   )
 
   return (
     <div 
-      className="min-h-[100dvh] bg-gradient-to-b from-black via-zinc-950 to-black text-gray-100"
+      className="min-h-[100dvh] bg-gradient-to-b from-black via-steel-900 to-black text-gray-100"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -236,7 +236,7 @@ export default function App() {
         {activeTab === 'batches' && <Batches highlightId={scannedId} />}
         {activeTab === 'range' && <RangeLogs recipes={recipes} canEdit={!!isAdmin} highlightId={scannedId} />}
         {activeTab === 'analytics' && (
-          <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500 animate-pulse">Running Ballistics Calculations...</div>}>
+          <Suspense fallback={<div className="p-8 text-center text-xs text-steel-500 animate-pulse">Running Ballistics Calculations...</div>}>
             <Analytics />
           </Suspense>
         )}
