@@ -33,11 +33,13 @@ export async function addListing(item, userId) {
     )
     const newItem = res.rows[0]
 
+    // Attempt immediate scrape — if it fails, delete the placeholder and throw
+    // so the frontend shows the real error instead of a broken "Scrape Failed" card
     try {
-        return await refreshListing(newItem.id, userId);
+        return await refreshListing(newItem.id, userId)
     } catch (err) {
-        console.error("[Market] Auto-scrape failed, returning placeholder:", err);
-        return newItem;
+        await query(`DELETE FROM market_listings WHERE id = $1`, [newItem.id]).catch(() => {})
+        throw err
     }
 }
 
@@ -73,7 +75,74 @@ export async function updateListing(id, data, userId) {
     return res.rows[0]
 }
 
-// --- HYBRID INTELLIGENT SCRAPER ---
+// --- JSON-LD structured data extractor (schema.org/Product) ---
+function parseJsonLd($) {
+    const result = {}
+    $('script[type="application/ld+json"]').each((_, el) => {
+        try {
+            let data = JSON.parse($(el).html())
+            // Handle @graph array or direct object
+            if (data['@graph']) data = data['@graph']
+            const items = Array.isArray(data) ? data : [data]
+            const product = items.find(d => d['@type'] === 'Product' || d['@type'] === 'IndividualProduct')
+            if (!product) return
+            if (product.name && !result.name) result.name = product.name
+            if (product.image && !result.image) {
+                result.image = Array.isArray(product.image) ? product.image[0] : product.image
+            }
+            const offers = product.offers
+            const offer = Array.isArray(offers) ? offers[0] : offers
+            if (offer) {
+                if (offer.price != null && result.price == null) result.price = parseFloat(offer.price)
+                if (offer.availability != null && result.inStock == null) {
+                    result.inStock = offer.availability.toLowerCase().includes('instock')
+                }
+            }
+        } catch (e) {}
+    })
+    return result
+}
+
+// --- Regex price fallback ---
+function extractPriceRegex(text) {
+    const matches = text.match(/\$\s*(\d{1,4}(?:\.\d{1,2})?)/g)
+    if (!matches) return null
+    const prices = matches
+        .map(m => parseFloat(m.replace(/[$\s]/g, '')))
+        .filter(p => p > 0.5 && p < 9999)
+    return prices.length ? Math.min(...prices) : null
+}
+
+// --- In-stock text detection ---
+function detectInStock(html) {
+    const t = html.toLowerCase()
+    if (t.includes('"instock"') || t.includes('in-stock') || t.match(/\badd[\s-]to[\s-]cart\b/) || t.includes('in stock')) return true
+    if (t.includes('out of stock') || t.includes('outofstock') || t.includes('sold out') || t.includes('notify me when')) return false
+    return null
+}
+
+// --- Category from URL + title keywords ---
+function inferCategory(title, url) {
+    const t = (title + ' ' + url).toLowerCase()
+    if (t.match(/\bpowder\b|\bimr\b|\bhodgdon\b|\bvv\b|\bvihtavuori\b|\bh4350\b|\bvarget\b/)) return 'powder'
+    if (t.match(/\bprimer\b|\blrp\b|\bsrp\b|\bsrm\b|\bcci 4\d\d\b|\bfederal 2\d\d\b/)) return 'primer'
+    if (t.match(/\bbullet\b|\bprojectile\b|\bfmj\b|\bjhp\b|\bhpbt\b|\bboat.?tail\b/)) return 'bullet'
+    if (t.match(/\bbrass\b|\bcase\b|\bcasings\b|\bshell\b|\bhull\b/)) return 'case'
+    if (t.match(/\bammo\b|\bammunition\b|\bcartridge\b|\bround\b/)) return 'ammo'
+    return 'other'
+}
+
+// --- Vendor from hostname ---
+function extractVendor(url) {
+    try {
+        const hostname = new URL(url).hostname
+        const parts = hostname.replace(/^www\./, '').split('.')
+        const name = parts[0]
+        return name.charAt(0).toUpperCase() + name.slice(1)
+    } catch (e) { return '' }
+}
+
+// --- HYBRID SCRAPER: JSON-LD → Regex → AI (if key available) ---
 export async function refreshListing(id, userId) {
     const itemRes = await query(`SELECT url FROM market_listings WHERE id = $1`, [id])
     if (itemRes.rows.length === 0) throw new Error("Item not found")
@@ -81,87 +150,84 @@ export async function refreshListing(id, userId) {
 
     try {
         const scraperKey = process.env.SCRAPER_API_KEY
-        let fetchUrl = url
-        
-        const headers = { 
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-            'Referer': 'https://www.google.com/',
-            'Cache-Control': 'max-age=0'
-        }
+        let fetchUrl = scraperKey
+            ? `http://api.scrape.do?token=${scraperKey}&url=${encodeURIComponent(url)}`
+            : url
 
-        if (scraperKey) {
-            fetchUrl = `http://api.scrape.do?token=${scraperKey}&url=${encodeURIComponent(url)}`
-        }
+        const response = await fetch(fetchUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://www.google.com/',
+            }
+        })
 
-        const response = await fetch(fetchUrl, { headers })
-        
-        if (!response.ok) {
-            if (response.status === 403) throw new Error("Access Denied (403) - Anti-Bot Blocked");
-            throw new Error(`HTTP Error ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status} from site`)
         const html = await response.text()
         const $ = cheerio.load(html)
-        
-        let title = $('meta[property="og:title"]').attr('content') || $('title').text() || 'Unknown Item';
-        let image = $('meta[property="og:image"]').attr('content');
-        
-        const badTitles = ['Access Denied', 'Just a moment', 'Attention Required', 'Security Check', '403 Forbidden', 'Cloudflare'];
-        if (badTitles.some(t => title.includes(t))) {
-            throw new Error("Scraper Blocked (Soft 403)");
-        }
 
-        if (!image) {
-            image = $('img[id*="product"], img[class*="product"], img[class*="main"]').first().attr('src');
-        }
+        // Bot-block detection
+        const rawTitle = $('meta[property="og:title"]').attr('content') || $('title').text() || ''
+        const badTitles = ['Access Denied', 'Just a moment', 'Attention Required', 'Security Check', '403 Forbidden', 'Cloudflare']
+        if (badTitles.some(t => rawTitle.includes(t))) throw new Error("Site blocked the request (Cloudflare). A SCRAPER_API_KEY is required for this retailer.")
+
+        // PASS 1: JSON-LD structured data (most reliable)
+        const ld = parseJsonLd($)
+        let title   = ld.name   || $('meta[property="og:title"]').attr('content') || rawTitle || 'Unknown Item'
+        let image   = ld.image  || $('meta[property="og:image"]').attr('content') || ''
+        let price   = ld.price  ?? null
+        let inStock = ld.inStock ?? null
+        const vendor = extractVendor(url)
+
+        // Fix relative image URLs
         if (image && image.startsWith('/')) {
-            const u = new URL(url);
-            image = `${u.protocol}//${u.host}${image}`;
+            const u = new URL(url)
+            image = `${u.protocol}//${u.host}${image}`
         }
 
-        let vendor = '';
-        try {
-            const hostname = new URL(url).hostname;
-            const parts = hostname.split('.');
-            if (parts.length >= 2) vendor = parts[parts.length - 2]; 
-            else vendor = parts[0];
-            vendor = vendor.charAt(0).toUpperCase() + vendor.slice(1);
-            if (vendor === 'Co' || vendor === 'Com') vendor = parts[0];
-        } catch (e) {}
+        // PASS 2: Regex/text fallback for missing price or stock
+        if (price == null || inStock == null) {
+            $('script, style, nav, footer, svg').remove()
+            const bodyText = $('body').text().replace(/\s+/g, ' ').trim()
+            if (price == null)   price   = extractPriceRegex(bodyText)
+            if (inStock == null) inStock = detectInStock(html) ?? false
 
-        $('script').remove(); $('style').remove(); $('nav').remove(); $('footer').remove(); $('svg').remove();
-        const cleanText = $('body').text().replace(/\s+/g, ' ').trim().substring(0, 15000);
+            // PASS 3: AI fallback — only if key is configured and still missing price
+            if (price == null) {
+                try {
+                    const snippet = bodyText.substring(0, 8000)
+                    const prompt = `Extract from this product page text. Return ONLY valid JSON with no commentary:
+{"price": <number or null>, "in_stock": <true|false>, "qty": <pack size number>}
+Page: ${snippet}`
+                    const aiResponse = await chatWithAi(prompt)
+                    const match = aiResponse.match(/\{[\s\S]*?\}/)
+                    if (match) {
+                        const parsed = JSON.parse(match[0])
+                        if (parsed.price != null) price   = parseFloat(parsed.price)
+                        if (parsed.in_stock != null) inStock = parsed.in_stock
+                    }
+                } catch (aiErr) {
+                    console.warn('[Market] AI fallback skipped:', aiErr.message)
+                }
+            }
+        }
 
-        const prompt = `
-            Analyze this product page text. Extract:
-            1. PRICE (Number).
-            2. IN_STOCK (Boolean).
-            3. QUANTITY (Number of items in this pack). 
-            4. CATEGORY (String). Strictly one of: "powder", "primer", "bullet", "case", "ammo", "gear", "other".
-            
-            JSON Format: { "price": 0.00, "in_stock": true, "qty": 1, "category": "other" }
-            Page Text: ${cleanText}
-        `;
-
-        const aiResponse = await chatWithAi(prompt);
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("AI parsing failed.");
-        
-        const data = JSON.parse(jsonMatch[0]);
+        const category = inferCategory(title, url)
+        const qty = 1 // JSON-LD qty not standard; user can edit
 
         const updateRes = await query(
-            `UPDATE market_listings 
-             SET name = $1, price = $2, in_stock = $3, image_url = $4, qty_per_unit = $5, vendor = $6, category = $7, status = 'active', last_scraped_at = NOW() 
-             WHERE id = $8 
+            `UPDATE market_listings
+             SET name = $1, price = $2, in_stock = $3, image_url = $4, qty_per_unit = $5, vendor = $6, category = $7, status = 'active', last_scraped_at = NOW()
+             WHERE id = $8
              RETURNING *, category as "componentType"`,
-            [title.trim(), data.price || 0, data.in_stock, image, data.qty || 1, vendor, data.category || 'other', id]
+            [title.trim(), price || 0, inStock ?? false, image, qty, vendor, category, id]
         )
-
-        return updateRes.rows[0];
+        return updateRes.rows[0]
 
     } catch (err) {
-        console.error("Scrape Error:", err);
-        await query(`UPDATE market_listings SET status = 'error' WHERE id = $1`, [id]);
-        return { id, status: 'error', name: 'Scrape Failed (Access Denied)' };
+        console.error('[Market] Scrape failed:', err.message)
+        await query(`UPDATE market_listings SET status = 'error' WHERE id = $1`, [id])
+        throw err  // propagate so addListing / handler can surface the real message
     }
 }

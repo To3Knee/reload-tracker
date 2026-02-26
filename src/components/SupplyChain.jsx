@@ -53,7 +53,7 @@ export function SupplyChain() {
             load()
             HAPTIC.success()
         } catch (e) {
-            setError('Failed to track URL. Check link validity.')
+            setError(e.message || 'Failed to track URL. Check link validity.')
             HAPTIC.error()
         } finally {
             setLoading(false)
@@ -69,7 +69,7 @@ export function SupplyChain() {
             load()
             HAPTIC.success()
         } catch (e) {
-            setError('Refresh failed. Site may be blocking bots.')
+            setError(e.message || 'Refresh failed. Site may be blocking bots.')
             HAPTIC.error()
         } finally { setRefreshingId(null) }
     }
