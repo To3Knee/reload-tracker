@@ -199,7 +199,7 @@ export function Batches({ highlightId }) {
         )}
 
         {/* Timeline */}
-        <div className="divide-y divide-[#1a1a1a]">
+        <div className="divide-y divide-steel-600">
           {batches.map((batch, idx) => {
             const isEditing    = editingId === batch.id
             const isHighlighted = String(highlightId) === String(batch.id)

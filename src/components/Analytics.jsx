@@ -136,11 +136,11 @@ export function Analytics() {
     <div className="space-y-6 pb-12">
       
       {/* HEADER */}
-      <div className="flex items-start gap-4">
-        <div className="w-1.5 self-stretch bg-red-600 rounded-sm"></div>
+      <div className="rt-section">
+        <div className="rt-section-bar" />
         <div>
-            <span className="block text-[10px] uppercase tracking-[0.2em] text-red-500 font-bold mb-0.5">Intelligence</span>
-            <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">ANALYTICS</h2>
+          <span className="rt-section-eyebrow">Intelligence</span>
+          <h2 className="rt-section-title">ANALYTICS</h2>
         </div>
       </div>
 

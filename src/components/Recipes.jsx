@@ -342,12 +342,12 @@ body { font-family: 'Inter', sans-serif; background: #fff; color: #111; -webkit-
 .rname { font-size: 22px; font-weight: 900; color: #111; line-height: 1; text-transform: uppercase; letter-spacing: -0.02em; }
 .rsub { font-size: 10px; color: #777; margin-top: 4px; letter-spacing: 0.04em; }
 .hdr-r { display: flex; align-items: center; gap: 12px; }
-.logo { height: 50px; width: auto; filter: invert(1) brightness(0); }
+.logo { height: 50px; width: auto; }
 .qr-img { width: 54px; height: 54px; display: block; border: 1px solid #ddd; padding: 2px; }
 /* SECTION EYEBROW */
-.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.28em; color: #b87333; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 18px; }
-.sect:first-child { margin-top: 0; }
-.sect::after { content: ''; flex: 1; height: 1px; background: #e0d8cf; }
+.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.28em; color: #b87333; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid #222; }
+.sect:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.sect::after { content: ''; flex: 1; height: 1px; background: #333; }
 /* COMPONENT GRID */
 .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .comp-card { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 8px 10px; }
