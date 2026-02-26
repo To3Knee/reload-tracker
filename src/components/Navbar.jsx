@@ -46,7 +46,7 @@ export default function Navbar({
 
         {/* Branding */}
         <div className="flex items-center w-48 flex-shrink-0">
-          <img src={logo} alt="Reload Tracker" className="h-[52px] w-auto object-contain opacity-95 hover:opacity-100 transition-opacity duration-200" />
+          <img src={logo} alt="Reload Tracker" className="h-[64px] w-auto object-contain opacity-95 hover:opacity-100 transition-opacity duration-200" />
         </div>
 
         {/* Navigation links */}
@@ -110,7 +110,7 @@ export default function Navbar({
                    bg-[#080808]/97 backdrop-blur-xl border-b border-[#1e1e1e]"
         style={{ height: 'calc(48px + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <img src={logo} alt="Reload Tracker" className="h-8 w-auto object-contain opacity-95" />
+        <img src={logo} alt="Reload Tracker" className="h-11 w-auto object-contain opacity-95" />
 
         <div className="flex items-center gap-2">
           {isAdmin && isAiEnabled && (
