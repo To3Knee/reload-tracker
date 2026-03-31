@@ -15,6 +15,7 @@ import { getBatches, deleteBatch, updateBatch } from '../lib/batches'
 import { printBatchLabel } from '../lib/labels'
 import { getCurrentUser, ROLE_ADMIN } from '../lib/auth'
 import { Printer, Edit2, Trash2, Check, X, ChevronDown, ChevronUp, Layers } from 'lucide-react'
+import { InfoTip } from './InfoTip'
 
 /* ── COMPONENT TYPE CHIP ────────────────────────────────────── */
 function ComponentChips({ components = '' }) {
@@ -155,7 +156,7 @@ export function Batches({ highlightId }) {
         <div className="rt-section-bar" />
         <div>
           <span className="rt-section-eyebrow">Production</span>
-          <h2 className="rt-section-title">BATCH LOG</h2>
+          <h2 className="rt-section-title flex items-center">BATCH LOG<InfoTip variant="tip" title="Production Log" text="Records every loading session — links rounds produced to a specific recipe and component lots for full quality traceability." side="bottom" /></h2>
         </div>
       </div>
 

@@ -29,6 +29,7 @@ import { calculateStability, parseTwistRate, guessDiameter } from '../lib/ballis
 import { CartridgeVisualizer } from './CartridgeVisualizer'
 import QRCode from 'qrcode'
 import { Html5Qrcode } from 'html5-qrcode'
+import { InfoTip } from './InfoTip'
 
 const PROFILE_TYPES = [
   { value: 'range', label: 'Range / Plinking' },
@@ -694,7 +695,7 @@ ${recipe.notes ? `
       {batchModalOpen && batchRecipe && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)]">
             <div className="glass border border-steel-700 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div className="p-4 border-b border-steel-700 flex justify-between items-center bg-black/40"><h3 className="text-sm font-bold text-steel-200">Load Batch: {batchRecipe.name}</h3><button onClick={() => setBatchModalOpen(false)} className="text-steel-500 hover:text-white"><X size={16} /></button></div>
+                <div className="p-4 border-b border-steel-700 flex justify-between items-center bg-black/40"><h3 className="text-sm font-bold text-steel-200 flex items-center">Load Batch: {batchRecipe.name}<InfoTip variant="tip" title="Load Batch" text="Records a production run — links rounds loaded to this recipe and specific component lots for quality traceability and per-round cost accuracy." side="bottom" /></h3><button onClick={() => setBatchModalOpen(false)} className="text-steel-500 hover:text-white"><X size={16} /></button></div>
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4"><div><label className={labelClass}>Rounds Loaded</label><input type="number" className={inputClass} value={batchForm.rounds} onChange={e => setBatchForm(p => ({ ...p, rounds: e.target.value }))} /></div><div><label className={labelClass}>Powder Lot</label><select className={inputClass} value={batchForm.powderLotId} onChange={e => setBatchForm(p => ({ ...p, powderLotId: e.target.value }))}><option value="">Select Powder...</option>{powders.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div></div>
                      <div className="grid grid-cols-3 gap-4"><div><label className={labelClass}>Bullet Lot</label><select className={inputClass} value={batchForm.bulletLotId} onChange={e => setBatchForm(p => ({ ...p, bulletLotId: e.target.value }))}><option value="">Select...</option>{bullets.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div><div><label className={labelClass}>Primer Lot</label><select className={inputClass} value={batchForm.primerLotId} onChange={e => setBatchForm(p => ({ ...p, primerLotId: e.target.value }))}><option value="">Select...</option>{primers.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div><div><label className={labelClass}>Brass Lot</label><select className={inputClass} value={batchForm.caseLotId} onChange={e => setBatchForm(p => ({ ...p, caseLotId: e.target.value }))}><option value="">Select Brass...</option>{cases.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div></div>

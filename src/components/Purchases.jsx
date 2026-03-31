@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom'
 import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit } from '../lib/db'
 import { fetchSettings } from '../lib/settings'
 import { Trash2, Plus, Search, Printer, X, Edit, User, Clock, AlertTriangle, Globe, Package, ScanBarcode, Sparkles, Camera, Loader2, Image as ImageIcon, Info, HelpCircle } from 'lucide-react'
+import { InfoTip } from './InfoTip'
 import { printPurchaseLabel } from '../lib/labels' 
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
@@ -492,7 +493,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
         <div className="rt-section-bar" />
         <div>
           <span className="rt-section-eyebrow">Supply Chain</span>
-          <h2 className="rt-section-title">PURCHASES</h2>
+          <h2 className="rt-section-title flex items-center">PURCHASES<InfoTip variant="info" title="Component Lots" text="Each purchase is a numbered lot — linking component cost to batches and inventory for accurate per-round cost tracking." side="bottom" /></h2>
         </div>
       </div>
 
@@ -668,9 +669,10 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                                         <div className="mt-3 md:mt-0 flex flex-wrap items-center justify-between md:justify-end gap-x-6 gap-y-4">
                                             <div className="text-left md:text-right flex flex-col justify-center">
                                                 <span className="text-sm font-bold text-steel-100 leading-none">{p.qty} <span className="text-xs font-normal text-steel-400">{p.unit}</span></span>
-                                                <span className="text-xs font-bold text-steel-100 mt-1">
+                                                <span className="text-xs font-bold text-steel-100 mt-1 flex items-center gap-0.5">
                                                     {formatMoney(smartPrice.val)}
                                                     <span className="text-[10px] font-normal text-steel-400"> / {smartPrice.label.split(' / ')[1]}</span>
+                                                    <InfoTip variant="tip" title="Smart Price" text="Auto-normalized unit: per 1,000 for primers, per 100 for bullets, per unit for powder — makes comparison across lot sizes intuitive." size={9} align="right" />
                                                 </span>
                                                 {isPowder && (<span className="block text-[9px] text-steel-400 mt-0.5 font-mono">(${grainCost.toFixed(4)}/gr)</span>)}
                                             </div>

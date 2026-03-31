@@ -23,6 +23,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend, ReferenceLine } from 'recharts'
 import { formatCurrency } from '../lib/db'
 import { AlertCircle, Clock, Package, Flame, Coins, Crosshair, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react'
+import { InfoTip } from './InfoTip'
 
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1']
 
@@ -175,7 +176,7 @@ export function Analytics() {
           <div className="glass p-6 border border-steel-700/50">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest flex items-center gap-2">
-                    <TrendingUp size={14} className="text-blue-500"/> Cost Per Round History
+                    <TrendingUp size={14} className="text-blue-500"/> Cost Per Round History<InfoTip variant="info" text="Tracks your loaded round cost over time as component prices change. Calculated from lot prices at the time each batch was logged." align="right" />
                 </h3>
                 <div className="flex items-center gap-2">
                     <button 
@@ -273,7 +274,7 @@ export function Analytics() {
           {/* 4. SUPPLY FORECAST */}
           <div className="glass p-6 border border-steel-700/50 flex flex-col">
             <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Flame size={14} className="text-orange-500"/> Supply Forecast
+                <Flame size={14} className="text-orange-500"/> Supply Forecast<InfoTip variant="info" title="Supply Forecast" text="Estimated days of ammo remaining based on your average monthly usage, calculated from range log history." align="right" />
             </h3>
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-[250px]">
                 {forecastData.length > 0 ? (
@@ -287,7 +288,7 @@ export function Analytics() {
           {/* 5. VELOCITY CONSISTENCY */}
           <div className="glass p-6 border border-steel-700/50 lg:col-span-2">
             <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Clock size={14} className="text-purple-500"/> Velocity Consistency (SD)
+                <Clock size={14} className="text-purple-500"/> Velocity Consistency (SD)<InfoTip variant="tip" title="Standard Deviation" text="SD = Standard Deviation of velocity in fps. Under 15 fps is excellent, under 30 fps is acceptable. High SD means inconsistent chamber pressure." align="right" />
             </h3>
             <div className="h-[250px] w-full">
                 {velocityData.length > 0 ? (

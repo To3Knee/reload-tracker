@@ -16,6 +16,7 @@ import { getBatches } from '../lib/batches'
 import { getFirearms } from '../lib/armory'
 import { calculateStatistics } from '../lib/math'
 import { Target, Plus, Thermometer, ExternalLink, Calendar, MapPin, Printer, Crosshair, Calculator, Trash2, User, Clock, AlertTriangle } from 'lucide-react'
+import { InfoTip } from './InfoTip'
 import UploadButton from './UploadButton'
 import QRCode from 'qrcode'
 import { HAPTIC } from '../lib/haptics'
@@ -566,9 +567,9 @@ ${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div 
                     </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center"><span className="block text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">Performance</span><span className="block text-[10px] font-mono text-steel-200">{calculateMoa(log.groupSize, log.distance)}</span></div>
-                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center"><span className="block text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">Velocity</span><span className="block text-sm font-bold text-steel-200">{log.velocity || '---'}</span><span className="block text-[9px] text-steel-500">fps</span></div>
-                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center flex flex-col justify-center"><div className="flex justify-between px-2 text-[10px] border-b border-steel-700/50 pb-0.5 mb-0.5"><span className="text-steel-500">SD</span><span className="text-steel-300 font-mono">{log.sd || '-'}</span></div><div className="flex justify-between px-2 text-[10px]"><span className="text-steel-500">ES</span><span className="text-steel-300 font-mono">{log.es || '-'}</span></div></div>
+                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center"><span className="flex items-center justify-center text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">Performance<InfoTip variant="info" title="MOA" text="Minutes of Angle — 1 MOA ≈ 1 inch at 100 yards. Calculated from group size and distance. Lower is better." size={9} /></span><span className="block text-[10px] font-mono text-steel-200">{calculateMoa(log.groupSize, log.distance)}</span></div>
+                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center"><span className="flex items-center justify-center text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">Velocity<InfoTip variant="info" text="Muzzle velocity in fps measured by chronograph. Used to calculate SD and ES for load consistency analysis." size={9} /></span><span className="block text-sm font-bold text-steel-200">{log.velocity || '---'}</span><span className="block text-[9px] text-steel-500">fps</span></div>
+                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center flex flex-col justify-center"><div className="flex justify-between px-2 text-[10px] border-b border-steel-700/50 pb-0.5 mb-0.5"><span className="text-steel-500 flex items-center gap-0.5">SD<InfoTip variant="tip" title="Standard Deviation" text="Under 15 fps = excellent. Under 30 fps = acceptable. High SD means inconsistent pressure — check powder charge and seating depth." size={9} side="bottom" /></span><span className="text-steel-300 font-mono">{log.sd || '-'}</span></div><div className="flex justify-between px-2 text-[10px]"><span className="text-steel-500 flex items-center gap-0.5">ES<InfoTip variant="info" title="Extreme Spread" text="Difference between fastest and slowest rounds. Under 50 fps is good. High ES points to charge weight inconsistency." size={9} side="bottom" /></span><span className="text-steel-300 font-mono">{log.es || '-'}</span></div></div>
                 </div>
                 <div className="flex flex-wrap gap-4 text-[10px] text-steel-400 border-t border-steel-700/50 pt-2 mt-auto">
                     {log.distance && <span className="flex items-center gap-1.5"><Target size={12} className="text-steel-500" /> {log.distance} yds</span>}

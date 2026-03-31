@@ -19,6 +19,7 @@ import {
   convertToGrains
 } from '../lib/math'
 import { Info, AlertTriangle, X, TrendingUp, DollarSign, TrendingDown } from 'lucide-react'
+import { InfoTip } from './InfoTip'
 
 // --- GLOBAL STYLES & HELPERS ---
 
@@ -470,17 +471,17 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
             <div>
               <div className="flex items-center justify-between mb-2">
                    <p className="rt-section-eyebrow">Cost Analysis</p>
-                   <div className="group relative">
-                       <Info size={14} className="text-steel-500 hover:text-steel-400 cursor-help"/>
-                       <div className="absolute right-0 bottom-6 w-48 bg-black border border-steel-600 p-2 rounded text-[10px] text-steel-300 opacity-0 group-hover:opacity-100 transition pointer-events-none z-50">
-                           Exact: {toPrecisionMoney(breakdown?.total.perRound || 0)} / round
-                       </div>
-                   </div>
+                   <InfoTip
+                       variant="info"
+                       title="Cost Precision"
+                       text={`Exact: ${toPrecisionMoney(breakdown?.total.perRound || 0)} / round. Proportioned from component lot prices.`}
+                       align="right"
+                   />
               </div>
               
               <div className="flex items-end justify-between gap-4 border-b border-steel-700 pb-6 mb-6">
                 <div>
-                  <p className="text-sm text-steel-400">Per round</p>
+                  <p className="text-sm text-steel-400 flex items-center">Per round<InfoTip variant="tip" title="Per Round Cost" text="True loaded round cost proportioned from lot prices: powder by grain weight used, bullet/primer/brass by per-unit cost." align="left" /></p>
                   <p className="text-5xl font-black tracking-tight" style={{ color: 'var(--text-hi)' }}>
                       {toStandardMoney(breakdown?.total.perRound)}
                   </p>
@@ -547,7 +548,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
 
           {/* 3. COMPONENT BREAKDOWN */}
           <div className="glass p-6">
-            <p className="rt-section-eyebrow mb-3">Components (Unit Cost)</p>
+            <p className="rt-section-eyebrow mb-3 flex items-center">Components (Unit Cost)<InfoTip variant="info" text="Each component's per-round cost contribution. Powder is priced by grain weight used per charge; bullet, primer, and brass by per-unit lot cost." /></p>
             <div className="grid grid-cols-2 gap-3">
               <BreakdownRow label="Powder" value={breakdown?.powder.perRound} />
               <BreakdownRow label="Bullet" value={breakdown?.bullet.perRound} />
