@@ -3,14 +3,16 @@
 //Script Location: src/components/AiModal.jsx
 //Date: 12/12/2025
 //Created By: T03KNEE
-//Version: 5.4.0 (Mobile UX Patch)
-//About: Chat interface.
+//Version: 6.0.0 (Design System v5 — Terminal Redesign)
+//About: Ballistics AI chat terminal interface.
 //       - FIX: Mobile Input set to 16px (text-base) to prevent iOS auto-zoom.
 //       - FIX: Container uses 100dvh to handle mobile browser address bars.
+//       - v6: JetBrains Mono force-applied via terminal-ui class.
+//             Copper/brass accent system. Immersive terminal aesthetic.
 //===============================================================
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Send, Bot, Trash2, RefreshCw, Cpu, ShieldCheck, TerminalSquare, ChevronRight } from 'lucide-react'
+import { X, Send, Bot, Trash2, RefreshCw, Cpu, ShieldCheck, TerminalSquare, ChevronRight, Zap } from 'lucide-react'
 import { HAPTIC } from '../lib/haptics'
 
 export default function AiModal({ open, onClose }) {
@@ -41,20 +43,20 @@ export default function AiModal({ open, onClose }) {
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
             prompt: input,
             history: messages.filter(m => m.role !== 'system')
         })
       })
 
       const data = await res.json()
-      
+
       if (!res.ok) throw new Error(data.error || "Connection Failed")
 
       setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
       HAPTIC.success()
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'system', content: `[SYSTEM ERROR]: ${err.message}` }])
+      setMessages(prev => [...prev, { role: 'system', content: `[ERR]: ${err.message}` }])
       HAPTIC.error()
     } finally {
       setLoading(false)
@@ -63,7 +65,7 @@ export default function AiModal({ open, onClose }) {
 
   function clearHistory() {
       if(!confirm("Purge session data?")) return
-      setMessages([{ role: 'system', content: 'MEMORY PURGED' }])
+      setMessages([{ role: 'system', content: 'SESSION PURGED. READY.' }])
       HAPTIC.soft()
   }
 
@@ -71,94 +73,181 @@ export default function AiModal({ open, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-0 md:p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
-      
-      {/* MAIN CONTAINER: Uses 100dvh for proper mobile height */}
-      <div className="bg-[#050505] border border-steel-700 w-full max-w-3xl h-[100dvh] md:h-[85vh] md:rounded-sm flex flex-col shadow-2xl relative overflow-hidden ring-1 ring-white/5 font-mono">
-        
-        {/* HEADER: Minimal Terminal Style */}
-        <div className="flex items-center justify-between p-3 border-b border-steel-700 bg-steel-900/90 z-10">
-            <div className="flex items-center gap-2">
-                <div className="text-red-500 animate-pulse">
-                    <TerminalSquare size={16} />
-                </div>
-                <div>
-                    <h3 className="text-xs font-bold text-steel-100 tracking-[0.2em] uppercase">BALLISTICS<span className="text-red-600">OS</span></h3>
-                    <div className="flex items-center gap-1.5 opacity-60">
-                        <span className="w-1 h-1 bg-emerald-500 rounded-sm"/> 
-                        <span className="text-[9px] text-steel-400 uppercase">v3.0.0 Connected</span>
-                    </div>
-                </div>
+
+      {/* terminal-ui forces JetBrains Mono across all children */}
+      <div className="terminal-ui bg-[#050507] border border-steel-700 w-full max-w-3xl h-[100dvh] md:h-[85vh] md:rounded-sm flex flex-col shadow-2xl relative overflow-hidden"
+           style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.04), 0 25px 50px rgba(0,0,0,0.8)' }}>
+
+        {/* ── HEADER ────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-steel-800 bg-black/60 z-10 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            {/* Accent bar */}
+            <div className="w-0.5 h-7 rounded-sm" style={{ background: 'var(--copper)' }} />
+            <div>
+              <div className="flex items-center gap-2">
+                <TerminalSquare size={13} style={{ color: 'var(--red)' }} />
+                <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-steel-100">
+                  BALLISTICS<span style={{ color: 'var(--red)' }}>OS</span>
+                </span>
+                <span className="text-[9px] tracking-[0.2em] text-steel-600 uppercase">v3.0</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {/* Green = connected/online — semantic, keep */}
+                <span className="rt-dot rt-dot-active" />
+                <span className="text-[9px] text-steel-500 tracking-widest uppercase">Secure Channel Active</span>
+              </div>
             </div>
-            <div className="flex gap-1">
-                <button onClick={clearHistory} className="p-2 text-steel-400 hover:text-red-400 hover:bg-steel-800 rounded-sm transition border border-transparent hover:border-steel-700"><Trash2 size={14}/></button>
-                <button onClick={onClose} className="p-2 text-steel-400 hover:text-white hover:bg-steel-800 rounded-sm transition border border-transparent hover:border-steel-700"><X size={16}/></button>
-            </div>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={clearHistory}
+              title="Purge session"
+              className="p-2 text-steel-600 hover:text-red-400 hover:bg-steel-900 rounded-sm transition border border-transparent hover:border-steel-700"
+            >
+              <Trash2 size={13}/>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 text-steel-600 hover:text-steel-200 hover:bg-steel-900 rounded-sm transition border border-transparent hover:border-steel-700"
+            >
+              <X size={15}/>
+            </button>
+          </div>
         </div>
 
-        {/* CHAT AREA: Clean Background (No Texture) */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-black/20 pb-20 md:pb-3">
-            {messages.map((m, i) => (
-                <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'} animate-in slide-in-from-bottom-1 duration-200`}>
-                    
-                    {/* MESSAGE BOX */}
-                    <div className={`max-w-[90%] md:max-w-[85%] rounded-sm px-3 py-2 text-xs md:text-sm leading-relaxed border backdrop-blur-sm ${
-                        m.role === 'user' 
-                        ? 'bg-steel-700 text-steel-100 border-steel-600' 
-                        : m.role === 'system'
-                        ? 'bg-transparent text-red-500 text-[10px] w-full text-center border-none font-bold opacity-80 py-1 tracking-widest'
-                        : 'bg-[#0a0a0a] text-steel-200 border-steel-700 shadow-sm'
-                    }`}>
-                        {m.role === 'assistant' && (
-                            <div className="flex items-center gap-1.5 mb-1 text-[9px] text-steel-500 border-b border-steel-700/50 pb-1 uppercase tracking-wider">
-                                <Cpu size={10} /> Calculation
-                            </div>
-                        )}
-                        <span className="whitespace-pre-wrap">{m.content}</span>
-                    </div>
+        {/* ── CHAT AREA ─────────────────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#050507] pb-20 md:pb-4">
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'} animate-in slide-in-from-bottom-1 duration-200`}
+            >
+              {/* USER MESSAGE */}
+              {m.role === 'user' && (
+                <div className="max-w-[88%] md:max-w-[80%]">
+                  <div className="text-[8px] text-steel-600 tracking-[0.2em] uppercase text-right mb-1 pr-1">OPERATOR INPUT</div>
+                  <div
+                    className="px-3 py-2 text-[11px] md:text-xs leading-relaxed text-steel-100 rounded-sm"
+                    style={{
+                      background: 'rgba(60,60,70,0.6)',
+                      border: '1px solid var(--border-md)',
+                      borderRight: '2px solid var(--copper)',
+                    }}
+                  >
+                    {m.content}
+                  </div>
                 </div>
-            ))}
-            
-            {loading && (
-                <div className="flex justify-start">
-                    <div className="bg-[#0a0a0a] rounded-sm px-3 py-2 flex items-center gap-2 border border-steel-700">
-                        <RefreshCw size={12} className="animate-spin text-red-600"/>
-                        <span className="text-[10px] text-steel-400 font-mono uppercase tracking-widest">Processing...</span>
-                    </div>
+              )}
+
+              {/* ASSISTANT MESSAGE */}
+              {m.role === 'assistant' && (
+                <div className="max-w-[92%] md:max-w-[88%]">
+                  <div className="flex items-center gap-1.5 mb-1 pl-1">
+                    <Cpu size={9} style={{ color: 'var(--copper)' }} />
+                    <span className="text-[8px] tracking-[0.2em] uppercase" style={{ color: 'var(--copper)' }}>
+                      CALCULATION COMPLETE
+                    </span>
+                  </div>
+                  <div
+                    className="px-3 py-2.5 text-[11px] md:text-xs leading-relaxed text-steel-200 rounded-sm whitespace-pre-wrap"
+                    style={{
+                      background: '#0a0a0d',
+                      border: '1px solid var(--border)',
+                      borderLeft: '2px solid var(--copper)',
+                    }}
+                  >
+                    {m.content}
+                  </div>
                 </div>
-            )}
-            <div ref={bottomRef} />
+              )}
+
+              {/* SYSTEM MESSAGE */}
+              {m.role === 'system' && (
+                <div className="w-full flex items-center gap-3 py-0.5">
+                  <div className="flex-1 h-px bg-steel-800" />
+                  <span
+                    className="text-[9px] tracking-[0.25em] uppercase px-2"
+                    style={{ color: 'var(--red)' }}
+                  >
+                    {m.content}
+                  </span>
+                  <div className="flex-1 h-px bg-steel-800" />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* LOADING */}
+          {loading && (
+            <div className="flex justify-start animate-in fade-in duration-200">
+              <div
+                className="flex items-center gap-2.5 px-3 py-2 rounded-sm"
+                style={{ background: '#0a0a0d', border: '1px solid var(--border)', borderLeft: '2px solid var(--copper)' }}
+              >
+                <RefreshCw size={11} className="animate-spin" style={{ color: 'var(--copper)' }} />
+                <span className="text-[10px] tracking-[0.2em] uppercase text-steel-500">
+                  Processing ballistics data...
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div ref={bottomRef} />
         </div>
 
-        {/* INPUT AREA: Slimmer & Technical */}
-        {/* FIX: pb-safe added for iPhone home bar */}
-        <div className="p-2 bg-steel-900 border-t border-steel-700 z-20 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            <form onSubmit={handleSend} className="relative flex items-center gap-0">
-                <div className="absolute left-3 text-steel-500 pointer-events-none">
-                    <ChevronRight size={14} />
-                </div>
-                <input 
-                    /* FIX: text-base on mobile prevents zoom */
-                    className="flex-1 bg-[#0a0a0a] border border-steel-700 rounded-sm pl-8 pr-12 py-2.5 text-base md:text-sm text-steel-100 focus:border-red-900 focus:bg-black focus:outline-none focus:ring-1 focus:ring-red-900/20 transition placeholder:text-steel-600 font-mono"
-                    placeholder="Enter command..."
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    disabled={loading}
-                    autoFocus
-                />
-                <button 
-                    type="submit" 
-                    disabled={loading || !input.trim()}
-                    className="absolute right-1 top-1 bottom-1 px-3 bg-steel-700 hover:bg-steel-600 text-steel-300 hover:text-white rounded-sm border border-steel-600 transition disabled:opacity-0 disabled:scale-75 transform duration-150"
-                >
-                    <Send size={12} />
-                </button>
-            </form>
-            <div className="flex justify-between items-center mt-1.5 px-1">
-                <p className="text-[8px] text-steel-600 font-mono">SECURE CONNECTION</p>
-                <p className="text-[8px] text-steel-500 flex items-center gap-1 opacity-50 font-mono">
-                    <ShieldCheck size={8} /> VERIFY DATA
-                </p>
+        {/* ── INPUT AREA ────────────────────────────────────────── */}
+        <div
+          className="p-3 border-t border-steel-800 bg-black/70 z-20 flex-shrink-0"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        >
+          <form onSubmit={handleSend} className="relative flex items-center">
+            {/* Prompt symbol */}
+            <div className="absolute left-3 pointer-events-none" style={{ color: 'var(--copper)' }}>
+              <ChevronRight size={13} />
             </div>
+            <input
+              /* text-base prevents iOS auto-zoom */
+              className="flex-1 rounded-sm pl-8 pr-12 py-2.5 text-base md:text-[12px] text-steel-100 placeholder:text-steel-700 outline-none transition"
+              style={{
+                background: '#0c0c10',
+                border: '1px solid var(--border-md)',
+                caretColor: 'var(--copper)',
+              }}
+              onFocus={e => e.target.style.borderColor = 'var(--copper)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+              placeholder="Enter query..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              disabled={loading}
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="absolute right-1 top-1 bottom-1 px-3 rounded-sm border transition disabled:opacity-0 disabled:scale-90 transform duration-150"
+              style={{
+                background: 'var(--copper-dim)',
+                borderColor: 'var(--copper)',
+                color: 'var(--copper)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--copper)'; e.currentTarget.style.color = '#000'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--copper-dim)'; e.currentTarget.style.color = 'var(--copper)'; }}
+            >
+              <Send size={11} />
+            </button>
+          </form>
+
+          {/* Footer meta */}
+          <div className="flex justify-between items-center mt-1.5 px-1">
+            <div className="flex items-center gap-1.5">
+              <Zap size={7} style={{ color: 'var(--copper)' }} />
+              <span className="text-[8px] tracking-widest text-steel-700 uppercase">AI-Assisted — Verify Critical Data</span>
+            </div>
+            <div className="flex items-center gap-1 text-steel-700">
+              <ShieldCheck size={8} />
+              <span className="text-[8px] tracking-widest uppercase">Secure</span>
+            </div>
+          </div>
         </div>
 
       </div>
