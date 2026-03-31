@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker Recipes Service
-//Script Location: backend/recipesService.js
-//Date: 12/10/2025
-//Created By: T03KNEE
-//Version: 2.2.0 (Restored Cascade Logic)
-//About: Business logic for managing load recipes.
-//       - FIX: Handles Foreign Key deletion errors gracefully.
-//===============================================================
 
 import { query } from './dbClient.js';
 import { ValidationError, NotFoundError } from './errors.js';

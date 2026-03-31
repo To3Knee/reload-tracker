@@ -1,16 +1,12 @@
-//===============================================================
-//Script Name: Reload Tracker Gear Service
-//Script Location: backend/gearService.js
-//Date: 12/07/2025
-//Created By: T03KNEE
-//Version: 1.1.0
-//About: Business logic for the Gear Locker.
-//       - Updated: GLOBAL ACCESS (Shared Gear).
-//       - Updated: Added User Attribution (Owner Name).
-//===============================================================
 
 import { query } from './dbClient.js'
 import { ValidationError, NotFoundError } from './errors.js'
+
+function assertAdmin(user) {
+  if (!user || user.role !== 'admin' || user.isActive === false) {
+    throw new ValidationError('You must be a Reloader (admin) to perform this action.')
+  }
+}
 
 function mapGearRow(row) {
   if (!row) return null
@@ -48,8 +44,9 @@ export async function listGear(currentUser) {
 }
 
 export async function createGear(payload, currentUser) {
+  assertAdmin(currentUser)
   const { name, type, brand, model, serial, price, purchaseDate, url, imageUrl, notes } = payload
-  
+
   if (!name) throw new ValidationError('Gear name is required.')
 
   const sql = `
@@ -78,6 +75,7 @@ export async function createGear(payload, currentUser) {
 }
 
 export async function updateGear(id, updates, currentUser) {
+  assertAdmin(currentUser)
   // SHARED WRITE: Any Admin can edit any gear
   const check = await query('SELECT id FROM gear WHERE id = $1 AND status != \'deleted\'', [id])
   if (check.rows.length === 0) throw new NotFoundError('Gear not found.')
@@ -116,6 +114,7 @@ export async function updateGear(id, updates, currentUser) {
 }
 
 export async function deleteGear(id, currentUser) {
+  assertAdmin(currentUser)
   // Soft delete — keeps FK relationships intact (firearm_gear links, etc.)
   const res = await query(
     `UPDATE gear SET status = 'deleted', updated_at = NOW() WHERE id = $1 AND status != 'deleted'`,

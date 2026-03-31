@@ -1,14 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker Backend Errors
-//Script Location: backend/errors.js
-//Date: 11/26/2025
-//Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 0.1.1
-//About: Common error classes and helpers used by the Reload
-//       Tracker backend (Netlify Functions or self-hosted API).
-//       ES-module version compatible with `type: "module"`.
-//===============================================================
 
 /**
  * ValidationError is thrown when incoming data fails validation.

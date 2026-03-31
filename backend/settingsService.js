@@ -1,11 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker Settings Service
-//Script Location: backend/settingsService.js
-//Date: 12/09/2025
-//Created By: T03KNEE
-//Version: 1.0.0
-//About: Manage system-wide configuration (AI Keys, etc).
-//===============================================================
 
 import { query } from './dbClient.js'
 

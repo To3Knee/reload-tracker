@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker AI Service
-//Script Location: backend/aiService.js
-//Date: 12/10/2025
-//Created By: T03KNEE
-//Version: 3.1.0 (Concise Mode)
-//About: AI Chat Logic.
-//       - UPDATE: Aggressive "Concise" System Prompt.
-//===============================================================
 
 import { query } from './dbClient.js'
 

@@ -1,11 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker System Service
-//Script Location: backend/systemService.js
-//Date: 12/08/2025
-//Created By: T03KNEE
-//Version: 1.0.0
-//About: Super Admin capabilities (SQL Execution, Config).
-//===============================================================
 
 import { query } from './dbClient.js'
 import { ValidationError } from './errors.js'

@@ -1,19 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker DB Client
-//Script Location: backend/dbClient.js
-//Date: 11/26/2025
-//Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 0.1.2
-//About: PostgreSQL client wrapper used by Reload Tracker backend
-//       services. Works on Netlify Functions (including Netlify
-//       DB / Neon) or self-hosted environments.
-//
-//       Connection-string resolution priority:
-//         1) DATABASE_URL (portable / self-host friendly)
-//         2) NETLIFY_DATABASE_URL (Netlify DB pooled)
-//         3) NETLIFY_DATABASE_URL_UNPOOLED (fallback)
-//===============================================================
 
 import { Pool } from 'pg';
 

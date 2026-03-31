@@ -1,11 +1,3 @@
-//===============================================================
-//Script Name: Barcode Scanner Service (Multi-Provider)
-//Script Location: backend/barcodeService.js
-//Date: 12/13/2025
-//Created By: T03KNEE
-//Version: 2.0.0
-//About: Unified adapter for multiple Barcode API providers.
-//===============================================================
 
 import { query } from './dbClient.js'
 

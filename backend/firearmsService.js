@@ -1,15 +1,12 @@
-//===============================================================
-//Script Name: Reload Tracker Firearms Service
-//Script Location: backend/firearmsService.js
-//Date: 12/10/2025
-//Created By: T03KNEE
-//Version: 2.2.0 (Type-Safe Fix)
-//About: Business logic for "The Armory".
-//       - FIX: Explicitly casts roundCount to Integer in updates.
-//===============================================================
 
 import { query } from './dbClient.js'
 import { ValidationError, NotFoundError } from './errors.js'
+
+function assertAdmin(user) {
+  if (!user || user.role !== 'admin' || user.isActive === false) {
+    throw new ValidationError('You must be a Reloader (admin) to perform this action.')
+  }
+}
 
 function mapFirearmRow(row) {
   if (!row) return null
@@ -47,8 +44,9 @@ export async function listFirearms(currentUser) {
 }
 
 export async function createFirearm(payload, currentUser) {
+  assertAdmin(currentUser)
   const { name, platform, caliber, manufacturer, model, specs, roundCount, imageUrl, gearIds } = payload
-  
+
   if (!name) throw new ValidationError('Firearm name is required.')
 
   const sql = `
@@ -77,6 +75,7 @@ export async function createFirearm(payload, currentUser) {
 }
 
 export async function updateFirearm(id, updates, currentUser) {
+  assertAdmin(currentUser)
   // 1. Verify existence
   const check = await query('SELECT id FROM firearms WHERE id = $1 AND status != \'deleted\'', [id])
   if (check.rows.length === 0) throw new NotFoundError('Firearm not found.')
@@ -125,6 +124,7 @@ export async function updateFirearm(id, updates, currentUser) {
 }
 
 export async function deleteFirearm(id, currentUser) {
+  assertAdmin(currentUser)
   await query(`UPDATE firearms SET status = 'deleted', updated_at = NOW() WHERE id = $1`, [id])
   return { success: true }
 }

@@ -1,13 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker Auth Service
-//Script Location: backend/authService.js
-//Date: 12/07/2025
-//Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.3.0
-//About: User accounts and session management logic.
-//       Updated: Added Hard Delete & Reverted List Filter.
-//===============================================================
 
 import crypto from 'node:crypto'
 import { query } from './dbClient.js'

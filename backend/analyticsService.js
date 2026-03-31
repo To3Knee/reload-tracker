@@ -1,13 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker Analytics Service
-//Script Location: backend/analyticsService.js
-//Date: 12/12/2025
-//Created By: T03KNEE
-//Version: 2.6.0 (Burn Rate & Math Safety)
-//About: Business logic for aggregating cost and trend data.
-//       - FEATURE: Added 'burnRate' (rounds/month) to Supply Forecast.
-//       - FIX: Hardened unit conversion (lb/lbs/kg) to match frontend math.js.
-//===============================================================
 
 import { query } from './dbClient.js'
 

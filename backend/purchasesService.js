@@ -1,13 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker Purchases Service
-//Script Location: backend/purchasesService.js
-//Date: 12/23/2025
-//Created By: T03KNEE
-//Version: 1.3.0 (Auto-ID Generation)
-//About: Business logic for managing LOTs / purchases.
-//       - FEATURE: Auto-generates unique System IDs (e.g. "PRI-X92B") 
-//         if Lot ID is missing (Safety Net).
-//===============================================================
 
 import { query } from './dbClient.js';
 import { ValidationError, NotFoundError } from './errors.js';

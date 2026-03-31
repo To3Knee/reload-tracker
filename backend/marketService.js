@@ -1,13 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker Market Service
-//Script Location: backend/marketService.js
-//Date: 12/19/2025
-//Created By: T03KNEE
-//Version: 5.3.0 (Field Mapping Fix)
-//About: Scrapes web data.
-//       - FIX: Mapped DB 'category' to Frontend 'componentType'.
-//       - FIX: Ensures classification persists after refresh.
-//===============================================================
 
 import { query } from './dbClient.js'
 import { chatWithAi } from './aiService.js'

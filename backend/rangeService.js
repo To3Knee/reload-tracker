@@ -1,15 +1,12 @@
-//===============================================================
-//Script Name: Reload Tracker Range Service
-//Script Location: backend/rangeService.js
-//Date: 12/07/2025
-//Created By: T03KNEE
-//Version: 2.3.0
-//About: Business logic for Range Logs.
-//       Updated: SQL JOINs reinforced.
-//===============================================================
 
 import { query } from './dbClient.js'
 import { ValidationError, NotFoundError } from './errors.js'
+
+function assertAdmin(user) {
+  if (!user || user.role !== 'admin' || user.isActive === false) {
+    throw new ValidationError('You must be a Reloader (admin) to perform this action.')
+  }
+}
 
 function normalizeNumber(val) {
   if (val === '' || val === null || val === undefined) return null
@@ -67,9 +64,7 @@ export async function listRangeLogs(filters = {}) {
 }
 
 export async function createRangeLog(payload, currentUser) {
-  if (!currentUser || currentUser.role !== 'admin') {
-    throw new ValidationError('Only Reloaders can log range sessions.')
-  }
+  assertAdmin(currentUser)
 
   const {
     recipeId, batchId, firearmId, date,
@@ -113,9 +108,7 @@ export async function createRangeLog(payload, currentUser) {
 }
 
 export async function updateRangeLog(id, updates, currentUser) {
-  if (!currentUser || currentUser.role !== 'admin') {
-    throw new ValidationError('Only Reloaders can edit logs.')
-  }
+  assertAdmin(currentUser)
   
   const fields = {
     recipeId: 'recipe_id', batchId: 'batch_id', firearmId: 'firearm_id', roundsFired: 'rounds_fired',
@@ -160,9 +153,7 @@ export async function updateRangeLog(id, updates, currentUser) {
 }
 
 export async function deleteRangeLog(id, currentUser) {
-  if (!currentUser || currentUser.role !== 'admin') {
-    throw new ValidationError('Only Reloaders can delete logs.')
-  }
+  assertAdmin(currentUser)
   const res = await query('DELETE FROM range_logs WHERE id = $1', [id])
   if (res.rowCount === 0) throw new NotFoundError('Log not found.')
   return { success: true }

@@ -1,15 +1,12 @@
-//===============================================================
-//Script Name: Reload Tracker Batches Service
-//Script Location: backend/batchesService.js
-//Date: 12/07/2025
-//Created By: T03KNEE
-//Version: 1.5.0
-//About: Business logic for logging loaded batches.
-//       Updated: SQL JOINs reinforced to prevent data loss.
-//===============================================================
 
 import { query, withTransaction } from './dbClient.js'
 import { ValidationError, NotFoundError } from './errors.js'
+
+function assertAdmin(user) {
+  if (!user || user.role !== 'admin' || user.isActive === false) {
+    throw new ValidationError('You must be a Reloader (admin) to perform this action.')
+  }
+}
 
 const GRAINS_PER_LB = 7000
 const GRAINS_PER_KG = 15432.3584
@@ -75,9 +72,7 @@ export async function listBatches(currentUser) {
 }
 
 export async function createBatch(payload, currentUser) {
-  if (!currentUser || currentUser.role !== 'admin') {
-    throw new ValidationError('Only Reloaders can log batches.')
-  }
+  assertAdmin(currentUser)
 
   const { recipeId, rounds, powderLotId, bulletLotId, primerLotId, caseLotId, notes } = payload
   const roundsLoaded = Number(rounds)
@@ -143,9 +138,7 @@ export async function createBatch(payload, currentUser) {
 }
 
 export async function updateBatch(id, updates, currentUser) {
-  if (!currentUser || currentUser.role !== 'admin') {
-    throw new ValidationError('Only Reloaders can edit batches.')
-  }
+  assertAdmin(currentUser)
   
   const notes = updates.notes !== undefined ? updates.notes : null
   
@@ -161,9 +154,7 @@ export async function updateBatch(id, updates, currentUser) {
 }
 
 export async function deleteBatch(id, currentUser) {
-  if (!currentUser || currentUser.role !== 'admin') {
-    throw new ValidationError('Only Reloaders can delete batches.')
-  }
+  assertAdmin(currentUser)
   const res = await query('DELETE FROM batches WHERE id = $1', [id])
   if (res.rowCount === 0) throw new NotFoundError('Batch not found.')
   return { success: true }
