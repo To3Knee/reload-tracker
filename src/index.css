@@ -25,15 +25,15 @@
   --red-dim:      #8b1e16;
   --red-glow:     rgba(196, 43, 33, 0.18);
 
-  /* Secondary — steel blue (precision accent) */
-  --copper:       #4d8fd6;
-  --copper-dim:   #1e508f;
-  --copper-glow:  rgba(77, 143, 214, 0.18);
+  /* Secondary — deep red gradient accent */
+  --copper:       #c42b21;
+  --copper-dim:   #8b1e16;
+  --copper-glow:  rgba(196, 43, 33, 0.18);
 
-  /* Tertiary — light steel blue (data highlight) */
-  --brass:        #7ab3e8;
-  --brass-dim:    #3e7fc5;
-  --brass-glow:   rgba(122, 179, 232, 0.15);
+  /* Tertiary — lighter red for secondary accents */
+  --brass:        #e05252;
+  --brass-dim:    #a82418;
+  --brass-glow:   rgba(224, 82, 82, 0.12);
 
   /* Text — clean neutral hierarchy */
   --text-hi:      #f2f2f4;
@@ -81,7 +81,7 @@ h1 {
   width: 3px;
   align-self: stretch;
   min-height: 2.5rem;
-  background: var(--red);
+  background: linear-gradient(to bottom, var(--red) 0%, var(--red-dim) 60%, #1a0808 100%);
   border-radius: 1px;
   flex-shrink: 0;
 }
@@ -90,7 +90,7 @@ h1 {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.28em;
-  color: var(--copper);
+  color: var(--text-md);
   font-weight: 700;
   margin-bottom: 3px;
 }
@@ -111,7 +111,7 @@ h1 {
   overflow: hidden;
 }
 
-/* Hairline copper-to-brass gradient across the top of featured cards */
+/* Hairline red-to-black gradient across the top of featured cards */
 .rt-card-accent::before {
   content: '';
   position: absolute;
@@ -119,10 +119,10 @@ h1 {
   height: 1px;
   background: linear-gradient(
     90deg,
-    transparent 0%,
-    var(--copper) 25%,
-    var(--brass)  50%,
-    var(--copper) 75%,
+    transparent   0%,
+    var(--red)    30%,
+    var(--brass)  55%,
+    var(--red)    80%,
     transparent   100%
   );
 }
@@ -141,14 +141,14 @@ h1 {
  * border-top-color creates a material feel without decoration.
  */
 .glass {
-  background: rgba(20, 18, 12, 0.97);
+  background: rgba(18, 18, 20, 0.97);
   backdrop-filter: blur(12px) saturate(140%);
   border: 1px solid var(--border-md);
   border-top-color: var(--border-hi);
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.45),
     0 4px 24px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 240, 200, 0.025);
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
   border-radius: 6px;
 }
 
@@ -172,7 +172,7 @@ h1 {
   position: absolute;
   top: 0; left: 0; bottom: 0;
   width: 2px;
-  background: linear-gradient(to bottom, var(--copper) 0%, var(--brass) 50%, var(--copper) 100%);
+  background: linear-gradient(to bottom, var(--red) 0%, var(--red-dim) 60%, #1a0808 100%);
   border-radius: 4px 0 0 4px;
 }
 
@@ -215,16 +215,16 @@ h1 {
   box-shadow: 0 3px 16px var(--red-glow);
 }
 
-/* Secondary — copper outline */
+/* Secondary — dim red outline */
 .rt-btn-secondary {
   background: transparent;
   border-color: var(--border-md);
   color: var(--text-md);
 }
 .rt-btn-secondary:hover {
-  border-color: var(--copper);
-  color: var(--copper);
-  background: rgba(184, 115, 51, 0.08);
+  border-color: var(--red-dim);
+  color: var(--text-hi);
+  background: rgba(196, 43, 33, 0.08);
 }
 
 /* Ghost — minimal */
@@ -328,12 +328,12 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
   text-transform: uppercase;
   border: 1px solid currentColor;
 }
-.rt-chip-powder { color: var(--brass);   border-color: rgba(212, 168, 67,  0.30); background: rgba(212, 168, 67,  0.06); }
-.rt-chip-bullet { color: var(--copper);  border-color: rgba(184, 115, 51,  0.30); background: rgba(184, 115, 51,  0.06); }
+.rt-chip-powder { color: var(--text-md); border-color: rgba(130, 130, 142, 0.30); background: rgba(130, 130, 142, 0.06); }
+.rt-chip-bullet { color: var(--text-md); border-color: rgba(130, 130, 142, 0.30); background: rgba(130, 130, 142, 0.06); }
 .rt-chip-primer { color: #c0c8d0;        border-color: rgba(192, 200, 208, 0.30); background: rgba(192, 200, 208, 0.06); }
-.rt-chip-brass  { color: #a0845c;        border-color: rgba(160, 132, 92,  0.30); background: rgba(160, 132, 92,  0.06); }
-.rt-chip-ammo   { color: #22c55e;        border-color: rgba(34,  197, 94,  0.30); background: rgba(34,  197, 94,  0.06); }
-.rt-chip-other  { color: var(--text-md); border-color: rgba(138, 130, 117, 0.30); background: rgba(138, 130, 117, 0.06); }
+.rt-chip-brass  { color: var(--text-md); border-color: rgba(130, 130, 142, 0.30); background: rgba(130, 130, 142, 0.06); }
+.rt-chip-ammo   { color: #e05252;        border-color: rgba(196, 43,  33,  0.30); background: rgba(196, 43,  33,  0.06); }
+.rt-chip-other  { color: var(--text-md); border-color: rgba(130, 130, 142, 0.30); background: rgba(130, 130, 142, 0.06); }
 
 /* ── MONOSPACE DATA READOUTS ────────────────────────────────── */
 /*
@@ -344,7 +344,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
   font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace !important;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em !important;
-  color: var(--brass);
+  color: var(--text-hi);
 }
 
 /* ── TERMINAL UI ─────────────────────────────────────────────── */
@@ -374,13 +374,13 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
   position: relative;
   overflow: hidden;
 }
-/* Copper hairline across top of each stat tile */
+/* Red hairline across top of each stat tile, fading to black */
 .rt-stat::after {
   content: '';
   position: absolute;
   top: 0; left: 16px; right: 16px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--copper-dim), transparent);
+  background: linear-gradient(90deg, transparent, var(--red-dim), var(--red), var(--red-dim), transparent);
 }
 .rt-stat-label {
   font-size: 8px;

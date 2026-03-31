@@ -209,7 +209,7 @@ export default function App() {
       >
         <div className="rt-card p-2 shadow-xl shadow-black/60">
           <RefreshCw
-            className={`w-5 h-5 text-[#4d8fd6] ptr-spinner ${isRefreshing ? 'refreshing' : ''}`}
+            className={`w-5 h-5 text-[#c42b21] ptr-spinner ${isRefreshing ? 'refreshing' : ''}`}
             style={{ transform: `rotate(${pullDistance * 3}deg)`, willChange: 'transform' }}
           />
         </div>

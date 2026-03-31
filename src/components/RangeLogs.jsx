@@ -318,11 +318,11 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: 'Inter', sans-serif; background: #fff; color: #111; font-size: 10px; }
 /* HEADER */
-.hdr { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; border-bottom: 2px solid #4d8fd6; margin-bottom: 16px; }
+.hdr { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; border-bottom: 2px solid #c42b21; margin-bottom: 16px; }
 .hdr-l { flex: 1; min-width: 0; }
-.eyebrow { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: #4d8fd6; margin-bottom: 4px; }
+.eyebrow { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: #c42b21; margin-bottom: 4px; }
 .rname { font-size: 20px; font-weight: 900; text-transform: uppercase; color: #111; line-height: 1; letter-spacing: -0.01em; }
-.rcal { font-size: 9px; font-weight: 700; color: #4d8fd6; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 3px; }
+.rcal { font-size: 9px; font-weight: 700; color: #c42b21; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 3px; }
 .rmeta { font-size: 8px; color: #777; margin-top: 3px; letter-spacing: 0.04em; }
 .hdr-r { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 16px; }
 .logo { height: 44px; width: auto; }
@@ -330,33 +330,33 @@ body { font-family: 'Inter', sans-serif; background: #fff; color: #111; font-siz
 /* LOAD STRIP */
 .load-strip { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 8px 14px; display: flex; flex-wrap: wrap; gap: 6px 24px; margin-bottom: 16px; }
 .load-item { display: flex; flex-direction: column; }
-.load-label { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #4d8fd6; margin-bottom: 2px; }
+.load-label { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #c42b21; margin-bottom: 2px; }
 .load-val { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; color: #111; }
 /* TARGET IMAGE */
 .target-wrap { border: 1px solid #e0d8cf; border-radius: 3px; height: 2.8in; overflow: hidden; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; background: #faf8f6; }
 .target-img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .no-img { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #ccc; }
 /* SECTION EYEBROW */
-.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.25em; color: #4d8fd6; display: flex; align-items: center; gap: 8px; margin: 14px 0 8px; padding-top: 14px; border-top: 1px solid #222; }
+.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.25em; color: #c42b21; display: flex; align-items: center; gap: 8px; margin: 14px 0 8px; padding-top: 14px; border-top: 1px solid #222; }
 .sect:first-child { margin-top: 0; padding-top: 0; border-top: none; }
 .sect::after { content: ''; flex: 1; height: 1px; background: #333; }
 /* STAT GRID */
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
 .stat-box { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 8px 10px; }
-.stat-box.hi { border-left: 3px solid #4d8fd6; }
+.stat-box.hi { border-left: 3px solid #c42b21; }
 .slabel { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #999; display: block; margin-bottom: 3px; }
 .sval { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 900; color: #111; display: block; line-height: 1; }
-.sval.cu { color: #4d8fd6; }
+.sval.cu { color: #c42b21; }
 .sunit { font-size: 8px; font-weight: 500; color: #aaa; margin-left: 2px; }
 /* WEATHER */
 .wx-row { display: flex; align-items: baseline; gap: 8px; background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 6px 10px; margin-bottom: 8px; }
-.wx-tag { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #4d8fd6; flex-shrink: 0; }
+.wx-tag { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #c42b21; flex-shrink: 0; }
 .wx-val { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #444; }
 /* SHOTS */
 .shots-wrap { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 7px 10px; margin-bottom: 8px; }
 .shots-data { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #555; line-height: 1.6; word-break: break-all; }
 /* NOTES */
-.notes-box { background: #faf8f6; border: 1px solid #e0d8cf; border-left: 3px solid #4d8fd6; border-radius: 0 3px 3px 0; padding: 8px 12px; }
+.notes-box { background: #faf8f6; border: 1px solid #e0d8cf; border-left: 3px solid #c42b21; border-radius: 0 3px 3px 0; padding: 8px 12px; }
 .notes-txt { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: #444; line-height: 1.6; white-space: pre-wrap; }
 /* FOOTER */
 .footer { display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid #e0d8cf; margin-top: 18px; font-family: 'JetBrains Mono', monospace; font-size: 7px; color: #aaa; text-transform: uppercase; letter-spacing: 0.12em; }

@@ -42,7 +42,7 @@ function RoundBar({ count, max }) {
         className="h-full rounded-full transition-all duration-500"
         style={{
           width: `${pct}%`,
-          background: 'linear-gradient(90deg, #4d8fd6, #7ab3e8)',
+          background: 'linear-gradient(90deg, #c42b21, #f2f2f4)',
         }}
       />
     </div>
@@ -174,7 +174,7 @@ export function Batches({ highlightId }) {
           </div>
           <div className="rt-stat">
             <span className="rt-stat-label">Top Load</span>
-            <span className="rt-stat-value text-[1.1rem] leading-tight text-[#4d8fd6] tracking-tight">{stats.topCal}</span>
+            <span className="rt-stat-value text-[1.1rem] leading-tight text-[#c42b21] tracking-tight">{stats.topCal}</span>
             <span className="rt-stat-sub">by volume</span>
           </div>
         </div>
@@ -216,7 +216,7 @@ export function Batches({ highlightId }) {
               >
                 {/* Highlight accent */}
                 {isHighlighted && (
-                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#7ab3e8]" />
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#f2f2f4]" />
                 )}
 
                 {/* Main row */}

@@ -23,22 +23,22 @@ export default {
           900: '#2d1111',
         },
 
-        // Secondary accent — steel blue (precision, tactical)
+        // Secondary accent — deep red (matches --copper)
         copper: {
-          300: '#93bcec',
-          400: '#6ba0df',
-          500: '#4d8fd6',
-          600: '#3373b8',
-          700: '#1e508f',
-          900: '#0a1e3d',
+          300: '#f08888',
+          400: '#e05252',
+          500: '#c42b21',
+          600: '#a82418',
+          700: '#8b1e16',
+          900: '#2d1111',
         },
 
-        // Tertiary accent — light steel blue (data readouts, highlights)
+        // Tertiary accent — lighter red / rose (matches --brass)
         brass: {
-          300: '#b8d4f4',
-          400: '#7ab3e8',
-          500: '#5a9bdb',
-          600: '#3e7fc5',
+          300: '#f4aaaa',
+          400: '#e87070',
+          500: '#e05252',
+          600: '#c42b21',
         },
 
         // Neutral steel — clean grays, no warm or cool cast

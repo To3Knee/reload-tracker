@@ -63,13 +63,13 @@ export default function Navbar({
                 <item.icon
                   size={14}
                   strokeWidth={active ? 2.5 : 1.5}
-                  className={active ? 'text-[#4d8fd6]' : ''}
+                  className={active ? 'text-[#c42b21]' : ''}
                 />
                 {item.label}
                 {/* Copper underline for active tab */}
                 {active && (
                   <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-t-sm"
-                        style={{ background: 'linear-gradient(90deg, transparent, #4d8fd6 30%, #7ab3e8 50%, #4d8fd6 70%, transparent)' }} />
+                        style={{ background: 'linear-gradient(90deg, transparent, #c42b21 30%, #f2f2f4 50%, #c42b21 70%, transparent)' }} />
                 )}
               </button>
             )
@@ -82,7 +82,7 @@ export default function Navbar({
             <button
               onClick={() => onOpenAi?.()}
               title="Ballistics AI"
-              className="rt-btn rt-btn-ghost rt-btn-icon border-copper-900/60 text-copper-500 hover:text-copper-300 hover:border-copper-700 hover:bg-copper-950/40"
+              className="rt-btn rt-btn-ghost rt-btn-icon border-copper-900/60 text-copper-500 hover:text-copper-300 hover:border-copper-700 hover:bg-red-900/40"
             >
               <Bot size={16} />
             </button>
@@ -116,7 +116,7 @@ export default function Navbar({
           {isAdmin && isAiEnabled && (
             <button
               onClick={() => onOpenAi?.()}
-              className="p-2 rounded border border-copper-900/60 bg-copper-950/30 text-copper-500 active:scale-95 transition-transform"
+              className="p-2 rounded border border-copper-900/60 bg-red-900/30 text-copper-500 active:scale-95 transition-transform"
             >
               <Bot size={18} />
             </button>
@@ -147,18 +147,18 @@ export default function Navbar({
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`flex-1 min-w-[52px] flex flex-col items-center justify-center gap-[3px] pt-2 pb-1 relative transition-colors
-                ${active ? 'text-[#4d8fd6]' : 'text-[#3a3a3a]'}`}
+                ${active ? 'text-[#c42b21]' : 'text-[#3a3a3a]'}`}
             >
               {/* Copper top tick for active */}
               {active && (
-                <span className="absolute top-0 left-2 right-2 h-[1.5px] rounded-b-sm bg-[#4d8fd6]" />
+                <span className="absolute top-0 left-2 right-2 h-[1.5px] rounded-b-sm bg-[#c42b21]" />
               )}
               <item.icon
                 size={20}
                 strokeWidth={active ? 2.5 : 1.5}
               />
               <span className={`text-[8px] font-bold uppercase tracking-[0.1em] leading-none
-                ${active ? 'text-[#4d8fd6]' : 'text-[#3a3a3a]'}`}>
+                ${active ? 'text-[#c42b21]' : 'text-[#3a3a3a]'}`}>
                 {SHORT_LABELS[item.id] || item.label}
               </span>
             </button>

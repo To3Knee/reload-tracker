@@ -337,15 +337,15 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Inter', sans-serif; background: #fff; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10px; }
 /* HEADER */
-.hdr { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #4d8fd6; margin-bottom: 16px; }
-.eyebrow { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: #4d8fd6; margin-bottom: 4px; }
+.hdr { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #c42b21; margin-bottom: 16px; }
+.eyebrow { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: #c42b21; margin-bottom: 4px; }
 .rname { font-size: 22px; font-weight: 900; color: #111; line-height: 1; text-transform: uppercase; letter-spacing: -0.02em; }
 .rsub { font-size: 10px; color: #777; margin-top: 4px; letter-spacing: 0.04em; }
 .hdr-r { display: flex; align-items: center; gap: 12px; }
 .logo { height: 50px; width: auto; }
 .qr-img { width: 54px; height: 54px; display: block; border: 1px solid #ddd; padding: 2px; }
 /* SECTION EYEBROW */
-.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.28em; color: #4d8fd6; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid #222; }
+.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.28em; color: #c42b21; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid #222; }
 .sect:first-child { margin-top: 0; padding-top: 0; border-top: none; }
 .sect::after { content: ''; flex: 1; height: 1px; background: #333; }
 /* COMPONENT GRID */
@@ -353,20 +353,20 @@ body { font-family: 'Inter', sans-serif; background: #fff; color: #111; -webkit-
 .comp-card { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 8px 10px; }
 .clabel { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #999; margin-bottom: 3px; }
 .cval { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #111; }
-.cval.cu { color: #4d8fd6; }
+.cval.cu { color: #c42b21; }
 .cval.wn { color: #c42b21; }
 /* BALLISTICS ROW */
 .blt-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.blt-card { background: #faf8f6; border: 1px solid #e0d8cf; border-top: 2px solid #4d8fd6; border-radius: 3px; padding: 7px 8px; text-align: center; }
+.blt-card { background: #faf8f6; border: 1px solid #e0d8cf; border-top: 2px solid #c42b21; border-radius: 3px; padding: 7px 8px; text-align: center; }
 .blabel { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #999; margin-bottom: 3px; }
-.bval { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #4d8fd6; }
+.bval { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #c42b21; }
 /* LOAD SPECS ROW */
 .spec-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .spec-card { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 7px 10px; }
 /* LOT IDs */
 .lot-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .lot-tag { font-family: 'JetBrains Mono', monospace; font-size: 7.5px; font-weight: 700; color: #111; border: 1px solid #c8b89a; border-radius: 2px; padding: 3px 7px; background: #faf8f6; letter-spacing: 0.06em; }
-.lot-tag span { color: #4d8fd6; margin-right: 4px; font-weight: 400; }
+.lot-tag span { color: #c42b21; margin-right: 4px; font-weight: 400; }
 /* RANGE TABLE */
 .tbl-wrap { border: 1px solid #e0d8cf; border-radius: 3px; overflow: hidden; }
 .ws-table { width: 100%; border-collapse: collapse; }
@@ -374,7 +374,7 @@ body { font-family: 'Inter', sans-serif; background: #fff; color: #111; -webkit-
 .ws-table td { height: 30px; border-bottom: 1px solid #ece7e0; padding: 0 8px; }
 .ws-table tr:last-child td { border-bottom: none; }
 /* NOTES */
-.notes-box { background: #faf8f6; border: 1px solid #e0d8cf; border-left: 3px solid #4d8fd6; border-radius: 0 3px 3px 0; padding: 10px 14px; }
+.notes-box { background: #faf8f6; border: 1px solid #e0d8cf; border-left: 3px solid #c42b21; border-radius: 0 3px 3px 0; padding: 10px 14px; }
 .notes-body { font-family: 'JetBrains Mono', monospace; font-size: 9px; line-height: 1.7; color: #444; white-space: pre-wrap; }
 /* FOOTER */
 .footer { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #e0d8cf; margin-top: 18px; }
