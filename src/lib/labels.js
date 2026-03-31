@@ -20,27 +20,34 @@ const SHARED_CSS = `
 
   /* ── SCREEN PREVIEW ── */
   @media screen and (min-width: 500px) {
-    body { display: flex; flex-direction: column; align-items: flex-start; padding: 40px 50px; gap: 12px; }
-    .label-card { transform: scale(2.8); transform-origin: top left; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
-    .print-hint {
-      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
-      color: #888; letter-spacing: 0.08em; text-transform: uppercase;
+    body {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: flex-start; padding: 100px 60px 60px; gap: 24px;
+      min-height: 100vh;
     }
-    .close-btn {
-      position: fixed; top: 14px; right: 14px;
-      background: #2a2a2a; color: #ccc; padding: 6px 14px;
-      border-radius: 4px; font-family: 'Inter', sans-serif; font-weight: 700;
-      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
-      text-decoration: none; border: 1px solid #3a3a3a; cursor: pointer;
-    }
-  }
-  @media screen and (max-width: 499px) {
-    body { display: flex; flex-direction: column; align-items: center; padding-top: 56px; gap: 8px; background: #111; }
-    .label-card { transform: scale(1.5); transform-origin: top center; }
+    /* zoom affects layout (unlike transform), so the label takes up its full visual space */
+    .label-card { zoom: 3.5; box-shadow: 0 16px 60px rgba(0,0,0,0.85), 0 0 0 1px #2a2a2a; }
     .print-hint {
       position: fixed; top: 0; left: 0; right: 0;
       font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
-      color: #fff; background: #c0392b; padding: 8px 12px;
+      color: #aaa; letter-spacing: 0.1em; text-transform: uppercase;
+      background: #111; padding: 14px 20px; border-bottom: 1px solid #222;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .close-btn {
+      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+      background: #c42b21; color: #fff; padding: 5px 14px;
+      border-radius: 3px; border: none; letter-spacing: 0.1em;
+      text-transform: uppercase; cursor: pointer; margin-left: auto;
+    }
+  }
+  @media screen and (max-width: 499px) {
+    body { display: flex; flex-direction: column; align-items: center; padding-top: 60px; gap: 8px; background: #111; }
+    .label-card { zoom: 1.8; }
+    .print-hint {
+      position: fixed; top: 0; left: 0; right: 0;
+      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+      color: #fff; background: #c42b21; padding: 10px 12px;
       text-align: center; letter-spacing: 0.05em;
     }
     .close-btn { display: none; }
@@ -128,7 +135,7 @@ const SHARED_CSS = `
 
 /* ── OPEN POPUP HELPER ─────────────────────────────────────── */
 function openLabelWindow(html, title = 'Label') {
-  const win = window.open('', '_blank', 'width=620,height=440')
+  const win = window.open('', '_blank', 'width=900,height=620')
   if (win) {
     win.document.write(html)
     win.document.close()
@@ -157,8 +164,11 @@ export async function printBatchLabel(batch) {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
-  <button onclick="window.close()" class="close-btn">✕ Close</button>
-  <span class="print-hint">DYMO 30334 · 2.25" × 1.25" · No Margins</span>
+  <div class="print-hint">
+    <span>DYMO 30334 · 2.25" × 1.25" · No Margins — Print with no scaling</span>
+    <button onclick="window.print()" style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;background:#333;color:#ccc;padding:5px 14px;border-radius:3px;border:1px solid #444;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;margin-right:8px">Print</button>
+    <button onclick="window.close()" class="close-btn">✕ Close</button>
+  </div>
   <div class="label-card">
     <div class="label-left">
       <img src="${qrDataUri}" class="qr-img" />
@@ -211,8 +221,11 @@ export async function printPurchaseLabel(purchase) {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
-  <button onclick="window.close()" class="close-btn">✕ Close</button>
-  <span class="print-hint">DYMO 30334 · 2.25" × 1.25" · No Margins</span>
+  <div class="print-hint">
+    <span>DYMO 30334 · 2.25" × 1.25" · No Margins — Print with no scaling</span>
+    <button onclick="window.print()" style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;background:#333;color:#ccc;padding:5px 14px;border-radius:3px;border:1px solid #444;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;margin-right:8px">Print</button>
+    <button onclick="window.close()" class="close-btn">✕ Close</button>
+  </div>
   <div class="label-card">
     <div class="label-left">
       <img src="${qrDataUri}" class="qr-img" />

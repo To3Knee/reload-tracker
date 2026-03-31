@@ -229,10 +229,13 @@ export default function AuthModal({
         <div className={`bg-black/40 p-6 flex flex-col relative border-b border-steel-700 md:border-b-0 md:border-r ${isAdmin ? "w-full md:w-[30%] shrink-0" : "w-full flex-1"}`}>
           {canClose && !isAdmin && (<button onClick={onClose} className="absolute top-4 right-4 rt-btn rt-btn-icon"><X size={16} /></button>)}
           <div className="mb-6 flex flex-col items-center md:items-start text-center md:text-left border-b border-steel-700/50 pb-6">
-            <img src={logo} alt="Reload Tracker" className="h-16 w-auto mb-4 object-contain opacity-90" />
+            <div className="relative mb-3">
+              <div className="absolute inset-0 blur-2xl rounded-full bg-red-900/30 scale-150" />
+              <img src={logo} alt="Reload Tracker" className="relative h-28 w-auto object-contain opacity-95" />
+            </div>
             <div>
-                <h2 className="text-xl font-black text-white tracking-wide">RELOAD <span className="text-steel-500">TRACKER</span></h2>
-                <p className="text-[10px] text-steel-400 font-medium uppercase tracking-[0.2em] mt-1">System Access Control</p>
+                <h2 className="text-2xl font-black text-white tracking-[0.12em] uppercase leading-none">RELOAD<br/><span style={{ color: 'var(--red)' }}>TRACKER</span></h2>
+                <p className="text-[9px] text-steel-500 font-bold uppercase tracking-[0.3em] mt-2">System Access Control</p>
             </div>
           </div>
           {currentUser && (

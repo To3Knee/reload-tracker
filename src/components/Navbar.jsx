@@ -45,8 +45,12 @@ export default function Navbar({
                       shadow-[0_1px_0_#2a2a2a,0_4px_24px_rgba(0,0,0,0.6)]">
 
         {/* Branding */}
-        <div className="flex items-center w-48 flex-shrink-0">
-          <img src={logo} alt="Reload Tracker" className="h-[64px] w-auto object-contain opacity-95 hover:opacity-100 transition-opacity duration-200" />
+        <div className="flex items-center gap-3 w-56 flex-shrink-0">
+          <img src={logo} alt="Reload Tracker" className="h-[72px] w-auto object-contain opacity-95 hover:opacity-100 transition-opacity duration-200" />
+          <div className="hidden xl:flex flex-col leading-none">
+            <span className="text-[13px] font-black tracking-[0.18em] uppercase text-[#f2f2f4]">RELOAD</span>
+            <span className="text-[13px] font-black tracking-[0.18em] uppercase text-[#c42b21]">TRACKER</span>
+          </div>
         </div>
 
         {/* Navigation links */}
@@ -110,7 +114,13 @@ export default function Navbar({
                    bg-[#080808]/97 backdrop-blur-xl border-b border-[#1e1e1e]"
         style={{ height: 'calc(48px + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <img src={logo} alt="Reload Tracker" className="h-11 w-auto object-contain opacity-95" />
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="Reload Tracker" className="h-12 w-auto object-contain opacity-95" />
+          <div className="flex flex-col leading-none">
+            <span className="text-[10px] font-black tracking-[0.2em] uppercase text-[#f2f2f4]">RELOAD</span>
+            <span className="text-[10px] font-black tracking-[0.2em] uppercase text-[#c42b21]">TRACKER</span>
+          </div>
+        </div>
 
         <div className="flex items-center gap-2">
           {isAdmin && isAiEnabled && (

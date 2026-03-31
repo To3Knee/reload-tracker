@@ -171,12 +171,16 @@ export default function App() {
 
   if (!ageConfirmed) return (
       <div className="min-h-[100dvh] bg-[#080808] text-gray-100 flex items-center justify-center px-4">
-        <div className="glass max-w-lg w-full text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-4">Reload Tracker</p>
-          <h1 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-[0.1em] text-white">For Responsible <span className="text-red-600">Adult Reloaders</span> Only.</h1>
+        <div className="glass max-w-lg w-full text-center p-10">
+          <div className="relative mb-6 flex justify-center">
+            <div className="absolute inset-0 blur-3xl rounded-full bg-red-900/25 scale-150" />
+            <img src={logo} alt="Reload Tracker" className="relative h-32 w-auto object-contain opacity-95" />
+          </div>
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.35em] text-red-500/70 mb-5">Reload Tracker</h2>
+          <h1 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-[0.06em] text-white leading-tight">For Responsible <span className="text-red-600">Adult Reloaders</span> Only.</h1>
           <p className="text-sm text-steel-400 mb-8">By continuing you confirm you are of legal age.</p>
           <button onClick={confirmAge} className="rt-btn rt-btn-primary px-8 py-3 text-sm font-semibold shadow-lg shadow-red-900/40 active:scale-95">I am 21 or older</button>
-          <div className="mt-4 text-[10px] text-steel-500">Reload Tracker {APP_VERSION_LABEL}</div>
+          <div className="mt-6 text-[10px] text-steel-600 uppercase tracking-widest">Reload Tracker {APP_VERSION_LABEL}</div>
         </div>
       </div>
   )
