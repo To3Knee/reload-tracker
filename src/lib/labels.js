@@ -9,45 +9,18 @@ const SHARED_CSS = `
 
   html, body { margin: 0; padding: 0; background: #1a1a1a; }
 
-  /* ── SCREEN PREVIEW ── */
-  @media screen and (min-width: 500px) {
+  /* ── SCREEN PREVIEW (inside overlay iframe) ── */
+  @media screen {
     body {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: flex-start; padding: 100px 60px 60px; gap: 24px;
-      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: #1a1a1a;
     }
-    /* zoom affects layout (unlike transform), so the label takes up its full visual space */
     .label-card { zoom: 3.5; box-shadow: 0 16px 60px rgba(0,0,0,0.85), 0 0 0 1px #2a2a2a; }
-    .print-hint {
-      position: fixed; top: 0; left: 0; right: 0;
-      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
-      color: #aaa; letter-spacing: 0.1em; text-transform: uppercase;
-      background: #111; padding: 14px 20px; border-bottom: 1px solid #222;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .close-btn {
-      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
-      background: #c42b21; color: #fff; padding: 5px 14px;
-      border-radius: 3px; border: none; letter-spacing: 0.1em;
-      text-transform: uppercase; cursor: pointer; margin-left: auto;
-    }
-  }
-  @media screen and (max-width: 499px) {
-    body { display: flex; flex-direction: column; align-items: center; padding-top: 60px; gap: 8px; background: #111; }
-    .label-card { zoom: 1.8; }
-    .print-hint {
-      position: fixed; top: 0; left: 0; right: 0;
-      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
-      color: #fff; background: #c42b21; padding: 10px 12px;
-      text-align: center; letter-spacing: 0.05em;
-    }
-    .close-btn { display: none; }
   }
 
   @media print {
-    body { background: white; padding: 0; }
-    .print-hint, .close-btn { display: none !important; }
-    .label-card { transform: none !important; box-shadow: none !important; }
+    body { background: white; padding: 0; margin: 0; }
+    .label-card { transform: none !important; zoom: 1 !important; box-shadow: none !important; }
   }
 
   /* ── LABEL BASE ── */
@@ -124,15 +97,44 @@ const SHARED_CSS = `
   }
 `
 
-/* ── OPEN POPUP HELPER ─────────────────────────────────────── */
-function openLabelWindow(html, title = 'Label') {
-  const win = window.open('', '_blank', 'width=900,height=620')
-  if (win) {
-    win.document.write(html)
-    win.document.close()
-  } else {
-    alert('Please allow popups to print labels.')
-  }
+/* ── LABEL OVERLAY (no popup permissions needed) ───────────── */
+function openLabelWindow(html) {
+  const existing = document.getElementById('rt-label-overlay')
+  if (existing) existing.remove()
+
+  const overlay = document.createElement('div')
+  overlay.id = 'rt-label-overlay'
+  overlay.style.cssText = [
+    'position:fixed;inset:0;z-index:9999',
+    'background:rgba(0,0,0,0.97)',
+    'display:flex;flex-direction:column',
+  ].join(';')
+
+  const bar = document.createElement('div')
+  bar.style.cssText = [
+    'flex-shrink:0;display:flex;align-items:center;justify-content:space-between',
+    'padding:12px 20px;background:#111;border-bottom:1px solid #222',
+    "font-family:Inter,sans-serif;font-size:11px;color:#aaa",
+    'letter-spacing:0.1em;text-transform:uppercase',
+  ].join(';')
+  bar.innerHTML = `
+    <span>DYMO 30334 &middot; 2.25&quot; &times; 1.25&quot; &middot; No Margins &middot; No Scaling</span>
+    <div style="display:flex;gap:8px">
+      <button id="rt-lbl-print" style="font-size:10px;font-weight:700;background:#222;color:#ccc;padding:5px 14px;border-radius:3px;border:1px solid #444;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;font-family:Inter,sans-serif">Print</button>
+      <button id="rt-lbl-close" style="font-size:10px;font-weight:700;background:#c42b21;color:#fff;padding:5px 14px;border-radius:3px;border:none;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;font-family:Inter,sans-serif">&#x2715; Close</button>
+    </div>
+  `
+
+  const iframe = document.createElement('iframe')
+  iframe.style.cssText = 'flex:1;border:none;background:#1a1a1a'
+  iframe.srcdoc = html
+
+  overlay.appendChild(bar)
+  overlay.appendChild(iframe)
+  document.body.appendChild(overlay)
+
+  document.getElementById('rt-lbl-close').onclick = () => overlay.remove()
+  document.getElementById('rt-lbl-print').onclick = () => iframe.contentWindow?.print()
 }
 
 /* ── BATCH LABEL ────────────────────────────────────────────── */
@@ -155,11 +157,6 @@ export async function printBatchLabel(batch) {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
-  <div class="print-hint">
-    <span>DYMO 30334 · 2.25" × 1.25" · No Margins — Print with no scaling</span>
-    <button onclick="window.print()" style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;background:#333;color:#ccc;padding:5px 14px;border-radius:3px;border:1px solid #444;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;margin-right:8px">Print</button>
-    <button onclick="window.close()" class="close-btn">✕ Close</button>
-  </div>
   <div class="label-card">
     <div class="label-left">
       <img src="${qrDataUri}" class="qr-img" />
@@ -180,7 +177,6 @@ export async function printBatchLabel(batch) {
       </div>
     </div>
   </div>
-  <script>window.onload = () => { setTimeout(() => window.print(), 600); }<\/script>
 </body>
 </html>`
 
@@ -212,11 +208,6 @@ export async function printPurchaseLabel(purchase) {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
-  <div class="print-hint">
-    <span>DYMO 30334 · 2.25" × 1.25" · No Margins — Print with no scaling</span>
-    <button onclick="window.print()" style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;background:#333;color:#ccc;padding:5px 14px;border-radius:3px;border:1px solid #444;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;margin-right:8px">Print</button>
-    <button onclick="window.close()" class="close-btn">✕ Close</button>
-  </div>
   <div class="label-card">
     <div class="label-left">
       <img src="${qrDataUri}" class="qr-img" />
@@ -237,7 +228,6 @@ export async function printPurchaseLabel(purchase) {
       </div>
     </div>
   </div>
-  <script>window.onload = () => { setTimeout(() => window.print(), 600); }<\/script>
 </body>
 </html>`
 
