@@ -23,22 +23,22 @@ export default {
           900: '#2d1111',
         },
 
-        // Secondary accent — copper (the material of the primer pocket)
+        // Secondary accent — steel blue (precision, tactical)
         copper: {
-          300: '#dda05a',
-          400: '#c87941',
-          500: '#b87333',
-          600: '#9a5f28',
-          700: '#7a4a1e',
-          900: '#2a1a0a',
+          300: '#93bcec',
+          400: '#6ba0df',
+          500: '#4d8fd6',
+          600: '#3373b8',
+          700: '#1e508f',
+          900: '#0a1e3d',
         },
 
-        // Tertiary accent — brass (the material of the case)
+        // Tertiary accent — light steel blue (data readouts, highlights)
         brass: {
-          300: '#e8c875',
-          400: '#d4a843',
-          500: '#c49528',
-          600: '#a87e1e',
+          300: '#b8d4f4',
+          400: '#7ab3e8',
+          500: '#5a9bdb',
+          600: '#3e7fc5',
         },
 
         // Neutral steel — clean grays, no warm or cool cast

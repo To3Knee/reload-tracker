@@ -9,7 +9,7 @@
 
 /* ── CSS CUSTOM PROPERTIES ─────────────────────────────────── */
 :root {
-  /* Surfaces — clean neutral dark; brass/copper own all the warmth */
+  /* Surfaces — clean neutral dark */
   --bg:           #0a0a0c;
   --surface:      #111113;
   --card:         #181819;
@@ -25,15 +25,15 @@
   --red-dim:      #8b1e16;
   --red-glow:     rgba(196, 43, 33, 0.18);
 
-  /* Secondary — copper (primer pocket, ejector) */
-  --copper:       #b87333;
-  --copper-dim:   #7a4a1e;
-  --copper-glow:  rgba(184, 115, 51, 0.20);
+  /* Secondary — steel blue (precision accent) */
+  --copper:       #4d8fd6;
+  --copper-dim:   #1e508f;
+  --copper-glow:  rgba(77, 143, 214, 0.18);
 
-  /* Tertiary — brass (case body, the round itself) */
-  --brass:        #d4a843;
-  --brass-dim:    #a07828;
-  --brass-glow:   rgba(212, 168, 67, 0.18);
+  /* Tertiary — light steel blue (data highlight) */
+  --brass:        #7ab3e8;
+  --brass-dim:    #3e7fc5;
+  --brass-glow:   rgba(122, 179, 232, 0.15);
 
   /* Text — clean neutral hierarchy */
   --text-hi:      #f2f2f4;

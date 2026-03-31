@@ -470,7 +470,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   const labelClass = "rt-label"
   const helpClass = "text-[9px] text-steel-500 mt-0.5 italic flex items-center gap-1"
   const sectionLabelClass = "rt-label block mb-4"
-  const tabBtnClass = (active) => `pb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] transition border-b-2 flex items-center gap-2 ${active ? 'border-[#b87333] text-[#f0ece4]' : 'border-transparent text-[#4a4844] hover:text-[#9a9590]'}`
+  const tabBtnClass = (active) => `pb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] transition border-b-2 flex items-center gap-2 ${active ? 'border-[#4d8fd6] text-[#f2f2f4]' : 'border-transparent text-[#484854] hover:text-[#82828e]'}`
 
   const getSmartPrice = (type, unitCost) => {
       if (type === 'primer') return { label: 'Cost / 1k', val: unitCost * 1000 };

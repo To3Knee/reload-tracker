@@ -203,10 +203,10 @@ function CapacityCard({ label, rounds, type, highlight = false }) {
     <div className={`rt-card p-3 flex flex-col justify-between ${highlight ? 'rt-card-accent' : ''}`}>
       {chipClass
         ? <span className={chipClass}>{label}</span>
-        : <span className="text-[9px] uppercase tracking-[0.22em] font-bold text-[#b87333]">{label}</span>
+        : <span className="text-[9px] uppercase tracking-[0.22em] font-bold text-[#4d8fd6]">{label}</span>
       }
       <div className="mt-2">
-        <span className="text-xl font-black text-[#f0ece4] rt-data leading-none">
+        <span className="text-xl font-black text-[#f2f2f4] rt-data leading-none">
           {val.toLocaleString()}
         </span>
         <span className="text-[9px] text-steel-500 ml-1 uppercase tracking-wider">rds</span>
@@ -229,9 +229,9 @@ function LotCard({ lot }) {
     <div className={`rt-card flex flex-col overflow-hidden transition-all hover:border-[#3a3a3a] ${isDepleted ? 'opacity-55 grayscale' : 'rt-card-accent'}`}>
       {/* Card header band */}
       <div className="relative h-20 bg-gradient-to-br from-[#0f0f0f] via-[#0a0a0a] to-[#141414] flex-shrink-0">
-        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_top_right,_#b87333_0,_transparent_60%)]" />
+        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_top_right,_#4d8fd6_0,_transparent_60%)]" />
         <div className="relative z-10 flex items-start justify-between px-3 pt-2.5">
-          <span className="text-[9px] font-mono px-2 py-[2px] rounded bg-black/80 border border-[#b87333]/30 text-[#b87333]/80 tracking-widest">
+          <span className="text-[9px] font-mono px-2 py-[2px] rounded bg-black/80 border border-[#4d8fd6]/30 text-[#4d8fd6]/80 tracking-widest">
             {lot.lotId || 'LOT'}
           </span>
           <span className={chipClass}>{typeLabel}</span>
@@ -252,7 +252,7 @@ function LotCard({ lot }) {
       {/* Card body */}
       <div className="p-3 space-y-2 flex-1 flex flex-col">
         <div>
-          <div className="text-xs font-bold text-[#f0ece4] leading-tight">
+          <div className="text-xs font-bold text-[#f2f2f4] leading-tight">
             {lot.brand || 'Unknown'}
           </div>
           {lot.name && (
@@ -267,11 +267,11 @@ function LotCard({ lot }) {
 
         <div className="flex justify-between text-[11px] mt-auto">
           <span className="text-steel-500">Total Cost</span>
-          <span className="font-mono text-[#f0ece4]">{formatCurrency(totalCost)}</span>
+          <span className="font-mono text-[#f2f2f4]">{formatCurrency(totalCost)}</span>
         </div>
         <div className="flex justify-between text-[11px]">
           <span className="text-steel-500">Per Unit</span>
-          <span className="font-mono text-[#d4a843]">{formatCurrency(perUnit)}</span>
+          <span className="font-mono text-[#7ab3e8]">{formatCurrency(perUnit)}</span>
         </div>
 
         <div className="flex items-center justify-between pt-1.5 border-t border-[#1e1e1e] mt-1">

@@ -160,7 +160,7 @@ export function Armory({ canEdit }) {
 
   const inputClass = "rt-input"
   const labelClass = "rt-label flex items-center gap-1"
-  const tabBtnClass = (active) => `pb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] transition border-b-2 flex items-center gap-2 ${active ? 'border-[#b87333] text-[#f0ece4]' : 'border-transparent text-[#4a4844] hover:text-[#9a9590]'}`
+  const tabBtnClass = (active) => `pb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] transition border-b-2 flex items-center gap-2 ${active ? 'border-[#4d8fd6] text-[#f2f2f4]' : 'border-transparent text-[#484854] hover:text-[#82828e]'}`
 
   const availableGear = useMemo(
     () => gear.filter(g => !form.gearIds.includes(Number(g.id))),

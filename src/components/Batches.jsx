@@ -42,7 +42,7 @@ function RoundBar({ count, max }) {
         className="h-full rounded-full transition-all duration-500"
         style={{
           width: `${pct}%`,
-          background: 'linear-gradient(90deg, #b87333, #d4a843)',
+          background: 'linear-gradient(90deg, #4d8fd6, #7ab3e8)',
         }}
       />
     </div>
@@ -174,7 +174,7 @@ export function Batches({ highlightId }) {
           </div>
           <div className="rt-stat">
             <span className="rt-stat-label">Top Load</span>
-            <span className="rt-stat-value text-[1.1rem] leading-tight text-[#b87333] tracking-tight">{stats.topCal}</span>
+            <span className="rt-stat-value text-[1.1rem] leading-tight text-[#4d8fd6] tracking-tight">{stats.topCal}</span>
             <span className="rt-stat-sub">by volume</span>
           </div>
         </div>
@@ -183,7 +183,7 @@ export function Batches({ highlightId }) {
       {/* ── BATCH LIST ── */}
       <div className="rt-card p-0 overflow-hidden">
         {loading && (
-          <div className="px-6 py-8 text-center text-[11px] text-[#4a4844] uppercase tracking-[0.2em] animate-pulse">
+          <div className="px-6 py-8 text-center text-[11px] text-[#484854] uppercase tracking-[0.2em] animate-pulse">
             Loading production log…
           </div>
         )}
@@ -216,7 +216,7 @@ export function Batches({ highlightId }) {
               >
                 {/* Highlight accent */}
                 {isHighlighted && (
-                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#d4a843]" />
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#7ab3e8]" />
                 )}
 
                 {/* Main row */}
@@ -227,7 +227,7 @@ export function Batches({ highlightId }) {
                     <div className="text-[1.6rem] font-black leading-none rt-data">
                       {batch.rounds}
                     </div>
-                    <div className="text-[7px] text-[#4a4844] uppercase tracking-[0.18em] mt-0.5">rds</div>
+                    <div className="text-[7px] text-[#484854] uppercase tracking-[0.18em] mt-0.5">rds</div>
                     <RoundBar count={Number(batch.rounds)} max={stats?.maxBatch || 1} />
                   </div>
 
@@ -235,13 +235,13 @@ export function Batches({ highlightId }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">
                       <span className="text-[8px] text-[#3a3a3a] font-mono">#{batch.id}</span>
-                      <h3 className="text-[13px] font-bold text-[#f0ece4] truncate leading-tight">
+                      <h3 className="text-[13px] font-bold text-[#f2f2f4] truncate leading-tight">
                         {batch.recipe || 'Custom Load'}
                       </h3>
                     </div>
                     <ComponentChips components={batch.components} />
                     {!isExpanded && batch.notes && (
-                      <p className="text-[10px] text-[#4a4844] italic mt-1.5 line-clamp-1 pl-2 border-l border-[#2a2a2a]">
+                      <p className="text-[10px] text-[#484854] italic mt-1.5 line-clamp-1 pl-2 border-l border-[#2a2a2a]">
                         {batch.notes}
                       </p>
                     )}
@@ -249,7 +249,7 @@ export function Batches({ highlightId }) {
 
                   {/* Date + actions column */}
                   <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                    <span className="text-[9px] text-[#4a4844] font-mono tracking-wide whitespace-nowrap">
+                    <span className="text-[9px] text-[#484854] font-mono tracking-wide whitespace-nowrap">
                       {fmtDate(batch.date)}
                     </span>
                     {attribution && (

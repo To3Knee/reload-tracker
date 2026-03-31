@@ -58,18 +58,18 @@ export default function Navbar({
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={`relative flex items-center gap-2 px-3 h-full text-[11px] font-bold uppercase tracking-[0.12em] transition-colors whitespace-nowrap
-                  ${active ? 'text-[#f0ece4]' : 'text-[#4a4844] hover:text-[#9a9590]'}`}
+                  ${active ? 'text-[#f2f2f4]' : 'text-[#484854] hover:text-[#82828e]'}`}
               >
                 <item.icon
                   size={14}
                   strokeWidth={active ? 2.5 : 1.5}
-                  className={active ? 'text-[#b87333]' : ''}
+                  className={active ? 'text-[#4d8fd6]' : ''}
                 />
                 {item.label}
                 {/* Copper underline for active tab */}
                 {active && (
                   <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-t-sm"
-                        style={{ background: 'linear-gradient(90deg, transparent, #b87333 30%, #d4a843 50%, #b87333 70%, transparent)' }} />
+                        style={{ background: 'linear-gradient(90deg, transparent, #4d8fd6 30%, #7ab3e8 50%, #4d8fd6 70%, transparent)' }} />
                 )}
               </button>
             )
@@ -88,8 +88,8 @@ export default function Navbar({
             </button>
           )}
           <div className="hidden lg:flex flex-col items-end leading-tight">
-            <span className="text-[11px] font-bold text-[#f0ece4] tracking-wide">{sessionName}</span>
-            <span className="text-[8px] text-[#4a4844] uppercase tracking-[0.2em]">{sessionRole}</span>
+            <span className="text-[11px] font-bold text-[#f2f2f4] tracking-wide">{sessionName}</span>
+            <span className="text-[8px] text-[#484854] uppercase tracking-[0.2em]">{sessionRole}</span>
           </div>
           <button
             onClick={() => onOpenSettings?.()}
@@ -123,7 +123,7 @@ export default function Navbar({
           )}
           <button
             onClick={() => onOpenSettings?.()}
-            className="p-2 rounded border border-[#1e1e1e] bg-[#0f0f0f] text-[#4a4844] active:scale-95 transition-transform"
+            className="p-2 rounded border border-[#1e1e1e] bg-[#0f0f0f] text-[#484854] active:scale-95 transition-transform"
           >
             <Settings size={18} />
           </button>
@@ -147,18 +147,18 @@ export default function Navbar({
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`flex-1 min-w-[52px] flex flex-col items-center justify-center gap-[3px] pt-2 pb-1 relative transition-colors
-                ${active ? 'text-[#b87333]' : 'text-[#3a3a3a]'}`}
+                ${active ? 'text-[#4d8fd6]' : 'text-[#3a3a3a]'}`}
             >
               {/* Copper top tick for active */}
               {active && (
-                <span className="absolute top-0 left-2 right-2 h-[1.5px] rounded-b-sm bg-[#b87333]" />
+                <span className="absolute top-0 left-2 right-2 h-[1.5px] rounded-b-sm bg-[#4d8fd6]" />
               )}
               <item.icon
                 size={20}
                 strokeWidth={active ? 2.5 : 1.5}
               />
               <span className={`text-[8px] font-bold uppercase tracking-[0.1em] leading-none
-                ${active ? 'text-[#b87333]' : 'text-[#3a3a3a]'}`}>
+                ${active ? 'text-[#4d8fd6]' : 'text-[#3a3a3a]'}`}>
                 {SHORT_LABELS[item.id] || item.label}
               </span>
             </button>
