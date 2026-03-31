@@ -38,7 +38,7 @@ function BreakdownRow({ label, value }) {
   return (
     <div className="rt-card flex items-center justify-between p-2">
       <span className="text-steel-500 text-[11px]">{label}</span>
-      <span className="font-mono text-[#d4a843] text-[11px]" title={toPrecisionMoney(value)}>{toPrecisionMoney(value)}</span>
+      <span className="rt-data text-[11px]" title={toPrecisionMoney(value)}>{toPrecisionMoney(value)}</span>
     </div>
   )
 }
@@ -481,7 +481,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
               <div className="flex items-end justify-between gap-4 border-b border-steel-700 pb-6 mb-6">
                 <div>
                   <p className="text-sm text-steel-400">Per round</p>
-                  <p className="text-5xl font-black text-emerald-400 tracking-tight">
+                  <p className="text-5xl font-black tracking-tight" style={{ color: 'var(--brass)' }}>
                       {toStandardMoney(breakdown?.total.perRound)}
                   </p>
                 </div>
@@ -539,7 +539,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
                 </div>
                 <div className="flex justify-between text-steel-400 border-t border-steel-700 pt-2 mt-2">
                     <span>Cost for {lotSize.toLocaleString()} rounds</span>
-                    <span className="font-bold text-emerald-500">{toStandardMoney(breakdown?.total.lot)}</span>
+                    <span className="font-bold" style={{ color: 'var(--copper)' }}>{toStandardMoney(breakdown?.total.lot)}</span>
                 </div>
               </div>
             </div>

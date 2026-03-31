@@ -1,5 +1,5 @@
 /*================================================================
-  RELOAD TRACKER — Precision Engineering Design System v4.0
+  RELOAD TRACKER — Precision Engineering Design System v5.0
   Script Location: src/index.css
 ================================================================*/
 
@@ -9,29 +9,36 @@
 
 /* ── CSS CUSTOM PROPERTIES ─────────────────────────────────── */
 :root {
-  --bg:           #080808;
-  --surface:      #0f0f0f;
-  --card:         #141414;
-  --overlay:      #1c1c1c;
+  /* Surfaces — warm oiled-steel, never cold black */
+  --bg:           #0c0b09;
+  --surface:      #141210;
+  --card:         #1a1714;
+  --overlay:      #222018;
 
-  --border:       #1e1e1e;
-  --border-md:    #2a2a2a;
-  --border-hi:    #3a3a3a;
+  /* Borders — warm hairlines */
+  --border:       #272218;
+  --border-md:    #353020;
+  --border-hi:    #46402e;
 
-  --red:          #c0392b;
-  --red-dim:      #8b2a2a;
-  --red-glow:     rgba(192, 57, 43, 0.3);
+  /* Primary — rifle red */
+  --red:          #c42b21;
+  --red-dim:      #8b1e16;
+  --red-glow:     rgba(196, 43, 33, 0.18);
 
+  /* Secondary — copper (primer pocket, ejector) */
   --copper:       #b87333;
   --copper-dim:   #7a4a1e;
-  --copper-glow:  rgba(184, 115, 51, 0.25);
+  --copper-glow:  rgba(184, 115, 51, 0.20);
 
+  /* Tertiary — brass (case body, the round itself) */
   --brass:        #d4a843;
-  --brass-dim:    #a87e1e;
+  --brass-dim:    #a07828;
+  --brass-glow:   rgba(212, 168, 67, 0.18);
 
-  --text-hi:      #f0ece4;
-  --text-md:      #9a9590;
-  --text-lo:      #4a4844;
+  /* Text — warm ivory hierarchy */
+  --text-hi:      #ece5d8;
+  --text-md:      #8a8275;
+  --text-lo:      #4a4540;
 }
 
 /* ── RESET & GLOBALS ────────────────────────────────────────── */
@@ -73,8 +80,9 @@ h1 {
 .rt-section-bar {
   width: 3px;
   align-self: stretch;
+  min-height: 2.5rem;
   background: var(--red);
-  border-radius: 2px;
+  border-radius: 1px;
   flex-shrink: 0;
 }
 .rt-section-eyebrow {
@@ -98,18 +106,27 @@ h1 {
 .rt-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 4px;
   position: relative;
   overflow: hidden;
 }
-/* Hairline top-accent on featured cards */
+
+/* Hairline copper-to-brass gradient across the top of featured cards */
 .rt-card-accent::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--copper) 30%, var(--brass) 50%, var(--copper) 70%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--copper) 25%,
+    var(--brass)  50%,
+    var(--copper) 75%,
+    transparent   100%
+  );
 }
+
 /* Horizontal rule inside cards */
 .rt-rule {
   border: none;
@@ -117,15 +134,46 @@ h1 {
   margin: 0;
 }
 
-/* ── GLASS (MODALS / PANELS) ────────────────────────────────── */
+/* ── GLASS PANELS (MAIN CONTENT AREAS) ──────────────────────── */
+/*
+ * Glass panels are the primary data entry and display surfaces.
+ * Slightly elevated from the card layer. The inset shimmer on
+ * border-top-color creates a material feel without decoration.
+ */
 .glass {
-  background: rgba(12, 12, 12, 0.94);
-  backdrop-filter: blur(20px) saturate(160%);
+  background: rgba(20, 18, 12, 0.97);
+  backdrop-filter: blur(12px) saturate(140%);
   border: 1px solid var(--border-md);
   border-top-color: var(--border-hi);
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 24px 64px rgba(0,0,0,0.8);
-  padding: 2rem;
-  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 4px 24px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 240, 200, 0.025);
+  border-radius: 6px;
+}
+
+/* ── INSTRUMENT READOUT (cost panels, key metrics) ───────────── */
+/*
+ * Recessed into the surface — for numbers that matter.
+ * The copper left-rule marks it as a data-bearing element.
+ */
+.rt-readout {
+  background: var(--bg);
+  border: 1px solid var(--border-md);
+  border-top-color: var(--border);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.50),
+    inset 0 1px 0 rgba(0, 0, 0, 0.30);
+  position: relative;
+}
+.rt-readout::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--copper) 0%, var(--brass) 50%, var(--copper) 100%);
+  border-radius: 4px 0 0 4px;
 }
 
 /* ── BUTTONS ────────────────────────────────────────────────── */
@@ -141,7 +189,12 @@ h1 {
   border-radius: 4px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, color 0.12s, transform 0.08s;
+  transition:
+    background 0.1s,
+    border-color 0.1s,
+    box-shadow 0.1s,
+    color 0.1s,
+    transform 0.07s;
   white-space: nowrap;
   padding: 7px 14px;
   line-height: 1;
@@ -150,16 +203,16 @@ h1 {
 }
 .rt-btn:active { transform: scale(0.96); }
 
-/* Primary — red action */
+/* Primary — rifle red */
 .rt-btn-primary {
   background: var(--red);
   border-color: var(--red-dim);
   color: #fff;
-  box-shadow: 0 2px 12px var(--red-glow);
+  box-shadow: 0 2px 10px var(--red-glow);
 }
 .rt-btn-primary:hover {
-  background: #d44030;
-  box-shadow: 0 4px 20px var(--red-glow);
+  background: #d43020;
+  box-shadow: 0 3px 16px var(--red-glow);
 }
 
 /* Secondary — copper outline */
@@ -171,7 +224,7 @@ h1 {
 .rt-btn-secondary:hover {
   border-color: var(--copper);
   color: var(--copper);
-  background: var(--copper-glow);
+  background: rgba(184, 115, 51, 0.08);
 }
 
 /* Ghost — minimal */
@@ -198,10 +251,10 @@ h1 {
   border-color: var(--red);
 }
 
-/* Confirm — green/emerald */
+/* Confirm — positive, save, create */
 .rt-btn-confirm {
-  background: #052512;
-  border-color: #16532a;
+  background: #05260f;
+  border-color: #175a28;
   color: #4ade80;
 }
 .rt-btn-confirm:hover {
@@ -209,10 +262,10 @@ h1 {
   border-color: #22c55e;
 }
 
-/* Icon-only button */
+/* Icon-only */
 .rt-btn-icon {
   padding: 7px;
-  border-radius: 5px;
+  border-radius: 4px;
   border-color: var(--border);
   color: var(--text-md);
 }
@@ -227,12 +280,12 @@ h1 {
   width: 100%;
   background: var(--surface);
   border: 1px solid var(--border-md);
-  border-radius: 4px;
+  border-radius: 3px;
   padding: 8px 11px;
   font-size: 12px;
   color: var(--text-hi);
   outline: none;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition: border-color 0.1s, box-shadow 0.1s;
   -webkit-appearance: none;
   appearance: none;
 }
@@ -245,7 +298,7 @@ h1 {
 select.rt-input {
   cursor: pointer;
   padding-right: 28px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234a4844' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234a4540' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
 }
@@ -257,7 +310,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
   font-size: 9px !important;
   font-weight: 700 !important;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.20em;
   color: var(--text-md) !important;
   margin-bottom: 5px;
 }
@@ -275,37 +328,51 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
   text-transform: uppercase;
   border: 1px solid currentColor;
 }
-.rt-chip-powder { color: #d4a843; border-color: #d4a84340; background: #d4a84308; }
-.rt-chip-bullet { color: #b87333; border-color: #b8733340; background: #b8733308; }
-.rt-chip-primer { color: #c0c8d0; border-color: #c0c8d040; background: #c0c8d008; }
-.rt-chip-brass  { color: #a0845c; border-color: #a0845c40; background: #a0845c08; }
-.rt-chip-ammo   { color: #22c55e; border-color: #22c55e40; background: #22c55e08; }
-.rt-chip-other  { color: #7a8190; border-color: #7a819040; background: #7a819008; }
+.rt-chip-powder { color: var(--brass);   border-color: rgba(212, 168, 67,  0.30); background: rgba(212, 168, 67,  0.06); }
+.rt-chip-bullet { color: var(--copper);  border-color: rgba(184, 115, 51,  0.30); background: rgba(184, 115, 51,  0.06); }
+.rt-chip-primer { color: #c0c8d0;        border-color: rgba(192, 200, 208, 0.30); background: rgba(192, 200, 208, 0.06); }
+.rt-chip-brass  { color: #a0845c;        border-color: rgba(160, 132, 92,  0.30); background: rgba(160, 132, 92,  0.06); }
+.rt-chip-ammo   { color: #22c55e;        border-color: rgba(34,  197, 94,  0.30); background: rgba(34,  197, 94,  0.06); }
+.rt-chip-other  { color: var(--text-md); border-color: rgba(138, 130, 117, 0.30); background: rgba(138, 130, 117, 0.06); }
 
 /* ── MONOSPACE DATA READOUTS ────────────────────────────────── */
+/*
+ * All measured values — cost, velocity, weight, distance.
+ * !important overrides the universal Inter font rule above.
+ */
 .rt-data {
   font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace !important;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.05em !important;
+  letter-spacing: 0.04em !important;
   color: var(--brass);
 }
 
 /* ── STATUS DOTS ────────────────────────────────────────────── */
-.rt-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.rt-dot-active   { background: #22c55e; box-shadow: 0 0 6px #22c55e80; }
-.rt-dot-low      { background: #f59e0b; box-shadow: 0 0 6px #f59e0b80; }
-.rt-dot-empty    { background: #ef4444; box-shadow: 0 0 6px #ef444480; }
-.rt-dot-inactive { background: #2a2a2a; }
+.rt-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+.rt-dot-active   { background: #22c55e; box-shadow: 0 0 5px rgba(34, 197, 94, 0.55); }
+.rt-dot-low      { background: #f59e0b; box-shadow: 0 0 5px rgba(245, 158, 11, 0.55); }
+.rt-dot-empty    { background: #ef4444; box-shadow: 0 0 5px rgba(239, 68, 68, 0.55); }
+.rt-dot-inactive { background: var(--border-md); }
 
-/* ── STAT TILES (DASHBOARD / BATCHES) ──────────────────────── */
+/* ── STAT TILES ─────────────────────────────────────────────── */
 .rt-stat {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  position: relative;
+  overflow: hidden;
+}
+/* Copper hairline across top of each stat tile */
+.rt-stat::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 16px; right: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--copper-dim), transparent);
 }
 .rt-stat-label {
   font-size: 8px;
@@ -330,11 +397,15 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 /* ── TIMELINE (BATCHES) ─────────────────────────────────────── */
 .rt-timeline-line {
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
+  left: 0; top: 0; bottom: 0;
   width: 1px;
-  background: linear-gradient(to bottom, transparent, var(--border-md) 10%, var(--border-md) 90%, transparent);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--border-md) 10%,
+    var(--border-md) 90%,
+    transparent
+  );
 }
 
 /* ── SCROLLBAR ──────────────────────────────────────────────── */
@@ -359,6 +430,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 /* ── GLOW EFFECTS ───────────────────────────────────────────── */
 .glow-red    { filter: drop-shadow(0 0 8px var(--red-glow)); }
 .glow-copper { filter: drop-shadow(0 0 8px var(--copper-glow)); }
+.glow-brass  { filter: drop-shadow(0 0 8px var(--brass-glow)); }
 
 /* ── ANIMATIONS ─────────────────────────────────────────────── */
 @keyframes spin    { from { transform: rotate(0deg); }   to { transform: rotate(360deg); } }
@@ -368,3 +440,13 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
   0%, 100% { box-shadow: 0 0 8px var(--red-glow); }
   50%       { box-shadow: 0 0 24px var(--red-glow); }
 }
+
+/* ── RECHARTS OVERRIDES ─────────────────────────────────────── */
+.recharts-text { fill: var(--text-lo) !important; }
+.recharts-cartesian-axis-tick-value { fill: var(--text-lo) !important; }
+.recharts-legend-item-text { color: var(--text-md) !important; }
+
+/* ── ANIMATE-IN UTILITY ─────────────────────────────────────── */
+.animate-in             { animation: fadeIn 0.15s ease-out; }
+.fade-in                { animation: fadeIn 0.15s ease-out; }
+.slide-in-from-top-2    { animation: slideUp 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }

@@ -354,7 +354,7 @@ body { font-family: 'Inter', sans-serif; background: #fff; color: #111; -webkit-
 .clabel { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #999; margin-bottom: 3px; }
 .cval { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #111; }
 .cval.cu { color: #b87333; }
-.cval.wn { color: #c0392b; }
+.cval.wn { color: #c42b21; }
 /* BALLISTICS ROW */
 .blt-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .blt-card { background: #faf8f6; border: 1px solid #e0d8cf; border-top: 2px solid #b87333; border-radius: 3px; padding: 7px 8px; text-align: center; }
