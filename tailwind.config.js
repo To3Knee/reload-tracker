@@ -8,11 +8,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Base surfaces — warm oiled-steel, not cold black
-        bg:      '#0c0b09',
-        surface: '#141210',
-        card:    '#1a1714',
-        overlay: '#222018',
+        // Base surfaces — clean neutral dark, lets brass/copper accents own the warmth
+        bg:      '#0a0a0c',
+        surface: '#111113',
+        card:    '#181819',
+        overlay: '#1e1e21',
 
         // Primary accent — rifle red
         red: {
@@ -41,19 +41,19 @@ export default {
           600: '#a87e1e',
         },
 
-        // Neutral warm steel — aligns with CSS custom property warm tone
-        // Cold blue-grays replaced with warm brown-grays
+        // Neutral steel — clean grays, no warm or cool cast
+        // Brass/copper accents provide all the warmth; steel stays out of the way
         steel: {
-          50:  '#f2ede6',
-          100: '#e8e0d4',
-          200: '#c8bfb0',
-          300: '#a09080',
-          400: '#787068',
-          500: '#565050',
-          600: '#3a3530',
-          700: '#2a2520',
-          800: '#1e1a14',
-          900: '#14100a',
+          50:  '#f4f4f6',
+          100: '#e8e8ec',
+          200: '#c8c8d0',
+          300: '#9898a4',
+          400: '#686874',
+          500: '#484854',
+          600: '#34343e',
+          700: '#26262e',
+          800: '#1a1a20',
+          900: '#10101a',
         },
       },
       fontFamily: {

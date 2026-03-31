@@ -82,7 +82,7 @@ export default function Navbar({
             <button
               onClick={() => onOpenAi?.()}
               title="Ballistics AI"
-              className="rt-btn rt-btn-ghost rt-btn-icon border-emerald-900/60 text-emerald-600 hover:text-emerald-400 hover:border-emerald-700 hover:bg-emerald-950/40"
+              className="rt-btn rt-btn-ghost rt-btn-icon border-copper-900/60 text-copper-500 hover:text-copper-300 hover:border-copper-700 hover:bg-copper-950/40"
             >
               <Bot size={16} />
             </button>
@@ -116,7 +116,7 @@ export default function Navbar({
           {isAdmin && isAiEnabled && (
             <button
               onClick={() => onOpenAi?.()}
-              className="p-2 rounded border border-emerald-900/60 bg-emerald-950/30 text-emerald-600 active:scale-95 transition-transform"
+              className="p-2 rounded border border-copper-900/60 bg-copper-950/30 text-copper-500 active:scale-95 transition-transform"
             >
               <Bot size={18} />
             </button>

@@ -19,9 +19,9 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-4">
-        <div className="w-1.5 self-stretch bg-purple-600 rounded-sm"></div>
+        <div className="w-1.5 self-stretch bg-[var(--copper)] rounded-sm"></div>
         <div>
-            <span className="block text-[10px] uppercase tracking-[0.2em] text-purple-500 font-bold mb-0.5">System Core</span>
+            <span className="block text-[10px] uppercase tracking-[0.2em] text-[var(--copper)] font-bold mb-0.5">System Core</span>
             <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-wide">COMMAND CENTER</h2>
         </div>
       </div>
@@ -33,7 +33,7 @@ export default function AdminDashboard() {
           <TabButton id="config" label="Configuration" icon={Settings} active={activeTab} set={setActiveTab} />
       </div>
 
-      <div className="glass p-6 rounded-2xl min-h-[500px]">
+      <div className="glass p-6 min-h-[500px]">
           {activeTab === 'users' && <UserManager />}
           {activeTab === 'sql' && <SqlConsole />}
           {activeTab === 'config' && <ConfigManager />}
@@ -46,7 +46,7 @@ function TabButton({ id, label, icon: Icon, active, set }) {
     return (
         <button 
             onClick={() => set(id)}
-            className={`flex items-center gap-2 px-6 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition ${active === id ? 'border-purple-500 text-white' : 'border-transparent text-steel-400 hover:text-steel-200'}`}
+            className={`flex items-center gap-2 px-6 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition ${active === id ? 'border-red-500 text-red-200' : 'border-transparent text-steel-400 hover:text-steel-200'}`}
         >
             <Icon size={16} /> {label}
         </button>
@@ -87,23 +87,23 @@ function SqlConsole() {
             </div>
 
             <textarea 
-                className="w-full h-48 bg-steel-900 border border-steel-600 rounded-xl p-4 font-mono text-xs text-emerald-400 focus:border-purple-500 focus:outline-none"
+                className="w-full h-48 bg-steel-900 border border-steel-600 rounded-md p-4 rt-data text-xs text-[var(--brass)] focus:border-red-500 focus:outline-none"
                 placeholder="SELECT * FROM users;"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
             />
             
             <div className="flex justify-end">
-                <button onClick={runQuery} disabled={loading} className="px-6 py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-lg flex items-center gap-2 transition">
+                <button onClick={runQuery} disabled={loading} className="rt-btn rt-btn-secondary flex items-center gap-2">
                     <Play size={16} fill="currentColor" /> Execute
                 </button>
             </div>
 
             {/* RESULTS */}
             {result && (
-                <div className={`p-4 rounded-xl border ${result.success ? 'bg-steel-800/50 border-steel-600' : 'bg-red-900/20 border-red-500/50'}`}>
+                <div className={`p-4 rounded-md border ${result.success ? 'bg-steel-800/50 border-steel-600' : 'bg-red-900/20 border-red-500/50'}`}>
                     <div className="flex items-center gap-2 mb-2">
-                        {result.success ? <CheckCircle size={16} className="text-emerald-500"/> : <AlertTriangle size={16} className="text-red-500"/>}
+                        {result.success ? <CheckCircle size={16} className="text-[var(--copper)]"/> : <AlertTriangle size={16} className="text-red-500"/>}
                         <span className="text-xs font-bold text-steel-100">{result.success ? 'Success' : 'Error'}</span>
                         <span className="text-[10px] text-steel-400 ml-auto">{result.message || ''}</span>
                     </div>

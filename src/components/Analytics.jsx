@@ -51,12 +51,12 @@ function NoData({ message = "No data recorded" }) {
 }
 
 function ForecastItem({ item }) {
-    let colorClass = "bg-emerald-500"
+    let colorClass = "bg-copper-500"
     if (item.days < 30) colorClass = "bg-red-600 animate-pulse"
     else if (item.days < 90) colorClass = "bg-amber-500"
 
     return (
-        <div className="flex items-center justify-between p-3 bg-black/40 border border-steel-700 rounded-xl mb-2 last:mb-0">
+        <div className="flex items-center justify-between p-3 bg-black/40 border border-steel-700 rounded-md mb-2 last:mb-0">
             <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full ${colorClass}`} />
                 <div>
@@ -147,9 +147,9 @@ export function Analytics() {
       <div className="grid lg:grid-cols-2 gap-6">
           
           {/* 1. SPEND HISTORY */}
-          <div className="glass rounded-2xl p-6 border border-steel-700/50">
+          <div className="glass p-6 border border-steel-700/50">
             <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Coins size={14} className="text-emerald-500"/> Monthly Spend
+                <Coins size={14} className="text-[var(--copper)]"/> Monthly Spend
             </h3>
             <div className="h-[250px] w-full">
                 {spendData.length > 0 ? (
@@ -172,7 +172,7 @@ export function Analytics() {
           </div>
 
           {/* 2. COST PER ROUND */}
-          <div className="glass rounded-2xl p-6 border border-steel-700/50">
+          <div className="glass p-6 border border-steel-700/50">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest flex items-center gap-2">
                     <TrendingUp size={14} className="text-blue-500"/> Cost Per Round History
@@ -235,7 +235,7 @@ export function Analytics() {
           </div>
 
           {/* 3. INVENTORY VALUE (Pie) */}
-          <div className="glass rounded-2xl p-6 border border-steel-700/50">
+          <div className="glass p-6 border border-steel-700/50">
             <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Package size={14} className="text-amber-500"/> Inventory Value
             </h3>
@@ -271,7 +271,7 @@ export function Analytics() {
           </div>
 
           {/* 4. SUPPLY FORECAST */}
-          <div className="glass rounded-2xl p-6 border border-steel-700/50 flex flex-col">
+          <div className="glass p-6 border border-steel-700/50 flex flex-col">
             <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Flame size={14} className="text-orange-500"/> Supply Forecast
             </h3>
@@ -285,7 +285,7 @@ export function Analytics() {
           </div>
 
           {/* 5. VELOCITY CONSISTENCY */}
-          <div className="glass rounded-2xl p-6 border border-steel-700/50 lg:col-span-2">
+          <div className="glass p-6 border border-steel-700/50 lg:col-span-2">
             <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Clock size={14} className="text-purple-500"/> Velocity Consistency (SD)
             </h3>
@@ -312,7 +312,7 @@ export function Analytics() {
           </div>
 
           {/* 6. TOP CALIBERS */}
-          <div className="glass rounded-2xl p-6 border border-steel-700/50 lg:col-span-2">
+          <div className="glass p-6 border border-steel-700/50 lg:col-span-2">
             <h3 className="text-xs font-bold text-steel-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Crosshair size={14} className="text-red-500"/> Production Volume
             </h3>

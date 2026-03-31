@@ -580,7 +580,7 @@ ${recipe.notes ? `
       <div className="glass p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-steel-700 pb-2">
           <div><p className="text-xs uppercase tracking-[0.3em] text-red-500/60 mb-1">Saved Recipes</p><p className="text-xs text-steel-400">{recipes.length === 0 ? 'No recipes yet.' : `${recipes.length} recipe${recipes.length !== 1 ? 's' : ''} saved.`}</p></div>
-          {recipes.length > 0 && (<button type="button" onClick={() => handleExportExcel(recipes, 'all')} className="rt-btn rt-btn-ghost text-emerald-500 hover:text-emerald-400 hover:border-emerald-700"><FileText size={10} /> Download All (Excel)</button>)}
+          {recipes.length > 0 && (<button type="button" onClick={() => handleExportExcel(recipes, 'all')} className="rt-btn rt-btn-ghost text-brass-400 hover:text-brass-300 hover:border-brass-600"><FileText size={10} /> Download All (Excel)</button>)}
         </div>
 
         {recipes.length > 0 && (
@@ -614,7 +614,7 @@ ${recipe.notes ? `
                   {(r.notes || r.rangeNotes) && (
                       <div className="bg-black/20 rounded-lg p-2 border border-steel-700/50 text-[10px] text-steel-400 min-w-0">
                           {r.notes && (<div className="flex items-start gap-1.5 mb-1 last:mb-0"><AlignLeft size={10} className="mt-0.5 text-steel-500 flex-shrink-0" /><span className="line-clamp-2 break-all">{r.notes}</span></div>)}
-                          {r.rangeNotes && (<div className="flex items-start gap-1.5 border-t border-steel-700/50 pt-1 mt-1"><Crosshair size={10} className="mt-0.5 text-emerald-600 flex-shrink-0" /><span className="line-clamp-2 text-emerald-500/80 break-all">{r.rangeNotes}</span></div>)}
+                          {r.rangeNotes && (<div className="flex items-start gap-1.5 border-t border-steel-700/50 pt-1 mt-1"><Crosshair size={10} className="mt-0.5 text-copper-600 flex-shrink-0" /><span className="line-clamp-2 text-copper-500/80 break-all">{r.rangeNotes}</span></div>)}
                       </div>
                   )}
 
@@ -622,8 +622,8 @@ ${recipe.notes ? `
                     <div className="flex flex-wrap items-center gap-2">
                         {onUseRecipe && !isArchived && (<span onClick={() => onUseRecipe(r)} className="rt-btn rt-btn-confirm">Use in Calculator</span>)}
                         {canEdit && (<span onClick={() => openBatchModal(r)} className="rt-btn rt-btn-danger"><ClipboardList size={12} /> Load Batch</span>)}
-                        <span onClick={() => handleExportPdf(r)} className="rt-btn rt-btn-ghost hover:text-emerald-400 hover:border-emerald-700"><Printer size={12}/> Export PDF</span>
-                        <span onClick={() => handleExportExcel([r], `single-${r.name.replace(/\s+/g,'-')}`)} className="rt-btn rt-btn-ghost hover:text-emerald-400 hover:border-emerald-700"><FileText size={12}/> Export Excel</span>
+                        <span onClick={() => handleExportPdf(r)} className="rt-btn rt-btn-ghost hover:text-brass-300 hover:border-brass-600"><Printer size={12}/> Export PDF</span>
+                        <span onClick={() => handleExportExcel([r], `single-${r.name.replace(/\s+/g,'-')}`)} className="rt-btn rt-btn-ghost hover:text-brass-300 hover:border-brass-600"><FileText size={12}/> Export Excel</span>
                         {canEdit && (<><span onClick={() => handleEdit(r)} className="rt-btn rt-btn-ghost">Edit</span><span onClick={() => { if (!isArchiving) handleArchiveToggle(r) }} className={'rt-btn rt-btn-ghost border-amber-800/60 text-amber-500 hover:text-amber-300 ' + (isArchiving ? 'opacity-50 pointer-events-none' : '')}>{isArchiving ? (isArchived ? 'Unarchiving…' : 'Archiving…') : (isArchived ? 'Unarchive' : 'Archive')}</span><span onClick={() => promptDelete(r)} className="rt-btn rt-btn-danger">Delete</span></>)}
                     </div>
                     
@@ -641,10 +641,10 @@ ${recipe.notes ? `
 
       {deleteModalOpen && recipeToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
-            <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
+            <div className="glass border border-red-900/50 shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
                 <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto"><Trash2 className="text-red-500" size={24} /></div>
                 <div><h3 className="text-lg font-bold text-white">Delete Recipe?</h3><p className="text-sm text-steel-400 mt-1">Are you sure you want to delete <span className="text-white font-medium">"{recipeToDelete.name}"</span>?<br/>This action cannot be undone.</p></div>
-                <div className="grid grid-cols-2 gap-3 pt-2"><button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-xl border border-steel-600 text-steel-300 hover:bg-steel-700 font-medium text-sm transition">Cancel</button><button onClick={() => executeDelete(false)} disabled={isDeleting} className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button></div>
+                <div className="grid grid-cols-2 gap-3 pt-2"><button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-md border border-steel-600 text-steel-300 hover:bg-steel-700 font-medium text-sm transition">Cancel</button><button onClick={() => executeDelete(false)} disabled={isDeleting} className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button></div>
             </div>
         </div>
       )}
@@ -652,7 +652,7 @@ ${recipe.notes ? `
       {/* CONFLICT RESOLUTION MODAL */}
       {conflictModalOpen && recipeToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4 pt-[env(safe-area-inset-top)] animate-in zoom-in-95 duration-200">
-            <div className="bg-[#0f0f10] border border-amber-500/50 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4 relative">
+            <div className="glass border border-amber-500/50 shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4 relative">
                 <button onClick={() => setConflictModalOpen(false)} className="absolute top-4 right-4 text-steel-500 hover:text-white"><X size={20} /></button>
                 <div className="flex items-center gap-4">
                     <div className="w-14 h-14 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0 border border-amber-500/50">
@@ -667,7 +667,7 @@ ${recipe.notes ? `
                 <div className="rt-card p-4 border border-steel-700 text-sm text-steel-300">
                     <p className="mb-2 font-bold text-steel-200">Recommended Action:</p>
                     <p className="text-xs text-steel-400 mb-4">Archive the recipe instead. It will be hidden from the active list but your batch history will be preserved.</p>
-                    <button onClick={() => handleResolveConflict('archive')} className="w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-900/20"><Archive size={14} /> Archive Recipe (Safe)</button>
+                    <button onClick={() => handleResolveConflict('archive')} className="w-full py-3 rounded-md bg-copper-700 hover:bg-copper-600 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition shadow-lg shadow-copper-900/20"><Archive size={14} /> Archive Recipe (Safe)</button>
                 </div>
 
                 <div className="pt-2 border-t border-steel-700/50">
@@ -679,7 +679,7 @@ ${recipe.notes ? `
 
       {batchModalOpen && batchRecipe && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)]">
-            <div className="bg-[#0f0f10] border border-steel-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="glass border border-steel-700 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <div className="p-4 border-b border-steel-700 flex justify-between items-center bg-black/40"><h3 className="text-sm font-bold text-steel-200">Load Batch: {batchRecipe.name}</h3><button onClick={() => setBatchModalOpen(false)} className="text-steel-500 hover:text-white"><X size={16} /></button></div>
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4"><div><label className={labelClass}>Rounds Loaded</label><input type="number" className={inputClass} value={batchForm.rounds} onChange={e => setBatchForm(p => ({ ...p, rounds: e.target.value }))} /></div><div><label className={labelClass}>Powder Lot</label><select className={inputClass} value={batchForm.powderLotId} onChange={e => setBatchForm(p => ({ ...p, powderLotId: e.target.value }))}><option value="">Select Powder...</option>{powders.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div></div>

@@ -534,10 +534,10 @@ ${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div 
       )}
       
       <div className="grid gap-4">
-        {logs.length === 0 && !isFormOpen && (<div className="text-center p-12 border border-dashed border-steel-700 rounded-2xl"><Target size={48} className="mx-auto mb-3 text-steel-600" /><p className="text-steel-500 text-sm">No range logs recorded yet.</p><p className="text-[11px] text-steel-500 mt-1">Log your first trip to track groups and velocity.</p></div>)}
+        {logs.length === 0 && !isFormOpen && (<div className="text-center p-12 border border-dashed border-steel-700 rounded-lg"><Target size={48} className="mx-auto mb-3 text-steel-600" /><p className="text-steel-500 text-sm">No range logs recorded yet.</p><p className="text-[11px] text-steel-500 mt-1">Log your first trip to track groups and velocity.</p></div>)}
         {logs.map(log => {
             const isHighlighted = String(highlightId) === String(log.id)
-            return (<div id={`rangelog-${log.id}`} key={log.id} className={`glass p-0 flex flex-col md:flex-row items-stretch overflow-hidden group transition duration-500 ${isHighlighted ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'border-red-500/20'}`}><div className="w-full md:w-48 h-48 md:h-auto bg-black/40 relative flex-shrink-0 border-b md:border-b-0 md:border-r border-steel-700">{log.imageUrl ? (<div className="relative w-full h-full group-image"><img src={log.imageUrl} alt="Target" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" /><a href={log.imageUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 bg-black/60 p-1.5 rounded-full text-steel-300 hover:text-white hover:bg-black/90 transition opacity-0 group-hover:opacity-100"><ExternalLink size={12} /></a></div>) : (<div className="w-full h-full flex items-center justify-center text-steel-700"><Target size={32} /></div>)}{log.groupSize && (<div className="absolute top-2 left-2 bg-black/80 backdrop-blur border border-emerald-500/30 px-2 py-1 rounded-md shadow-lg"><span className="text-xs font-bold text-emerald-400">{log.groupSize}"</span></div>)}</div>
+            return (<div id={`rangelog-${log.id}`} key={log.id} className={`glass p-0 flex flex-col md:flex-row items-stretch overflow-hidden group transition duration-500 ${isHighlighted ? 'border-copper-500 ring-2 ring-copper-500/50 shadow-[0_0_30px_rgba(184,115,51,0.2)]' : 'border-red-500/20'}`}><div className="w-full md:w-48 h-48 md:h-auto bg-black/40 relative flex-shrink-0 border-b md:border-b-0 md:border-r border-steel-700">{log.imageUrl ? (<div className="relative w-full h-full group-image"><img src={log.imageUrl} alt="Target" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" /><a href={log.imageUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 bg-black/60 p-1.5 rounded-full text-steel-300 hover:text-white hover:bg-black/90 transition opacity-0 group-hover:opacity-100"><ExternalLink size={12} /></a></div>) : (<div className="w-full h-full flex items-center justify-center text-steel-700"><Target size={32} /></div>)}{log.groupSize && (<div className="absolute top-2 left-2 bg-black/80 backdrop-blur border border-copper-500/30 px-2 py-1 rounded-md shadow-lg"><span className="text-xs font-bold text-copper-400">{log.groupSize}"</span></div>)}</div>
             <div className="flex-1 p-4 md:p-5 flex flex-col">
                 <div className="flex justify-between items-start mb-3">
                     <div>
@@ -550,7 +550,7 @@ ${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div 
                         </div>
                     </div>
                     <div className="flex gap-2 items-center">
-                        <button onClick={() => handlePrintLog(log)} className="rt-btn rt-btn-ghost hover:text-emerald-400 hover:border-emerald-700"><Printer size={10} /> Print</button>
+                        <button onClick={() => handlePrintLog(log)} className="rt-btn rt-btn-ghost hover:text-brass-300 hover:border-brass-600"><Printer size={10} /> Print</button>
                         {canEdit && (<>
                             <button onClick={() => handleStartEdit(log)} className="rt-btn rt-btn-ghost">Edit</button>
                             
@@ -566,7 +566,7 @@ ${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div 
                     </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center"><span className="block text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">Performance</span><span className="block text-[10px] font-mono text-emerald-500">{calculateMoa(log.groupSize, log.distance)}</span></div>
+                    <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center"><span className="block text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">Performance</span><span className="block text-[10px] font-mono text-brass-400">{calculateMoa(log.groupSize, log.distance)}</span></div>
                     <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center"><span className="block text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">Velocity</span><span className="block text-sm font-bold text-steel-200">{log.velocity || '---'}</span><span className="block text-[9px] text-steel-500">fps</span></div>
                     <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center flex flex-col justify-center"><div className="flex justify-between px-2 text-[10px] border-b border-steel-700/50 pb-0.5 mb-0.5"><span className="text-steel-500">SD</span><span className="text-steel-300 font-mono">{log.sd || '-'}</span></div><div className="flex justify-between px-2 text-[10px]"><span className="text-steel-500">ES</span><span className="text-steel-300 font-mono">{log.es || '-'}</span></div></div>
                 </div>

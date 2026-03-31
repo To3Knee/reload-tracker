@@ -126,7 +126,7 @@ export function Market({ user }) {
   if (!user) {
     return (
         <div className="space-y-6 mt-6">
-            <div className="glass p-8 rounded-2xl border border-red-500/20 flex flex-col items-center text-center space-y-4">
+            <div className="glass p-8 border border-red-500/20 flex flex-col items-center text-center space-y-4">
                 <div className="p-4 rounded-full bg-red-500/10 text-red-500">
                     <Lock size={32} />
                 </div>
@@ -218,7 +218,7 @@ export function Market({ user }) {
 
                                     {/* ACTIONS (Top Right) */}
                                     <div className="absolute top-2 right-2 flex gap-2">
-                                        <button onClick={() => handleRefresh(item.id)} className={`rt-btn rt-btn-icon backdrop-blur-md ${refreshingId === item.id ? 'animate-spin text-emerald-400' : ''}`}>
+                                        <button onClick={() => handleRefresh(item.id)} className={`rt-btn rt-btn-icon backdrop-blur-md ${refreshingId === item.id ? 'animate-spin text-copper-400' : ''}`}>
                                             <RefreshCw size={14} />
                                         </button>
                                         <button onClick={() => setEditingItem(item)} className="rt-btn rt-btn-icon backdrop-blur-md hover:text-amber-400 hover:border-amber-700">
@@ -243,7 +243,7 @@ export function Market({ user }) {
                                     <div className="flex justify-between items-end">
                                         <div>
                                             <p className="text-[10px] text-steel-400 uppercase tracking-wide">Price</p>
-                                            <p className="text-lg font-mono font-bold text-emerald-400">{formatCurrency(item.price)}</p>
+                                            <p className="text-lg font-mono font-bold text-brass-300">{formatCurrency(item.price)}</p>
                                         </div>
                                         {(item.qty_per_unit > 1 && item.price > 0) && (
                                             <div className="text-right">
@@ -259,7 +259,7 @@ export function Market({ user }) {
                                             href={item.url} 
                                             target="_blank" 
                                             rel="noreferrer" 
-                                            className="rt-btn rt-btn-ghost text-emerald-500 hover:text-emerald-400 hover:border-emerald-700"
+                                            className="rt-btn rt-btn-ghost text-copper-400 hover:text-copper-300 hover:border-copper-700"
                                         >
                                             Store Page <ExternalLink size={10} />
                                         </a>
@@ -277,7 +277,7 @@ export function Market({ user }) {
       {/* EDIT MODAL */}
       {editingItem && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
-            <div className="bg-[#0f0f10] border border-steel-600 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl relative">
+            <div className="glass border border-steel-600 w-full max-w-md p-6 space-y-4 shadow-2xl relative">
                 
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <Edit size={18} className="text-red-500"/> Edit Listing
@@ -338,7 +338,7 @@ export function Market({ user }) {
       {/* DELETE CONFIRMATION MODAL */}
       {itemToDelete && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
-            <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
+            <div className="glass border border-red-900/50 w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
                 <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto">
                     <Trash2 className="text-red-500" size={24} />
                 </div>

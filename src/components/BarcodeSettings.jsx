@@ -91,22 +91,22 @@ export function BarcodeSettings({ settings, onSave }) {
         }
     }
 
-    const inputClass = "w-full bg-[#1a1a1a] border border-steel-700 rounded-lg px-3 py-2 text-[11px] text-steel-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-steel-500"
+    const inputClass = "w-full bg-steel-900 border border-steel-700 rounded-md px-3 py-2 text-[11px] text-steel-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-steel-500"
     const labelClass = "block text-xs font-semibold text-steel-300 mb-1"
     const subLabelClass = "text-[10px] text-steel-500 font-normal ml-2 italic tracking-normal"
 
     return (
         <div className="space-y-6">
-            <div className="bg-steel-800/30 rounded-xl p-4 border border-steel-700/60">
+            <div className="bg-steel-800/30 rounded-md p-4 border border-steel-700/60">
                 <h3 className="text-sm font-bold text-steel-200 flex items-center gap-2 mb-4">
                     <ScanBarcode size={16} className="text-red-500" />
                     Scanner Configuration
                 </h3>
 
                 {/* STATUS CARD */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-steel-700 rounded-lg mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-steel-700 rounded-md mb-4">
                     <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-steel-700 text-steel-400 mt-1">
+                        <div className="p-2 rounded-md bg-steel-700 text-steel-400 mt-1">
                             <ScanBarcode size={18} />
                         </div>
                         <div>
@@ -120,18 +120,18 @@ export function BarcodeSettings({ settings, onSave }) {
                         {/* TOGGLE SWITCH UI */}
                         <button 
                             onClick={() => setEnabled(!enabled)}
-                            className={`relative w-12 h-6 rounded-full transition-colors duration-200 ease-in-out border ${enabled ? 'bg-emerald-900/50 border-emerald-500/50' : 'bg-steel-700 border-steel-600'}`}
+                            className={`relative w-12 h-6 rounded-full transition-colors duration-200 ease-in-out border ${enabled ? 'bg-copper-900/50 border-copper-700' : 'bg-steel-700 border-steel-600'}`}
                         >
-                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${enabled ? 'translate-x-6 bg-emerald-400' : 'translate-x-0.5 bg-steel-400'}`} />
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${enabled ? 'translate-x-6 bg-copper-400' : 'translate-x-0.5 bg-steel-400'}`} />
                         </button>
-                        <span className={`ml-3 text-[10px] font-bold uppercase tracking-wider ${enabled ? 'text-emerald-400' : 'text-steel-500'}`}>
+                        <span className={`ml-3 text-[10px] font-bold uppercase tracking-wider ${enabled ? 'text-copper-400' : 'text-steel-500'}`}>
                             {enabled ? 'Active' : 'Off'}
                         </span>
                     </div>
                 </div>
 
                 {/* CONFIG FORM */}
-                <div className={`p-4 bg-black/20 border border-steel-700 rounded-lg space-y-4 transition-opacity duration-300 ${enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                <div className={`p-4 bg-black/20 border border-steel-700 rounded-md space-y-4 transition-opacity duration-300 ${enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
                     <div>
                         <label className={labelClass}>Provider <span className={subLabelClass}>(Service API)</span></label>
                         <div className="relative">
@@ -165,7 +165,7 @@ export function BarcodeSettings({ settings, onSave }) {
 
                     <div className="flex justify-between items-center pt-2">
                         <div className="flex-1 mr-4">
-                            {message && <span className={`text-[10px] font-medium ${message.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>{message.text}</span>}
+                            {message && <span className={`text-[10px] font-medium ${message.type === 'success' ? 'text-copper-400' : 'text-red-400'}`}>{message.text}</span>}
                         </div>
                         <div className="flex gap-2">
                             <button onClick={handleTest} disabled={saving || testing || !enabled} className="rt-btn rt-btn-ghost disabled:opacity-50"><Zap size={12}/> {testing ? 'Testing...' : 'Test'}</button>

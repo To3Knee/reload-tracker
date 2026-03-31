@@ -6,8 +6,8 @@ export function Lots() {
       <h2 className="text-3xl font-bold flex items-center gap-3">
         <Layers /> Lots
       </h2>
-      <div className="glass rounded-2xl p-12 text-center">
-        <p className="text-6xl font-bold text-emerald-400">$0.142</p>
+      <div className="glass p-12 text-center">
+        <p className="text-6xl font-bold text-brass-300">$0.142</p>
         <p className="text-xl text-steel-400 mt-4">Cost per 9mm round (current lot)</p>
         <p className="text-sm text-steel-500 mt-8">Lot tracking + historical costs coming in v2</p>
       </div>

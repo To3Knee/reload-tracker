@@ -29,8 +29,8 @@ import { BarcodeSettings } from './BarcodeSettings'
 const PasswordInput = ({ value, onChange, show, onToggle, placeholder = "Password" }) => (
   <div className="relative">
       <input 
-          type={show ? "text" : "password"} 
-          className="w-full bg-[#1a1a1a] border border-steel-700 rounded-lg px-3 py-2 text-[11px] text-steel-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-steel-500 pr-10" 
+          type={show ? "text" : "password"}
+          className="w-full bg-steel-900 border border-steel-700 rounded-md px-3 py-2 text-[11px] text-steel-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-steel-500 pr-10"
           placeholder={placeholder} 
           value={value} 
           onChange={onChange}
@@ -214,16 +214,16 @@ export default function AuthModal({
   
   if (!open) return null
 
-  const inputClass = "w-full bg-[#1a1a1a] border border-steel-700 rounded-lg px-3 py-2 text-[11px] text-steel-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-steel-500"
+  const inputClass = "w-full bg-steel-900 border border-steel-700 rounded-md px-3 py-2 text-[11px] text-steel-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-steel-500"
   const labelClass = "block text-xs font-semibold text-steel-300 mb-1"
   const subLabelClass = "text-[10px] text-steel-500 font-normal ml-2 italic tracking-normal"
-  const tabBtnClass = (active) => `px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0 ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-steel-700 text-steel-400 hover:text-steel-200'}`
+  const tabBtnClass = (active) => `px-4 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0 ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-steel-700 text-steel-400 hover:text-steel-200'}`
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-4 pt-[env(safe-area-inset-top)]">
       <div className={`bg-[#0f0f10] border-steel-700 md:border shadow-2xl overflow-hidden flex flex-col md:flex-row 
-          w-full h-full md:w-full md:max-w-5xl md:h-auto md:max-h-[90vh] 
-          rounded-none md:rounded-2xl relative`}>
+          w-full h-full md:w-full md:max-w-5xl md:h-auto md:max-h-[90vh]
+          rounded-none md:rounded-xl relative`}>
         
         {/* LEFT PANEL */}
         <div className={`bg-black/40 p-6 flex flex-col relative border-b border-steel-700 md:border-b-0 md:border-r ${isAdmin ? "w-full md:w-[30%] shrink-0" : "w-full flex-1"}`}>
@@ -236,7 +236,7 @@ export default function AuthModal({
             </div>
           </div>
           {currentUser && (
-              <div className="bg-steel-800/50 rounded-xl p-3 md:p-4 border border-steel-700 mb-4">
+              <div className="bg-steel-800/50 rounded-lg p-3 md:p-4 border border-steel-700 mb-4">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-full ${currentUser?.role === ROLE_ADMIN ? 'bg-red-500/10 text-red-400' : 'bg-steel-700 text-steel-300'}`}><UserCircle2 size={20} /></div>
                   <div><p className="text-sm font-semibold text-steel-100">{currentUser.username}</p><p className="text-[10px] text-steel-400 uppercase">{currentUser?.role === ROLE_ADMIN ? 'Reloader (Admin)' : 'Shooter (Read-only)'}</p></div>
@@ -245,17 +245,17 @@ export default function AuthModal({
           )}
           {!currentUser ? (
             <div className="flex-1 animation-fade-in">
-                <div className="bg-red-900/10 border border-red-900/30 p-3 rounded-lg mb-4"><p className="text-[10px] text-red-400 font-bold flex items-center gap-2"><Shield size={12} /> AUTHORIZED PERSONNEL ONLY</p></div>
+                <div className="bg-red-900/10 border border-red-900/30 p-3 rounded-md mb-4"><p className="text-[10px] text-red-400 font-bold flex items-center gap-2"><Shield size={12} /> AUTHORIZED PERSONNEL ONLY</p></div>
                 <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
                     <div><label className={labelClass}>Username</label><input className={inputClass} value={loginForm.username} onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))} /></div>
                     <div><label className={labelClass}>Password</label><PasswordInput value={loginForm.password} onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))} show={showLoginPass} onToggle={() => setShowLoginPass(!showLoginPass)} /></div>
-                    <div className="pt-2"><button type="submit" disabled={busy} className="w-full py-3 rounded-lg bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20"><LogIn size={14} className="inline mr-2"/>{busy ? 'Verifying...' : 'Authenticate'}</button></div>
+                    <div className="pt-2"><button type="submit" disabled={busy} className="w-full py-3 rounded-md bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20"><LogIn size={14} className="inline mr-2"/>{busy ? 'Verifying...' : 'Authenticate'}</button></div>
                 </form>
             </div>
           ) : (
-             <div className="mt-auto"><button type="button" onClick={onLogout} className="w-full py-2 rounded-lg border border-steel-600 hover:bg-steel-700 text-xs font-semibold text-steel-300 transition">Sign Out</button></div>
+             <div className="mt-auto"><button type="button" onClick={onLogout} className="w-full py-2 rounded-md border border-steel-600 hover:bg-steel-700 text-xs font-semibold text-steel-300 transition">Sign Out</button></div>
           )}
-          {(statusMessage || errorMessage) && (<div className="mt-4 p-3 rounded-lg bg-black/40 border border-steel-700">{statusMessage && <p className="text-[10px] text-emerald-400">{statusMessage}</p>}{errorMessage && <p className="text-[10px] text-red-400">{errorMessage}</p>}</div>)}
+          {(statusMessage || errorMessage) && (<div className="mt-4 p-3 rounded-md bg-black/40 border border-steel-700">{statusMessage && <p className="text-[10px] text-[var(--copper)]">{statusMessage}</p>}{errorMessage && <p className="text-[10px] text-red-400">{errorMessage}</p>}</div>)}
         </div>
 
         {/* RIGHT PANEL: ADMIN FEATURES */}
@@ -272,7 +272,7 @@ export default function AuthModal({
                     <button onClick={() => setActiveTab('scanner')} className={tabBtnClass(activeTab === 'scanner')}><ScanBarcode size={12} className="inline mr-1"/> Scanner</button>
                     <button onClick={() => setActiveTab('console')} className={tabBtnClass(activeTab === 'console')}><Terminal size={12} className="inline mr-1"/> Console</button>
                 </div>
-                {canClose && (<button onClick={onClose} className="p-2 bg-steel-800 rounded-lg text-steel-300 hover:text-white hover:bg-steel-700 border border-steel-600 transition flex-shrink-0 ml-2" title="Close Panel"><X size={16} /></button>)}
+                {canClose && (<button onClick={onClose} className="p-2 bg-steel-800 rounded-md text-steel-300 hover:text-white hover:bg-steel-700 border border-steel-600 transition flex-shrink-0 ml-2" title="Close Panel"><X size={16} /></button>)}
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar pb-20 md:pb-4">
@@ -280,7 +280,7 @@ export default function AuthModal({
               {/* 1. MANAGE USERS */}
               {activeTab === 'manage' && (
                 <div className="space-y-6">
-                  <div className="bg-steel-800/30 rounded-xl p-4 border border-steel-700/60">
+                  <div className="bg-steel-800/30 rounded-md p-4 border border-steel-700/60">
                     <h3 className="text-xs md:text-sm font-bold text-steel-200 flex items-center gap-2 mb-4"><Users size={16} className="text-red-500" />{editingUserId ? 'Edit User' : 'Create New User'}</h3>
                     <form onSubmit={handleRegisterSubmit} className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3"><div><label className={labelClass}>First Name</label><input className={inputClass} value={newUser.firstName} onChange={e => setNewUser(p => ({ ...p, firstName: e.target.value }))} /></div><div><label className={labelClass}>Last Name</label><input className={inputClass} value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} /></div></div>
@@ -297,7 +297,7 @@ export default function AuthModal({
               {/* 2. PASSWORD RESET */}
               {activeTab === 'reset' && (
                   <div className="space-y-6">
-                     <div className="bg-steel-800/30 rounded-xl p-4 border border-steel-700/60">
+                     <div className="bg-steel-800/30 rounded-md p-4 border border-steel-700/60">
                         <h3 className="text-sm font-bold text-steel-200 flex items-center gap-2 mb-4"><Lock size={16} className="text-red-500" />Admin Password Reset</h3>
                         <form onSubmit={handleResetSubmit} className="space-y-3">
                            <div><label className={labelClass}>Target Username</label><input className={inputClass} value={resetForm.username} onChange={e => setResetForm(p => ({ ...p, username: e.target.value }))} /></div>
@@ -311,15 +311,15 @@ export default function AuthModal({
               {/* 3. AI CONFIG TAB */}
               {activeTab === 'config' && (
                   <div className="space-y-6">
-                     <div className="bg-steel-800/30 rounded-xl p-4 border border-steel-700/60">
+                     <div className="bg-steel-800/30 rounded-md p-4 border border-steel-700/60">
                         <h3 className="text-sm font-bold text-steel-200 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
                         
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-steel-700 rounded-lg mb-4">
-                            <div className="flex items-start gap-3"><div className="p-2 rounded-lg bg-steel-700 text-steel-400 mt-1"><Bot size={18} /></div><div><p className="text-xs font-bold text-steel-100">AI Ballistics Expert</p><p className="text-[10px] text-steel-400 leading-relaxed mt-1">Enable the generative AI chat assistant via OpenRouter.</p></div></div>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-steel-700 rounded-md mb-4">
+                            <div className="flex items-start gap-3"><div className="p-2 rounded-md bg-steel-700 text-steel-400 mt-1"><Bot size={18} /></div><div><p className="text-xs font-bold text-steel-100">AI Ballistics Expert</p><p className="text-[10px] text-steel-400 leading-relaxed mt-1">Enable the generative AI chat assistant via OpenRouter.</p></div></div>
                             <div className="flex items-center justify-end">{systemSettings.hasAiKey || systemSettings.ai_api_key ? (<button onClick={() => toggleAi(systemSettings.ai_enabled === 'true' ? 'false' : 'true')} className={`rt-btn w-full sm:w-auto ${systemSettings.ai_enabled === 'true' ? 'rt-btn-danger' : 'rt-btn-ghost'}`}>{systemSettings.ai_enabled === 'true' ? 'Enabled' : 'Disabled'}</button>) : (<span className="px-3 py-1 rounded bg-amber-900/20 text-amber-500 text-[10px] border border-amber-900/50 flex items-center gap-1"><AlertTriangle size={10} /> Missing API Key</span>)}</div>
                         </div>
 
-                        <div className="p-4 bg-black/20 border border-steel-700 rounded-lg space-y-4">
+                        <div className="p-4 bg-black/20 border border-steel-700 rounded-md space-y-4">
                             <div>
                                 <label className={labelClass}>AI Model <span className={subLabelClass}>(OpenRouter Free Tier)</span></label>
                                 <div className="relative">
@@ -369,9 +369,9 @@ export default function AuthModal({
                           <Database className="text-amber-500 shrink-0" size={20} />
                           <div><h4 className="text-xs font-bold text-amber-400">Database Console</h4><p className="text-[10px] text-amber-400/70">Execute raw SQL commands. USE CAUTION.</p></div>
                       </div>
-                      <textarea className="w-full h-48 bg-steel-900 border border-steel-600 rounded-xl p-4 font-mono text-xs text-emerald-400 focus:border-red-500 focus:outline-none resize-none" placeholder="SELECT * FROM users;" value={sqlQuery} onChange={e => setSqlQuery(e.target.value)} spellCheck={false} />
-                      <div className="flex justify-end"><button onClick={runQuery} disabled={busy} className="px-6 py-2 bg-red-700 hover:bg-red-600 text-white font-bold rounded-lg flex items-center gap-2 transition text-xs"><Play size={14} fill="currentColor" /> Execute Query</button></div>
-                      {sqlResult && (<div className={`p-4 rounded-xl border flex-1 overflow-hidden flex flex-col ${sqlResult.success ? 'bg-steel-800/50 border-steel-600' : 'bg-red-900/20 border-red-500/50'}`}><div className="flex items-center gap-2 mb-2 flex-shrink-0">{sqlResult.success ? <CheckCircle size={16} className="text-emerald-500"/> : <AlertTriangle size={16} className="text-red-500"/>}<span className="text-xs font-bold text-steel-100">{sqlResult.success ? 'Success' : 'Error'}</span><span className="text-[10px] text-steel-400 ml-auto">{sqlResult.message || ''}</span></div>{sqlResult.error && <pre className="text-[10px] text-red-400 whitespace-pre-wrap font-mono">{sqlResult.error}</pre>}{sqlResult.rows && (<div className="overflow-auto custom-scrollbar flex-1"><table className="w-full text-left text-[10px] text-steel-200 border-collapse"><thead className="sticky top-0 bg-steel-800 text-steel-400 font-bold border-b border-steel-600"><tr>{Object.keys(sqlResult.rows[0] || {}).map(k => <th key={k} className="p-2 whitespace-nowrap">{k}</th>)}</tr></thead><tbody>{sqlResult.rows.map((row, i) => (<tr key={i} className="border-b border-steel-700/50 hover:bg-white/5">{Object.values(row).map((v, j) => <td key={j} className="p-2 whitespace-nowrap max-w-[200px] truncate">{v === null ? 'NULL' : String(v)}</td>)}</tr>))}</tbody></table></div>)}</div>)}
+                      <textarea className="w-full h-48 bg-steel-900 border border-steel-600 rounded-md p-4 rt-data text-xs text-[var(--brass)] focus:border-red-500 focus:outline-none resize-none" placeholder="SELECT * FROM users;" value={sqlQuery} onChange={e => setSqlQuery(e.target.value)} spellCheck={false} />
+                      <div className="flex justify-end"><button onClick={runQuery} disabled={busy} className="px-6 py-2 bg-red-700 hover:bg-red-600 text-white font-bold rounded-md flex items-center gap-2 transition text-xs"><Play size={14} fill="currentColor" /> Execute Query</button></div>
+                      {sqlResult && (<div className={`p-4 rounded-md border flex-1 overflow-hidden flex flex-col ${sqlResult.success ? 'bg-steel-800/50 border-steel-600' : 'bg-red-900/20 border-red-500/50'}`}><div className="flex items-center gap-2 mb-2 flex-shrink-0">{sqlResult.success ? <CheckCircle size={16} className="text-[var(--copper)]"/> : <AlertTriangle size={16} className="text-red-500"/>}<span className="text-xs font-bold text-steel-100">{sqlResult.success ? 'Success' : 'Error'}</span><span className="text-[10px] text-steel-400 ml-auto">{sqlResult.message || ''}</span></div>{sqlResult.error && <pre className="text-[10px] text-red-400 whitespace-pre-wrap font-mono">{sqlResult.error}</pre>}{sqlResult.rows && (<div className="overflow-auto custom-scrollbar flex-1"><table className="w-full text-left text-[10px] text-steel-200 border-collapse"><thead className="sticky top-0 bg-steel-800 text-steel-400 font-bold border-b border-steel-600"><tr>{Object.keys(sqlResult.rows[0] || {}).map(k => <th key={k} className="p-2 whitespace-nowrap">{k}</th>)}</tr></thead><tbody>{sqlResult.rows.map((row, i) => (<tr key={i} className="border-b border-steel-700/50 hover:bg-white/5">{Object.values(row).map((v, j) => <td key={j} className="p-2 whitespace-nowrap max-w-[200px] truncate">{v === null ? 'NULL' : String(v)}</td>)}</tr>))}</tbody></table></div>)}</div>)}
                   </div>
               )}
             </div>

@@ -86,7 +86,7 @@ export function ScannerModal({ isOpen, onClose, onScan }) {
 
     return createPortal(
         <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-md bg-steel-800 rounded-2xl overflow-hidden border border-steel-700 shadow-2xl relative">
+            <div className="w-full max-w-md glass overflow-hidden border border-steel-700 shadow-2xl relative">
                 
                 {/* HEADER */}
                 <div className="p-4 flex items-center justify-between border-b border-steel-700 bg-black/40">

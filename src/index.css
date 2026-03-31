@@ -9,16 +9,16 @@
 
 /* ── CSS CUSTOM PROPERTIES ─────────────────────────────────── */
 :root {
-  /* Surfaces — warm oiled-steel, never cold black */
-  --bg:           #0c0b09;
-  --surface:      #141210;
-  --card:         #1a1714;
-  --overlay:      #222018;
+  /* Surfaces — clean neutral dark; brass/copper own all the warmth */
+  --bg:           #0a0a0c;
+  --surface:      #111113;
+  --card:         #181819;
+  --overlay:      #1e1e21;
 
-  /* Borders — warm hairlines */
-  --border:       #272218;
-  --border-md:    #353020;
-  --border-hi:    #46402e;
+  /* Borders — clean neutral hairlines */
+  --border:       #222226;
+  --border-md:    #2e2e34;
+  --border-hi:    #3e3e48;
 
   /* Primary — rifle red */
   --red:          #c42b21;
@@ -35,10 +35,10 @@
   --brass-dim:    #a07828;
   --brass-glow:   rgba(212, 168, 67, 0.18);
 
-  /* Text — warm ivory hierarchy */
-  --text-hi:      #ece5d8;
-  --text-md:      #8a8275;
-  --text-lo:      #4a4540;
+  /* Text — clean neutral hierarchy */
+  --text-hi:      #f2f2f4;
+  --text-md:      #82828e;
+  --text-lo:      #46464e;
 }
 
 /* ── RESET & GLOBALS ────────────────────────────────────────── */

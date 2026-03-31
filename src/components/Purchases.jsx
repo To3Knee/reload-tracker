@@ -520,7 +520,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
             {error && (<div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2"><AlertTriangle className="text-red-500 flex-shrink-0" size={20} /><div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div><button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button></div>)}
             
             {loading && scanStatus && (
-               <div className="flex items-center gap-3 bg-steel-800 border border-steel-700 rounded-xl p-3 animate-in fade-in">
+               <div className="flex items-center gap-3 bg-steel-800 border border-steel-700 rounded-md p-3 animate-in fade-in">
                    <Loader2 size={16} className="text-red-500 animate-spin" />
                    <span className="text-xs text-steel-200 font-mono">{scanStatus}</span>
                </div>
@@ -529,19 +529,19 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
             {/* UNIFIED SCANNER MODAL */}
             {showScanner && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
-                    <div className="bg-[#0f0f10] border border-steel-700 rounded-2xl w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
+                    <div className="glass w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
                         <button onClick={() => { stopScanner(); setShowScanner(false); }} className="absolute top-4 right-4 text-steel-400 hover:text-white bg-black/50 p-2 rounded-full z-20 cursor-pointer"><X size={20} /></button>
-                        <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2"><ScanBarcode className="text-emerald-500" /> Scanner</h3>
+                        <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2"><ScanBarcode className="text-[var(--copper)]" /> Scanner</h3>
                         
-                        <div className="relative w-full h-[300px] bg-black rounded-xl overflow-hidden border-2 border-emerald-500/30 flex flex-col items-center justify-center group">
+                        <div className="relative w-full h-[300px] bg-black rounded-lg overflow-hidden border-2 border-[var(--copper)]/30 flex flex-col items-center justify-center group">
                             {/* OVERLAY UI */}
                             {!scannerActive && !cameraLoading && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-steel-800 z-50 space-y-4 animate-in fade-in">
-                                    <button onClick={startScanner} className="w-48 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-lg transition flex items-center justify-center gap-2 cursor-pointer relative z-50">
+                                    <button onClick={startScanner} className="w-48 px-4 py-3 bg-red-700 hover:bg-red-600 text-white rounded-md font-bold shadow-lg transition flex items-center justify-center gap-2 cursor-pointer relative z-50">
                                         <Camera size={18} /> Live Camera
                                     </button>
                                     <span className="text-[10px] text-steel-400 uppercase tracking-widest font-bold">- OR -</span>
-                                    <button onClick={handleSystemCamera} className="w-48 px-4 py-3 bg-steel-700 hover:bg-steel-600 text-steel-100 rounded-xl font-bold shadow-lg transition flex items-center justify-center gap-2 border border-steel-600 cursor-pointer relative z-50">
+                                    <button onClick={handleSystemCamera} className="w-48 px-4 py-3 bg-steel-700 hover:bg-steel-600 text-steel-100 rounded-md font-bold shadow-lg transition flex items-center justify-center gap-2 border border-steel-600 cursor-pointer relative z-50">
                                         <ImageIcon size={18} /> Photo / File
                                     </button>
                                 </div>
@@ -550,7 +550,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                             {/* LOADING SPINNER */}
                             {cameraLoading && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-40">
-                                    <Loader2 className="animate-spin text-emerald-500 mb-2" size={32} />
+                                    <Loader2 className="animate-spin text-[var(--copper)] mb-2" size={32} />
                                     <span className="text-xs text-steel-300">Starting Camera...</span>
                                 </div>
                             )}
@@ -583,7 +583,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                     <span className={sectionLabelClass}>{editingId ? 'EDIT PURCHASE' : 'ADD PURCHASE'}</span>
                     
                     {form.brand && !editingId && form.imageUrl && (
-                        <div className="mb-4 text-[10px] text-emerald-400 flex items-center gap-1.5 bg-emerald-900/20 px-3 py-2 rounded-lg border border-emerald-900/50 animate-in fade-in slide-in-from-top-2">
+                        <div className="mb-4 text-[10px] text-[var(--copper)] flex items-center gap-1.5 bg-copper-900/20 px-3 py-2 rounded-md border border-copper-900/50 animate-in fade-in slide-in-from-top-2">
                             <Sparkles size={10} /> Product data retrieved from barcode scan.
                         </div>
                     )}
@@ -617,7 +617,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                             <div className="col-span-2 md:col-span-4 flex flex-col items-end mt-1">
                                 <span className="text-[10px] text-steel-300">Cost per Unit: <span className="text-steel-100 font-mono">{formatMoney(liveUnitCost)}</span></span>
                                 {liveSmartPrice.val !== liveUnitCost && (
-                                    <span className="text-xs text-emerald-400 font-bold">{liveSmartPrice.label}: {formatMoney(liveSmartPrice.val)}</span>
+                                    <span className="text-xs text-brass-300 font-bold">{liveSmartPrice.label}: {formatMoney(liveSmartPrice.val)}</span>
                                 )}
                             </div>
                         </div>
@@ -656,26 +656,26 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                                 const grainCost = isPowder ? (unitCost / 7000) : 0;
 
                                 return (
-                                    <div id={`purchase-${p.id}`} key={p.id} className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl bg-black/20 border transition ${isHighlighted ? 'border-emerald-500 ring-1 ring-emerald-500/50 shadow-lg shadow-emerald-900/20' : 'border-steel-700 hover:border-steel-600'}`}>
+                                    <div id={`purchase-${p.id}`} key={p.id} className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg bg-black/20 border transition ${isHighlighted ? 'border-copper-500 ring-1 ring-copper-500/50 shadow-lg shadow-copper-900/20' : 'border-steel-700 hover:border-steel-600'}`}>
                                         <div className="flex-1 flex gap-4">
                                             {p.imageUrl && (<div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-steel-600 bg-black"><img src={p.imageUrl} alt="Lot" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition" /></div>)}
                                             <div>
                                                 <div className="flex items-center gap-3"><span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${depleted ? 'bg-steel-800 text-steel-400 border-steel-700' : 'bg-red-900/20 text-red-400 border-red-900/50'}`}>{p.componentType}</span><span className="text-xs text-steel-400 font-mono">{p.lotId}</span></div>
                                                 <h4 className="text-sm font-bold text-steel-100 mt-1">{p.brand} {p.name}</h4>
-                                                <div className="text-[11px] text-steel-400 mt-1 flex flex-wrap gap-2">{p.caliber && <span className="text-steel-300">{p.caliber}</span>}{p.typeDetail && <span className="text-steel-300 italic">{p.typeDetail}</span>}{p.vendor && <span className="px-2 py-[1px] bg-black/40 border border-steel-700 rounded">{p.vendor}</span>}{p.purchaseDate && <span className="px-2 py-[1px] bg-black/40 border border-steel-700 rounded">{p.purchaseDate.substring(0,10)}</span>}{p.caseCondition && <span className="px-2 py-[1px] bg-black/40 border border-steel-700 rounded">{CASE_CONDITIONS.find(c=>c.value===p.caseCondition)?.label || p.caseCondition}</span>}{p.url && <a href={p.url} target="_blank" rel="noreferrer" className="px-2 py-[1px] bg-black/40 border border-emerald-900/50 text-emerald-500 hover:text-emerald-300 hover:border-emerald-500/50 rounded transition">Page ↗</a>}</div>
+                                                <div className="text-[11px] text-steel-400 mt-1 flex flex-wrap gap-2">{p.caliber && <span className="text-steel-300">{p.caliber}</span>}{p.typeDetail && <span className="text-steel-300 italic">{p.typeDetail}</span>}{p.vendor && <span className="px-2 py-[1px] bg-black/40 border border-steel-700 rounded">{p.vendor}</span>}{p.purchaseDate && <span className="px-2 py-[1px] bg-black/40 border border-steel-700 rounded">{p.purchaseDate.substring(0,10)}</span>}{p.caseCondition && <span className="px-2 py-[1px] bg-black/40 border border-steel-700 rounded">{CASE_CONDITIONS.find(c=>c.value===p.caseCondition)?.label || p.caseCondition}</span>}{p.url && <a href={p.url} target="_blank" rel="noreferrer" className="px-2 py-[1px] bg-black/40 border border-copper-900/50 text-copper-400 hover:text-copper-300 hover:border-copper-500/50 rounded transition">Page ↗</a>}</div>
                                                 {attribution && (<div className="mt-2 flex items-center gap-2"><span className="flex items-center gap-1 text-[9px] text-steel-400 px-2 py-0.5 bg-black/20 rounded border border-steel-700">{p.updatedByUsername ? <Clock size={10}/> : <User size={10}/>} {attribution}</span></div>)}
                                             </div>
                                         </div>
                                         <div className="mt-3 md:mt-0 flex flex-wrap items-center justify-between md:justify-end gap-x-6 gap-y-4">
                                             <div className="text-left md:text-right flex flex-col justify-center">
                                                 <span className="text-sm font-bold text-steel-100 leading-none">{p.qty} <span className="text-xs font-normal text-steel-400">{p.unit}</span></span>
-                                                <span className="text-xs font-bold text-emerald-400 mt-1">
-                                                    {formatMoney(smartPrice.val)} 
-                                                    <span className="text-[10px] font-normal text-emerald-600/80"> / {smartPrice.label.split(' / ')[1]}</span>
+                                                <span className="text-xs font-bold text-brass-300 mt-1">
+                                                    {formatMoney(smartPrice.val)}
+                                                    <span className="text-[10px] font-normal text-brass-400/80"> / {smartPrice.label.split(' / ')[1]}</span>
                                                 </span>
                                                 {isPowder && (<span className="block text-[9px] text-steel-400 mt-0.5 font-mono">(${grainCost.toFixed(4)}/gr)</span>)}
                                             </div>
-                                            <div className="flex flex-col items-end gap-2 min-w-[70px]">{canEdit && (<><button onClick={() => handleEdit(p)} className="rt-btn rt-btn-ghost w-full justify-center"><Edit size={12} /> Edit</button><button onClick={() => promptDelete(p)} className="rt-btn rt-btn-danger w-full justify-center"><Trash2 size={12} /> Remove</button></>)}<button onClick={() => { HAPTIC.click(); printPurchaseLabel(p); }} className="rt-btn rt-btn-ghost w-full justify-center text-emerald-500 hover:text-emerald-400 hover:border-emerald-700"><Printer size={12} /> Label</button></div>
+                                            <div className="flex flex-col items-end gap-2 min-w-[70px]">{canEdit && (<><button onClick={() => handleEdit(p)} className="rt-btn rt-btn-ghost w-full justify-center"><Edit size={12} /> Edit</button><button onClick={() => promptDelete(p)} className="rt-btn rt-btn-danger w-full justify-center"><Trash2 size={12} /> Remove</button></>)}<button onClick={() => { HAPTIC.click(); printPurchaseLabel(p); }} className="rt-btn rt-btn-ghost w-full justify-center text-copper-400 hover:text-copper-300 hover:border-copper-700"><Printer size={12} /> Label</button></div>
                                         </div>
                                     </div>
                                 )
@@ -691,10 +691,10 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
       
       {deleteModalOpen && itemToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
-            <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
+            <div className="glass border border-red-900/50 shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
                 <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto"><Trash2 className="text-red-500" size={24} /></div>
                 <div><h3 className="text-lg font-bold text-white">Delete Lot?</h3><p className="text-sm text-steel-300 mt-1">Are you sure you want to delete <span className="text-white font-medium">{itemToDelete.brand} {itemToDelete.name}</span>?<br/>This action cannot be undone.</p></div>
-                <div className="grid grid-cols-2 gap-3 pt-2"><button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-xl border border-steel-600 text-steel-200 hover:bg-steel-700 font-medium text-sm transition">Cancel</button><button onClick={executeDelete} disabled={isDeleting} className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button></div>
+                <div className="grid grid-cols-2 gap-3 pt-2"><button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-md border border-steel-600 text-steel-200 hover:bg-steel-700 font-medium text-sm transition">Cancel</button><button onClick={executeDelete} disabled={isDeleting} className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button></div>
             </div>
         </div>
       )}

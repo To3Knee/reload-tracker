@@ -119,7 +119,7 @@ export function SupplyChain() {
                 </div>
             )}
             
-            <div className="glass p-6 rounded-2xl flex gap-2 border border-red-500/30">
+            <div className="glass p-6 flex gap-2 border border-red-500/30">
                 <input
                     className="rt-input flex-1"
                     placeholder="Paste Product URL (Midway, Brownells, etc)..."
@@ -180,7 +180,7 @@ export function SupplyChain() {
 
                                         <div className="flex border-t border-steel-700 divide-x divide-steel-700 bg-black/60">
                                             <a href={item.url} target="_blank" className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-blue-400 hover:bg-blue-900/10 transition" title="Visit Link"><ExternalLink size={14}/></a>
-                                            <button onClick={() => handleRefresh(item.id)} disabled={isRefreshing} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-emerald-400 hover:bg-emerald-900/10 transition" title="Refresh Price"><RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""}/></button>
+                                            <button onClick={() => handleRefresh(item.id)} disabled={isRefreshing} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-copper-400 hover:bg-copper-900/10 transition" title="Refresh Price"><RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""}/></button>
                                             <button onClick={() => setEditItem(item)} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-amber-400 hover:bg-amber-900/10 transition" title="Edit Item"><Edit size={14}/></button>
                                             <button onClick={() => setDeleteId(item.id)} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-red-500 hover:bg-red-900/10 transition" title="Delete Tracker"><Trash2 size={14}/></button>
                                         </div>
@@ -194,7 +194,7 @@ export function SupplyChain() {
 
             {editItem && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-[#0f0f10] border border-steel-600 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+                    <div className="glass border border-steel-600 w-full max-w-md p-6 space-y-4 shadow-2xl">
                         <h3 className="text-lg font-bold text-white">Edit Listing</h3>
                         
                         <div><label className="rt-label">Name</label>
@@ -233,7 +233,7 @@ export function SupplyChain() {
 
             {deleteId && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-[#0f0f10] border border-red-900/50 rounded-2xl w-full max-w-sm p-6 text-center space-y-4 shadow-xl">
+                    <div className="glass border border-red-900/50 w-full max-w-sm p-6 text-center space-y-4 shadow-xl">
                         <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto text-red-500"><Trash2 size={24}/></div>
                         <div><h3 className="text-lg font-bold text-white">Stop Tracking?</h3><p className="text-sm text-steel-300 mt-1">This will remove the item from your Supply Chain.</p></div>
                         <div className="flex gap-3 justify-center pt-2">
