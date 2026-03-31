@@ -146,6 +146,7 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   const [batchRecipe, setBatchRecipe] = useState(null)
   const [batchForm, setBatchForm] = useState({ rounds: '', powderLotId: '', bulletLotId: '', primerLotId: '', caseLotId: '', notes: '' })
   const [batchSubmitting, setBatchSubmitting] = useState(false)
+  const [batchError, setBatchError] = useState('')
 
   const activePurchases = useMemo(() => purchases.filter(p => p.status !== 'depleted'), [purchases])
   
@@ -464,7 +465,7 @@ ${recipe.notes ? `
   }
 
   function openBatchModal(recipe) {
-    if (!canEdit) return; setBatchRecipe(recipe); HAPTIC.click();
+    if (!canEdit) return; setBatchRecipe(recipe); setBatchError(''); HAPTIC.click();
     const filterCaliber = (p) => !p.caliber || !recipe.caliber || p.caliber === recipe.caliber; const active = (p) => p.status !== 'depleted';
     const fallback = (type) => purchases.find(p => p.componentType === type && active(p) && filterCaliber(p));
     setBatchForm({ rounds: recipe.lotSize || 100, powderLotId: recipe.powderLotId || (fallback('powder')?.id || ''), bulletLotId: recipe.bulletLotId || (fallback('bullet')?.id || ''), primerLotId: recipe.primerLotId || (fallback('primer')?.id || ''), caseLotId: recipe.caseLotId || (fallback('case')?.id || ''), notes: '' });
@@ -472,8 +473,21 @@ ${recipe.notes ? `
   }
 
   async function handleBatchSubmit(e) {
-    e.preventDefault(); if (!batchRecipe) return; setBatchSubmitting(true);
-    try { await createBatch({ recipeId: batchRecipe.id, ...batchForm }); HAPTIC.success(); setBatchModalOpen(false); setBatchRecipe(null); } catch (err) { setError(`Batch failed: ${err.message}`); setBatchModalOpen(false); } finally { setBatchSubmitting(false); }
+    e.preventDefault()
+    if (!batchRecipe) return
+    setBatchSubmitting(true)
+    setBatchError('')
+    try {
+      await createBatch({ recipeId: batchRecipe.id, ...batchForm })
+      HAPTIC.success()
+      setBatchModalOpen(false)
+      setBatchRecipe(null)
+    } catch (err) {
+      setBatchError(err.message || 'Failed to save batch. Check API connection.')
+      HAPTIC.error()
+    } finally {
+      setBatchSubmitting(false)
+    }
   }
 
   // --- SAFE FALLBACKS FOR VISUALIZER ---
@@ -684,7 +698,12 @@ ${recipe.notes ? `
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4"><div><label className={labelClass}>Rounds Loaded</label><input type="number" className={inputClass} value={batchForm.rounds} onChange={e => setBatchForm(p => ({ ...p, rounds: e.target.value }))} /></div><div><label className={labelClass}>Powder Lot</label><select className={inputClass} value={batchForm.powderLotId} onChange={e => setBatchForm(p => ({ ...p, powderLotId: e.target.value }))}><option value="">Select Powder...</option>{powders.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div></div>
                      <div className="grid grid-cols-3 gap-4"><div><label className={labelClass}>Bullet Lot</label><select className={inputClass} value={batchForm.bulletLotId} onChange={e => setBatchForm(p => ({ ...p, bulletLotId: e.target.value }))}><option value="">Select...</option>{bullets.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div><div><label className={labelClass}>Primer Lot</label><select className={inputClass} value={batchForm.primerLotId} onChange={e => setBatchForm(p => ({ ...p, primerLotId: e.target.value }))}><option value="">Select...</option>{primers.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div><div><label className={labelClass}>Brass Lot</label><select className={inputClass} value={batchForm.caseLotId} onChange={e => setBatchForm(p => ({ ...p, caseLotId: e.target.value }))}><option value="">Select Brass...</option>{cases.map(p => (<option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>))}</select></div></div>
-                    <button onClick={handleBatchSubmit} disabled={batchSubmitting} className="rt-btn rt-btn-primary w-full justify-center">Log Batch</button>
+                    {batchError && (
+                      <div className="p-3 rounded-md bg-red-900/20 border border-red-900/50 text-[11px] text-red-400">{batchError}</div>
+                    )}
+                    <button onClick={handleBatchSubmit} disabled={batchSubmitting} className="rt-btn rt-btn-primary w-full justify-center disabled:opacity-50">
+                      {batchSubmitting ? 'Saving...' : 'Log Batch'}
+                    </button>
                 </div>
             </div>
         </div>
