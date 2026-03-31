@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from 'react'
-import { getRangeLogs, createRangeLog, updateRangeLog, deleteRangeLog } from '../lib/range'
-import { getBatches } from '../lib/batches' 
+import { createRangeLog, updateRangeLog, deleteRangeLog } from '../lib/range'
 import { getFirearms } from '../lib/armory'
+import { useAppStore } from '../lib/store'
 import { calculateStatistics } from '../lib/math'
 import { Target, Plus, Thermometer, ExternalLink, Calendar, MapPin, Printer, Crosshair, Calculator, Trash2, User, Clock, AlertTriangle } from 'lucide-react'
 import { InfoTip } from './InfoTip'
@@ -11,12 +11,10 @@ import QRCode from 'qrcode'
 import { HAPTIC } from '../lib/haptics'
 
 export function RangeLogs({ recipes = [], canEdit, highlightId }) {
-  const [logs, setLogs] = useState([])
-  const [batchList, setBatchList] = useState([])
-  const [guns, setGuns] = useState([]) 
+  const { rangeLogs: logs, batches: batchList, loading, refresh } = useAppStore()
+  const [guns, setGuns] = useState([])
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [loading, setLoading] = useState(false)
 
   // Safe Delete & Error State
   const [verifyDeleteId, setVerifyDeleteId] = useState(null)
@@ -55,9 +53,10 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
   }
   const [form, setForm] = useState(DEFAULT_FORM)
 
+  // Load firearms only (logs/batches come from store)
   useEffect(() => {
     const controller = new AbortController()
-    loadData(controller.signal)
+    getFirearms(controller.signal).then(setGuns).catch(() => {})
     return () => controller.abort()
   }, [])
 
@@ -84,22 +83,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
     }
   }, [highlightId, logs])
 
-  async function loadData(signal) {
-    setLoading(true)
-    const safe = fn => fn.catch(e => { if (e?.name === 'AbortError') throw e; return [] })
-    try {
-      const [logData, batchData, gunData] = await Promise.all([
-          safe(getRangeLogs(signal)),
-          safe(getBatches(signal)),
-          safe(getFirearms(signal)),
-      ])
-      setLogs(logData)
-      setBatchList(batchData)
-      setGuns(gunData)
-    } catch (e) {
-      if (e?.name !== 'AbortError') console.error(e)
-    } finally { setLoading(false) }
-  }
 
   function handleNewLog() {
       setEditingId(null)
@@ -216,7 +199,6 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setLoading(true)
     try {
       const payload = { ...form, shots: shotString }
       if (editingId) {
@@ -234,18 +216,18 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
       }
       HAPTIC.success()
       handleCancel()
-      loadData()
+      refresh()
     } catch (err) {
       HAPTIC.error()
       console.error(err)
-    } finally { setLoading(false) }
+    }
   }
 
   async function handleDelete(id) {
     setVerifyDeleteId(null)
     HAPTIC.error()
     await deleteRangeLog(id)
-    loadData()
+    refresh()
   }
 
   // Escape user-supplied strings before injecting into PDF innerHTML

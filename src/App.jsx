@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef, lazy, Suspense, useCallback } from 'react'
 import Navbar from './components/Navbar'
 import Dashboard from './components/Dashboard'
@@ -8,55 +7,45 @@ import { Recipes } from './components/Recipes'
 import { Batches } from './components/Batches'
 import { RangeLogs } from './components/RangeLogs'
 import { Armory } from './components/Armory'
-import { getAllPurchases, getAllRecipes } from './lib/db'
+import { useAppStore } from './lib/store'
+import { logoutUser, ROLE_ADMIN } from './lib/auth'
 import { APP_VERSION_LABEL } from './version'
-import { fetchSettings } from './lib/settings'
-import { getCurrentUser, logoutUser, ROLE_ADMIN } from './lib/auth'
 import { HAPTIC } from './lib/haptics'
 import logo from './assets/logo.png'
 import {
   Gauge, ShoppingCart, Package, Beaker, ClipboardList, Activity, Target, Crosshair, RefreshCw
 } from 'lucide-react'
 
-// Lazy-loaded: heavy bundles only downloaded when the tab/modal is first opened
-const Analytics  = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })))
+const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })))
 const AuthModal  = lazy(() => import('./components/AuthModal'))
 const AiModal    = lazy(() => import('./components/AiModal'))
 
-// CONFIG: Access Control
 const REQUIRE_LOGIN = import.meta.env.VITE_REQUIRE_LOGIN === 'true'
 
 const MENU_ITEMS = [
   { id: 'calculator', label: 'Calculator', icon: Gauge },
-  { id: 'purchases', label: 'Purchases', icon: ShoppingCart },
-  { id: 'inventory', label: 'Inventory', icon: Package },
-  { id: 'recipes', label: 'Recipes', icon: Beaker },
-  { id: 'batches', label: 'Batches', icon: ClipboardList },
-  { id: 'range', label: 'Range', icon: Target },
-  { id: 'armory', label: 'Armory', icon: Crosshair },
-  { id: 'analytics', label: 'Analytics', icon: Activity },
+  { id: 'purchases',  label: 'Purchases',  icon: ShoppingCart },
+  { id: 'inventory',  label: 'Inventory',  icon: Package },
+  { id: 'recipes',    label: 'Recipes',    icon: Beaker },
+  { id: 'batches',    label: 'Batches',    icon: ClipboardList },
+  { id: 'range',      label: 'Range',      icon: Target },
+  { id: 'armory',     label: 'Armory',     icon: Crosshair },
+  { id: 'analytics',  label: 'Analytics',  icon: Activity },
 ]
 
 export default function App() {
-  // Navigation & Data State
   const VALID_TABS = MENU_ITEMS.map(m => m.id)
   const [activeTab, setActiveTab] = useState(() => {
     const saved = localStorage.getItem('activeTab')
     return saved && VALID_TABS.includes(saved) ? saved : 'calculator'
   })
-  const [purchases, setPurchases] = useState([])
-  const [recipes, setRecipes] = useState([]) 
   const [selectedRecipe, setSelectedRecipe] = useState(null)
-  const [currentUser, setCurrentUser] = useState(null)
-  
-  // Auth & Modal State
-  const [isAuthOpen, setIsAuthOpen] = useState(false)
-  const [isAiOpen, setIsAiOpen] = useState(false)
-  const [aiEnabled, setAiEnabled] = useState(false)
-  const [scannedId, setScannedId] = useState(null)
+  const [isAuthOpen,  setIsAuthOpen]  = useState(false)
+  const [isAiOpen,    setIsAiOpen]    = useState(false)
+  const [scannedId,   setScannedId]   = useState(null)
 
-  // Pull-To-Refresh State
-  const [pullStartY, setPullStartY] = useState(0)
+  // Pull-To-Refresh state
+  const [pullStartY,   setPullStartY]   = useState(0)
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const mainRef = useRef(null)
@@ -65,122 +54,96 @@ export default function App() {
     typeof window !== 'undefined' ? localStorage.getItem('ageConfirmed') === 'true' : false
   )
 
+  // Zustand store
+  const { purchases, recipes, currentUser, aiEnabled, refresh, setCurrentUser, clearCurrentUser } = useAppStore()
+  const isAdmin = currentUser?.role === ROLE_ADMIN
+
   useEffect(() => {
     const controller = new AbortController()
     loadInitialData(controller.signal)
     return () => controller.abort()
   }, [])
 
-  // Consolidated Data Loader
   const loadInitialData = async (signal) => {
-    await refreshAllData(signal)
+    await refresh(signal)
+
+    // Auth gate
+    const user = useAppStore.getState().currentUser
+    if (user) {
+      setIsAuthOpen(false)
+    } else if (REQUIRE_LOGIN) {
+      setIsAuthOpen(true)
+    }
 
     const params = new URLSearchParams(window.location.search)
-    const batchId = params.get('batchId')
+    const batchId    = params.get('batchId')
     const purchaseId = params.get('purchaseId')
     const rangeLogId = params.get('rangeLogId')
-
-    if (batchId) { setActiveTab('batches'); setScannedId(Number(batchId)) }
+    if (batchId)    { setActiveTab('batches');   setScannedId(Number(batchId)) }
     else if (purchaseId) { setActiveTab('purchases'); setScannedId(Number(purchaseId)) }
-    else if (rangeLogId) { setActiveTab('range'); setScannedId(Number(rangeLogId)) }
+    else if (rangeLogId) { setActiveTab('range');     setScannedId(Number(rangeLogId)) }
   }
 
-  // The "Master" Refresh Function
-  const refreshAllData = async (signal) => {
-    try {
-      // Parallel fetch for speed
-      const [purchasesData, recipesData] = await Promise.all([
-        getAllPurchases(signal),
-        getAllRecipes(signal),
-      ])
-      setPurchases(purchasesData)
-      setRecipes(recipesData)
-
-      // Refresh user/settings silently
-      const user = await getCurrentUser()
-      if (user) {
-          setCurrentUser(user)
-          setIsAuthOpen(false)
-      } else if (REQUIRE_LOGIN) {
-          setIsAuthOpen(true)
-      }
-
-      const settings = await fetchSettings(signal)
-      setAiEnabled(settings.ai_enabled === 'true' && (settings.hasAiKey || settings.ai_api_key))
-
-    } catch (e) {
-      if (e?.name !== 'AbortError') console.error("Data refresh failed:", e)
-    }
+  const handlePullRefresh = async () => {
+    setIsRefreshing(true)
+    setPullDistance(60)
+    HAPTIC.success()
+    await refresh()
+    setTimeout(() => { setIsRefreshing(false); setPullDistance(0) }, 500)
   }
 
-  const confirmAge = () => { localStorage.setItem('ageConfirmed', 'true'); setAgeConfirmed(true); HAPTIC.click(); }
-  const handleUseRecipe = useCallback((recipe) => { setSelectedRecipe(recipe); setActiveTab('calculator'); HAPTIC.soft() }, [])
+  const confirmAge       = () => { localStorage.setItem('ageConfirmed', 'true'); setAgeConfirmed(true); HAPTIC.click() }
+  const handleUseRecipe  = useCallback((recipe) => { setSelectedRecipe(recipe); setActiveTab('calculator'); HAPTIC.soft() }, [])
   const handleTabChange  = useCallback((t) => { setActiveTab(t); localStorage.setItem('activeTab', t); HAPTIC.soft() }, [])
   const handleOpenSettings = useCallback(() => { setIsAuthOpen(true); HAPTIC.click() }, [])
   const handleOpenAi     = useCallback(() => { setIsAiOpen(true); HAPTIC.click() }, [])
   const handleLogin      = useCallback((user) => { setCurrentUser(user); setIsAuthOpen(false); HAPTIC.success() }, [])
   const handleLogout     = useCallback(async () => {
     await logoutUser()
-    setCurrentUser(null)
+    clearCurrentUser()
     if (!REQUIRE_LOGIN) setIsAuthOpen(false)
     setIsAiOpen(false)
     HAPTIC.soft()
   }, [])
   const handleCloseAuth  = useCallback(() => { if (!REQUIRE_LOGIN || currentUser) setIsAuthOpen(false) }, [currentUser])
-  const isAdmin = currentUser && currentUser.role === ROLE_ADMIN
 
-  // --- TOUCH HANDLERS FOR PULL-TO-REFRESH ---
+  // Touch handlers for pull-to-refresh
   const handleTouchStart = (e) => {
-    if (window.scrollY === 0 && !isRefreshing) {
-      setPullStartY(e.touches[0].clientY)
-    }
+    if (window.scrollY === 0 && !isRefreshing) setPullStartY(e.touches[0].clientY)
   }
-
   const handleTouchMove = (e) => {
     if (pullStartY > 0 && window.scrollY === 0 && !isRefreshing) {
-      const touchY = e.touches[0].clientY
-      const diff = touchY - pullStartY
-      if (diff > 0) {
-        // Logarithmic resistance for "sticky" feel
-        setPullDistance(Math.min(diff * 0.4, 120)) 
-      }
+      const diff = e.touches[0].clientY - pullStartY
+      if (diff > 0) setPullDistance(Math.min(diff * 0.4, 120))
     }
   }
-
   const handleTouchEnd = async () => {
-    if (pullDistance > 60) { // Threshold to trigger refresh
-      setIsRefreshing(true)
-      setPullDistance(60) // Snap to loading position
-      HAPTIC.success()
-      await refreshAllData()
-      setTimeout(() => {
-        setIsRefreshing(false)
-        setPullDistance(0)
-      }, 500)
+    if (pullDistance > 60) {
+      await handlePullRefresh()
     } else {
-      setPullDistance(0) // Snap back if not pulled enough
+      setPullDistance(0)
     }
     setPullStartY(0)
   }
 
   if (!ageConfirmed) return (
-      <div className="min-h-[100dvh] bg-[#080808] text-gray-100 flex items-center justify-center px-4">
-        <div className="glass max-w-lg w-full text-center p-10">
-          <div className="relative mb-6 flex justify-center">
-            <div className="absolute inset-0 blur-3xl rounded-full bg-red-900/25 scale-150" />
-            <img src={logo} alt="Reload Tracker" className="relative h-32 w-auto object-contain opacity-95" />
-          </div>
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.35em] text-red-500/70 mb-5">Reload Tracker</h2>
-          <h1 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-[0.06em] text-white leading-tight">For Responsible <span className="text-red-600">Adult Reloaders</span> Only.</h1>
-          <p className="text-sm text-steel-400 mb-8">By continuing you confirm you are of legal age.</p>
-          <button onClick={confirmAge} className="rt-btn rt-btn-primary px-8 py-3 text-sm font-semibold shadow-lg shadow-red-900/40 active:scale-95">I am 21 or older</button>
-          <div className="mt-6 text-[10px] text-steel-600 uppercase tracking-widest">Reload Tracker {APP_VERSION_LABEL}</div>
+    <div className="min-h-[100dvh] bg-[#080808] text-gray-100 flex items-center justify-center px-4">
+      <div className="glass max-w-lg w-full text-center p-10">
+        <div className="relative mb-6 flex justify-center">
+          <div className="absolute inset-0 blur-3xl rounded-full bg-red-900/25 scale-150" />
+          <img src={logo} alt="Reload Tracker" className="relative h-32 w-auto object-contain opacity-95" />
         </div>
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.35em] text-red-500/70 mb-5">Reload Tracker</h2>
+        <h1 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-[0.06em] text-white leading-tight">For Responsible <span className="text-red-600">Adult Reloaders</span> Only.</h1>
+        <p className="text-sm text-steel-400 mb-8">By continuing you confirm you are of legal age.</p>
+        <button onClick={confirmAge} className="rt-btn rt-btn-primary px-8 py-3 text-sm font-semibold shadow-lg shadow-red-900/40 active:scale-95">I am 21 or older</button>
+        <div className="mt-6 text-[10px] text-steel-600 uppercase tracking-widest">Reload Tracker {APP_VERSION_LABEL}</div>
       </div>
+    </div>
   )
 
   return (
-    <div 
+    <div
       className="min-h-[100dvh] bg-[#080808] text-gray-100"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -196,13 +159,13 @@ export default function App() {
         menuItems={MENU_ITEMS}
       />
 
-      {/* Pull To Refresh — sits just below the mobile top header */}
+      {/* Pull To Refresh indicator */}
       <div
         className="fixed left-0 right-0 flex justify-center z-[60] pointer-events-none transition-transform duration-200"
         style={{
           top: 'calc(48px + env(safe-area-inset-top))',
           transform: `translateY(${pullDistance - 50}px)`,
-          opacity: pullDistance > 10 ? 1 : 0
+          opacity: pullDistance > 10 ? 1 : 0,
         }}
       >
         <div className="rt-card p-2 shadow-xl shadow-black/60">
@@ -222,18 +185,14 @@ export default function App() {
           transition-transform duration-200"
         style={pullDistance > 0 ? { transform: `translateY(${pullDistance / 2}px)` } : undefined}
       >
-
         {activeTab === 'calculator' && <Dashboard purchases={purchases} recipes={recipes} selectedRecipe={selectedRecipe} onSelectRecipe={handleUseRecipe} canEdit={!!isAdmin} />}
-        {activeTab === 'armory' && <Armory canEdit={!!isAdmin} />}
-        
-        {/* FIX: Passed currentUser to Purchases */}
-        {activeTab === 'purchases' && <Purchases onChanged={refreshAllData} canEdit={!!isAdmin} highlightId={scannedId} user={currentUser} />}
-        
-        {activeTab === 'inventory' && <Inventory purchases={purchases} selectedRecipe={selectedRecipe} />}
-        {activeTab === 'recipes' && <Recipes onUseRecipe={handleUseRecipe} canEdit={!!isAdmin} purchases={purchases} />}
-        {activeTab === 'batches' && <Batches highlightId={scannedId} />}
-        {activeTab === 'range' && <RangeLogs recipes={recipes} canEdit={!!isAdmin} highlightId={scannedId} />}
-        {activeTab === 'analytics' && (
+        {activeTab === 'armory'     && <Armory canEdit={!!isAdmin} />}
+        {activeTab === 'purchases'  && <Purchases onChanged={refresh} canEdit={!!isAdmin} highlightId={scannedId} user={currentUser} />}
+        {activeTab === 'inventory'  && <Inventory purchases={purchases} selectedRecipe={selectedRecipe} />}
+        {activeTab === 'recipes'    && <Recipes onUseRecipe={handleUseRecipe} canEdit={!!isAdmin} purchases={purchases} />}
+        {activeTab === 'batches'    && <Batches highlightId={scannedId} />}
+        {activeTab === 'range'      && <RangeLogs recipes={recipes} canEdit={!!isAdmin} highlightId={scannedId} />}
+        {activeTab === 'analytics'  && (
           <Suspense fallback={<div className="p-8 text-center text-xs text-steel-500 animate-pulse">Running Ballistics Calculations...</div>}>
             <Analytics />
           </Suspense>
@@ -242,20 +201,23 @@ export default function App() {
 
       <Suspense fallback={null}>
         {isAuthOpen && (
-            <AuthModal
-              open={isAuthOpen}
-              onClose={handleCloseAuth}
-              currentUser={currentUser}
-              onLogin={handleLogin}
-              onLogout={handleLogout}
-              canClose={!REQUIRE_LOGIN || !!currentUser}
-            />
+          <AuthModal
+            open={isAuthOpen}
+            onClose={handleCloseAuth}
+            currentUser={currentUser}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+            canClose={!REQUIRE_LOGIN || !!currentUser}
+          />
         )}
-
         {isAiOpen && <AiModal open={isAiOpen} onClose={() => setIsAiOpen(false)} />}
       </Suspense>
 
-      <div className="hidden lg:block fixed bottom-2 right-3 z-50 text-[10px] text-steel-500"><span className="px-2 py-[2px] rounded border border-red-600/30 bg-black/70 backdrop-blur font-mono tracking-wider">Reload Tracker {APP_VERSION_LABEL}</span></div>
+      <div className="hidden lg:block fixed bottom-2 right-3 z-50 text-[10px] text-steel-500">
+        <span className="px-2 py-[2px] rounded border border-red-600/30 bg-black/70 backdrop-blur font-mono tracking-wider">
+          Reload Tracker {APP_VERSION_LABEL}
+        </span>
+      </div>
     </div>
   )
 }

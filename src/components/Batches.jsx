@@ -1,8 +1,8 @@
 
-import { useEffect, useState, useMemo } from 'react'
-import { getBatches, deleteBatch, updateBatch } from '../lib/batches'
+import { useState, useEffect, useMemo } from 'react'
+import { deleteBatch, updateBatch } from '../lib/batches'
 import { printBatchLabel } from '../lib/labels'
-import { getCurrentUser, ROLE_ADMIN } from '../lib/auth'
+import { useAppStore } from '../lib/store'
 import { Printer, Edit2, Trash2, Check, X, ChevronDown, ChevronUp, Layers } from 'lucide-react'
 import { InfoTip } from './InfoTip'
 
@@ -41,23 +41,15 @@ function RoundBar({ count, max }) {
 
 /* ── MAIN COMPONENT ─────────────────────────────────────────── */
 export function Batches({ highlightId }) {
-  const [batches,       setBatches]       = useState([])
-  const [loading,       setLoading]       = useState(true)
-  const [error,         setError]         = useState('')
-  const [isAdmin,       setIsAdmin]       = useState(false)
-  const [editingId,     setEditingId]     = useState(null)
-  const [editNotes,     setEditNotes]     = useState('')
+  const { batches, loading, currentUser, refresh } = useAppStore()
+  const isAdmin = currentUser?.role === 'admin'
+
+  const [error,          setError]          = useState('')
+  const [editingId,      setEditingId]      = useState(null)
+  const [editNotes,      setEditNotes]      = useState('')
   const [verifyDeleteId, setVerifyDeleteId] = useState(null)
-  const [expanded,      setExpanded]      = useState({})
+  const [expanded,       setExpanded]       = useState({})
 
-  useEffect(() => {
-    const controller = new AbortController()
-    checkAdmin()
-    loadHistory(controller.signal)
-    return () => controller.abort()
-  }, [])
-
-  // Scroll-to-highlight
   useEffect(() => {
     if (highlightId && batches.length > 0) {
       const el = document.getElementById(`batch-${highlightId}`)
@@ -67,23 +59,6 @@ export function Batches({ highlightId }) {
       }
     }
   }, [highlightId, batches])
-
-  async function checkAdmin() {
-    const user = await getCurrentUser()
-    setIsAdmin(user && user.role === ROLE_ADMIN)
-  }
-
-  async function loadHistory(signal) {
-    try {
-      setLoading(true)
-      const data = await getBatches(signal)
-      setBatches(data)
-    } catch (err) {
-      if (err?.name !== 'AbortError') setError('Unable to load batch history.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   function startEdit(batch) {
     setEditingId(batch.id)
@@ -96,17 +71,21 @@ export function Batches({ highlightId }) {
   async function saveEdit(id) {
     try {
       await updateBatch(id, { notes: editNotes })
-      setBatches(prev => prev.map(b => b.id === id ? { ...b, notes: editNotes } : b))
       setEditingId(null)
-    } catch (err) { console.error(err) }
+      refresh()
+    } catch (err) {
+      setError(err.message || 'Failed to save note.')
+    }
   }
 
   async function handleRemove(id) {
     setVerifyDeleteId(null)
     try {
       await deleteBatch(id)
-      setBatches(prev => prev.filter(b => b.id !== id))
-    } catch (err) { console.error(err) }
+      refresh()
+    } catch (err) {
+      setError(err.message || 'Failed to delete batch.')
+    }
   }
 
   const handlePrint = (batch) => printBatchLabel({ ...batch, recipe: batch.recipe || 'Custom Load', components: batch.components || '', date: batch.date })
