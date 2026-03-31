@@ -51,9 +51,9 @@ function NoData({ message = "No data recorded" }) {
 }
 
 function ForecastItem({ item }) {
-    let colorClass = "bg-copper-500"
+    let colorClass = "bg-steel-500"
     if (item.days < 30) colorClass = "bg-red-600 animate-pulse"
-    else if (item.days < 90) colorClass = "bg-amber-500"
+    else if (item.days < 90) colorClass = "bg-steel-400"
 
     return (
         <div className="flex items-center justify-between p-3 bg-black/40 border border-steel-700 rounded-md mb-2 last:mb-0">
@@ -64,7 +64,7 @@ function ForecastItem({ item }) {
                     <div className="text-[10px] text-steel-500 flex items-center gap-2">
                         <span>{item.rounds.toLocaleString()} rnds left</span>
                         <span className="text-steel-500">•</span>
-                        <span className="text-orange-400 font-mono flex items-center gap-0.5">
+                        <span className="text-steel-400 font-mono flex items-center gap-0.5">
                             <Flame size={8}/> {item.burnRate}/mo
                         </span>
                     </div>

@@ -180,8 +180,8 @@ export function SupplyChain() {
 
                                         <div className="flex border-t border-steel-700 divide-x divide-steel-700 bg-black/60">
                                             <a href={item.url} target="_blank" className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-blue-400 hover:bg-blue-900/10 transition" title="Visit Link"><ExternalLink size={14}/></a>
-                                            <button onClick={() => handleRefresh(item.id)} disabled={isRefreshing} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-copper-400 hover:bg-copper-900/10 transition" title="Refresh Price"><RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""}/></button>
-                                            <button onClick={() => setEditItem(item)} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-amber-400 hover:bg-amber-900/10 transition" title="Edit Item"><Edit size={14}/></button>
+                                            <button onClick={() => handleRefresh(item.id)} disabled={isRefreshing} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-steel-200 hover:bg-steel-700/20 transition" title="Refresh Price"><RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""}/></button>
+                                            <button onClick={() => setEditItem(item)} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-steel-200 hover:bg-steel-700/20 transition" title="Edit Item"><Edit size={14}/></button>
                                             <button onClick={() => setDeleteId(item.id)} className="flex-1 py-2 flex items-center justify-center text-steel-400 hover:text-red-500 hover:bg-red-900/10 transition" title="Delete Tracker"><Trash2 size={14}/></button>
                                         </div>
                                     </div>

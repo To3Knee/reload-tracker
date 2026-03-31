@@ -481,13 +481,12 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   const liveSmartPrice = getSmartPrice(form.componentType, liveUnitCost);
 
   return (
-    <div className="space-y-6">
+    <>
       {/* HIDDEN READER (Invisible but Renderable) */}
       <div id="reader-hidden" className="fixed top-0 left-0 w-px h-px opacity-0 overflow-hidden pointer-events-none"></div>
-      
       {/* FILE INPUT (System Camera Trigger) */}
       <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileScan} />
-
+    <div className="space-y-6">
       {/* HEADER */}
       <div className="rt-section">
         <div className="rt-section-bar" />
@@ -699,5 +698,6 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
         </div>
       )}
     </div>
+    </>
   )
 }

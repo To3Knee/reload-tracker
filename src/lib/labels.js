@@ -64,11 +64,11 @@ const SHARED_CSS = `
     border: 1px solid #2a2a2a;
   }
 
-  /* Copper top-line accent */
+  /* Red top-line accent */
   .label-card::before {
     content: '';
     position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, transparent 0%, #b87333 30%, #d4a843 50%, #b87333 70%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, #c42b21 30%, #e05252 50%, #c42b21 70%, transparent 100%);
     z-index: 10;
   }
 
@@ -89,22 +89,22 @@ const SHARED_CSS = `
   /* ── TYPOGRAPHY ── */
   .eyebrow {
     font-size: 5.5px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.22em; color: #b87333;
+    letter-spacing: 0.22em; color: #c42b21;
     margin-bottom: 1px;
   }
   .main-title {
     font-size: 9.5px; font-weight: 900; text-transform: uppercase;
-    color: #f0ece4; line-height: 1.1; letter-spacing: -0.01em;
+    color: #f2f2f4; line-height: 1.1; letter-spacing: -0.01em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .sub-title {
-    font-size: 7.5px; font-weight: 600; color: #9a9590;
+    font-size: 7.5px; font-weight: 600; color: #82828e;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     line-height: 1.2; margin-top: 1px;
   }
   .detail-row {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 6.5px; color: #d4a843; letter-spacing: 0.04em;
+    font-size: 6.5px; color: #f2f2f4; letter-spacing: 0.04em;
     white-space: nowrap; overflow: hidden;
   }
   .footer-row {
@@ -113,7 +113,7 @@ const SHARED_CSS = `
   .lot-badge {
     font-family: 'JetBrains Mono', monospace;
     font-size: 5.5px; font-weight: 700;
-    color: #b87333; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #c42b21; letter-spacing: 0.12em; text-transform: uppercase;
   }
   .type-badge {
     font-size: 5px; font-weight: 800; text-transform: uppercase;
@@ -144,7 +144,7 @@ export async function printBatchLabel(batch) {
   const appUrl = window.location.origin
   const qrUrl  = `${appUrl}?batchId=${batch.id}`
   const qrDataUri = await QRCode.toDataURL(qrUrl, { width: 80, margin: 0, errorCorrectionLevel: 'L',
-    color: { dark: '#d4a843', light: '#060606' } })
+    color: { dark: '#c42b21', light: '#060606' } })
 
   const components = batch.components?.split(',')[0]?.trim() || 'Load Data'
   const dateStr    = batch.date || ''
@@ -193,7 +193,7 @@ export async function printPurchaseLabel(purchase) {
   const appUrl = window.location.origin
   const qrUrl  = `${appUrl}?purchaseId=${purchase.id}`
   const qrDataUri = await QRCode.toDataURL(qrUrl, { width: 80, margin: 0, errorCorrectionLevel: 'L',
-    color: { dark: '#d4a843', light: '#060606' } })
+    color: { dark: '#c42b21', light: '#060606' } })
 
   const type      = (purchase.componentType || 'Component').toUpperCase()
   const brand     = purchase.brand || ''

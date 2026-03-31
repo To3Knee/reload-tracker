@@ -218,10 +218,10 @@ export function Market({ user }) {
 
                                     {/* ACTIONS (Top Right) */}
                                     <div className="absolute top-2 right-2 flex gap-2">
-                                        <button onClick={() => handleRefresh(item.id)} className={`rt-btn rt-btn-icon backdrop-blur-md ${refreshingId === item.id ? 'animate-spin text-copper-400' : ''}`}>
+                                        <button onClick={() => handleRefresh(item.id)} className={`rt-btn rt-btn-icon backdrop-blur-md ${refreshingId === item.id ? 'animate-spin text-steel-300' : ''}`}>
                                             <RefreshCw size={14} />
                                         </button>
-                                        <button onClick={() => setEditingItem(item)} className="rt-btn rt-btn-icon backdrop-blur-md hover:text-amber-400 hover:border-amber-700">
+                                        <button onClick={() => setEditingItem(item)} className="rt-btn rt-btn-icon backdrop-blur-md hover:text-steel-200 hover:border-steel-500">
                                             <Edit size={14} />
                                         </button>
                                         <button onClick={() => promptDelete(item)} className="rt-btn rt-btn-icon backdrop-blur-md hover:text-red-400 hover:border-red-700">
@@ -259,7 +259,7 @@ export function Market({ user }) {
                                             href={item.url} 
                                             target="_blank" 
                                             rel="noreferrer" 
-                                            className="rt-btn rt-btn-ghost text-copper-400 hover:text-copper-300 hover:border-copper-700"
+                                            className="rt-btn rt-btn-ghost hover:text-steel-200 hover:border-steel-500"
                                         >
                                             Store Page <ExternalLink size={10} />
                                         </a>
