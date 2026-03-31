@@ -617,7 +617,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                             <div className="col-span-2 md:col-span-4 flex flex-col items-end mt-1">
                                 <span className="text-[10px] text-steel-300">Cost per Unit: <span className="text-steel-100 font-mono">{formatMoney(liveUnitCost)}</span></span>
                                 {liveSmartPrice.val !== liveUnitCost && (
-                                    <span className="text-xs text-brass-300 font-bold">{liveSmartPrice.label}: {formatMoney(liveSmartPrice.val)}</span>
+                                    <span className="text-xs text-steel-200 font-bold">{liveSmartPrice.label}: {formatMoney(liveSmartPrice.val)}</span>
                                 )}
                             </div>
                         </div>
@@ -669,9 +669,9 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                                         <div className="mt-3 md:mt-0 flex flex-wrap items-center justify-between md:justify-end gap-x-6 gap-y-4">
                                             <div className="text-left md:text-right flex flex-col justify-center">
                                                 <span className="text-sm font-bold text-steel-100 leading-none">{p.qty} <span className="text-xs font-normal text-steel-400">{p.unit}</span></span>
-                                                <span className="text-xs font-bold text-brass-300 mt-1">
+                                                <span className="text-xs font-bold text-steel-100 mt-1">
                                                     {formatMoney(smartPrice.val)}
-                                                    <span className="text-[10px] font-normal text-brass-400/80"> / {smartPrice.label.split(' / ')[1]}</span>
+                                                    <span className="text-[10px] font-normal text-steel-400"> / {smartPrice.label.split(' / ')[1]}</span>
                                                 </span>
                                                 {isPowder && (<span className="block text-[9px] text-steel-400 mt-0.5 font-mono">(${grainCost.toFixed(4)}/gr)</span>)}
                                             </div>

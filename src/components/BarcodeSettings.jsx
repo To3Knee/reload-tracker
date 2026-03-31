@@ -120,11 +120,11 @@ export function BarcodeSettings({ settings, onSave }) {
                         {/* TOGGLE SWITCH UI */}
                         <button 
                             onClick={() => setEnabled(!enabled)}
-                            className={`relative w-12 h-6 rounded-full transition-colors duration-200 ease-in-out border ${enabled ? 'bg-copper-900/50 border-copper-700' : 'bg-steel-700 border-steel-600'}`}
+                            className={`relative w-12 h-6 rounded-full transition-colors duration-200 ease-in-out border ${enabled ? 'bg-steel-500 border-steel-400' : 'bg-steel-700 border-steel-600'}`}
                         >
-                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${enabled ? 'translate-x-6 bg-copper-400' : 'translate-x-0.5 bg-steel-400'}`} />
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${enabled ? 'translate-x-6 bg-white' : 'translate-x-0.5 bg-steel-400'}`} />
                         </button>
-                        <span className={`ml-3 text-[10px] font-bold uppercase tracking-wider ${enabled ? 'text-copper-400' : 'text-steel-500'}`}>
+                        <span className={`ml-3 text-[10px] font-bold uppercase tracking-wider ${enabled ? 'text-steel-100' : 'text-steel-500'}`}>
                             {enabled ? 'Active' : 'Off'}
                         </span>
                     </div>
@@ -165,7 +165,7 @@ export function BarcodeSettings({ settings, onSave }) {
 
                     <div className="flex justify-between items-center pt-2">
                         <div className="flex-1 mr-4">
-                            {message && <span className={`text-[10px] font-medium ${message.type === 'success' ? 'text-copper-400' : 'text-red-400'}`}>{message.text}</span>}
+                            {message && <span className={`text-[10px] font-medium ${message.type === 'success' ? 'text-steel-200' : 'text-red-400'}`}>{message.text}</span>}
                         </div>
                         <div className="flex gap-2">
                             <button onClick={handleTest} disabled={saving || testing || !enabled} className="rt-btn rt-btn-ghost disabled:opacity-50"><Zap size={12}/> {testing ? 'Testing...' : 'Test'}</button>

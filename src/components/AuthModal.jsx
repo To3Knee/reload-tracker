@@ -30,7 +30,7 @@ const PasswordInput = ({ value, onChange, show, onToggle, placeholder = "Passwor
   <div className="relative">
       <input 
           type={show ? "text" : "password"}
-          className="w-full bg-steel-900 border border-steel-700 rounded-md px-3 py-2 text-[11px] text-steel-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-steel-500 pr-10"
+          className="rt-input pr-10"
           placeholder={placeholder} 
           value={value} 
           onChange={onChange}
@@ -214,7 +214,7 @@ export default function AuthModal({
   
   if (!open) return null
 
-  const inputClass = "w-full bg-steel-900 border border-steel-700 rounded-md px-3 py-2 text-[11px] text-steel-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition placeholder:text-steel-500"
+  const inputClass = "rt-input"
   const labelClass = "block text-xs font-semibold text-steel-300 mb-1"
   const subLabelClass = "text-[10px] text-steel-500 font-normal ml-2 italic tracking-normal"
   const tabBtnClass = (active) => `px-4 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0 ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-steel-700 text-steel-400 hover:text-steel-200'}`
@@ -249,13 +249,13 @@ export default function AuthModal({
                 <form onSubmit={handleLoginSubmit} className="space-y-3 mt-2">
                     <div><label className={labelClass}>Username</label><input className={inputClass} value={loginForm.username} onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))} /></div>
                     <div><label className={labelClass}>Password</label><PasswordInput value={loginForm.password} onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))} show={showLoginPass} onToggle={() => setShowLoginPass(!showLoginPass)} /></div>
-                    <div className="pt-2"><button type="submit" disabled={busy} className="w-full py-3 rounded-md bg-red-700 hover:bg-red-600 text-xs font-bold text-white transition shadow-lg shadow-red-900/20"><LogIn size={14} className="inline mr-2"/>{busy ? 'Verifying...' : 'Authenticate'}</button></div>
+                    <div className="pt-2"><button type="submit" disabled={busy} className="rt-btn rt-btn-primary w-full justify-center disabled:opacity-50"><LogIn size={14}/>{busy ? 'Verifying...' : 'Authenticate'}</button></div>
                 </form>
             </div>
           ) : (
-             <div className="mt-auto"><button type="button" onClick={onLogout} className="w-full py-2 rounded-md border border-steel-600 hover:bg-steel-700 text-xs font-semibold text-steel-300 transition">Sign Out</button></div>
+             <div className="mt-auto"><button type="button" onClick={onLogout} className="rt-btn rt-btn-ghost w-full justify-center">Sign Out</button></div>
           )}
-          {(statusMessage || errorMessage) && (<div className="mt-4 p-3 rounded-md bg-black/40 border border-steel-700">{statusMessage && <p className="text-[10px] text-[var(--copper)]">{statusMessage}</p>}{errorMessage && <p className="text-[10px] text-red-400">{errorMessage}</p>}</div>)}
+          {(statusMessage || errorMessage) && (<div className="mt-4 p-3 rounded-md bg-black/40 border border-steel-700">{statusMessage && <p className="text-[10px] text-steel-300">{statusMessage}</p>}{errorMessage && <p className="text-[10px] text-red-400">{errorMessage}</p>}</div>)}
         </div>
 
         {/* RIGHT PANEL: ADMIN FEATURES */}
@@ -370,7 +370,7 @@ export default function AuthModal({
                           <div><h4 className="text-xs font-bold text-amber-400">Database Console</h4><p className="text-[10px] text-amber-400/70">Execute raw SQL commands. USE CAUTION.</p></div>
                       </div>
                       <textarea className="w-full h-48 bg-steel-900 border border-steel-600 rounded-md p-4 rt-data text-xs text-[var(--brass)] focus:border-red-500 focus:outline-none resize-none" placeholder="SELECT * FROM users;" value={sqlQuery} onChange={e => setSqlQuery(e.target.value)} spellCheck={false} />
-                      <div className="flex justify-end"><button onClick={runQuery} disabled={busy} className="px-6 py-2 bg-red-700 hover:bg-red-600 text-white font-bold rounded-md flex items-center gap-2 transition text-xs"><Play size={14} fill="currentColor" /> Execute Query</button></div>
+                      <div className="flex justify-end"><button onClick={runQuery} disabled={busy} className="rt-btn rt-btn-primary disabled:opacity-50 flex items-center gap-2"><Play size={14} fill="currentColor" /> Execute Query</button></div>
                       {sqlResult && (<div className={`p-4 rounded-md border flex-1 overflow-hidden flex flex-col ${sqlResult.success ? 'bg-steel-800/50 border-steel-600' : 'bg-red-900/20 border-red-500/50'}`}><div className="flex items-center gap-2 mb-2 flex-shrink-0">{sqlResult.success ? <CheckCircle size={16} className="text-[var(--copper)]"/> : <AlertTriangle size={16} className="text-red-500"/>}<span className="text-xs font-bold text-steel-100">{sqlResult.success ? 'Success' : 'Error'}</span><span className="text-[10px] text-steel-400 ml-auto">{sqlResult.message || ''}</span></div>{sqlResult.error && <pre className="text-[10px] text-red-400 whitespace-pre-wrap font-mono">{sqlResult.error}</pre>}{sqlResult.rows && (<div className="overflow-auto custom-scrollbar flex-1"><table className="w-full text-left text-[10px] text-steel-200 border-collapse"><thead className="sticky top-0 bg-steel-800 text-steel-400 font-bold border-b border-steel-600"><tr>{Object.keys(sqlResult.rows[0] || {}).map(k => <th key={k} className="p-2 whitespace-nowrap">{k}</th>)}</tr></thead><tbody>{sqlResult.rows.map((row, i) => (<tr key={i} className="border-b border-steel-700/50 hover:bg-white/5">{Object.values(row).map((v, j) => <td key={j} className="p-2 whitespace-nowrap max-w-[200px] truncate">{v === null ? 'NULL' : String(v)}</td>)}</tr>))}</tbody></table></div>)}</div>)}
                   </div>
               )}

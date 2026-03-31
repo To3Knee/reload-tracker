@@ -243,7 +243,7 @@ export function Market({ user }) {
                                     <div className="flex justify-between items-end">
                                         <div>
                                             <p className="text-[10px] text-steel-400 uppercase tracking-wide">Price</p>
-                                            <p className="text-lg font-mono font-bold text-brass-300">{formatCurrency(item.price)}</p>
+                                            <p className="text-lg font-mono font-bold text-steel-100">{formatCurrency(item.price)}</p>
                                         </div>
                                         {(item.qty_per_unit > 1 && item.price > 0) && (
                                             <div className="text-right">
