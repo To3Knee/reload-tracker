@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: Market.jsx
-//Script Location: src/components/Market.jsx
-//Date: 12/19/2025
-//Created By: T03KNEE
-//Version: 5.5.0 (Red Badge UI)
-//About: Market Watch Dashboard.
-//       - UI: Changed Classification Badge to Red (App Theme).
-//===============================================================
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'

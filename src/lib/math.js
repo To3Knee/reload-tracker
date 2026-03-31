@@ -1,15 +1,3 @@
-//===============================================================
-//Script Name: math.js
-//Script Location: src/lib/math.js
-//Date: 12/12/2025
-//Created By: T03KNEE
-//Version: 3.1.0 (Safe Rounding)
-//About: Complete mathematical engine.
-//       - INCLUDES: Financials (Cost/Unit, Lot Totals).
-//       - INCLUDES: Statistics (Avg, SD, ES for Range Logs).
-//       - INCLUDES: Conversions (Grains/Lbs/Kg).
-//       - FEATURE: Added Currency Formatting helpers.
-//===============================================================
 
 // --- CONSTANTS ---
 export const GRAINS_PER_LB = 7000

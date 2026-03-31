@@ -1,13 +1,3 @@
-//===============================================================
-//Script Name: UploadButton.jsx
-//Script Location: src/components/UploadButton.jsx
-//Date: 11/29/2025
-//Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.0.0
-//About: UI Component for Camera Capture & Cloudinary Upload.
-//       States: Idle -> Uploading (Progress) -> Preview
-//===============================================================
 
 import { useState, useRef } from 'react'
 import { Camera, UploadCloud, X, Loader2, Image as ImageIcon } from 'lucide-react'

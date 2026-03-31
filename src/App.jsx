@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: App.jsx
-//Script Location: src/App.jsx
-//Date: 12/19/2025
-//Created By: T03KNEE
-//Version: 4.1.0 (Auth Prop Fix)
-//About: Root shell. 
-//       - FIX: Passing 'currentUser' to Purchases component so Market Watch works.
-//===============================================================
 
 import { useEffect, useState, useRef, lazy, Suspense, useCallback } from 'react'
 import Navbar from './components/Navbar'
@@ -17,7 +8,7 @@ import { Recipes } from './components/Recipes'
 import { Batches } from './components/Batches'
 import { RangeLogs } from './components/RangeLogs'
 import { Armory } from './components/Armory'
-import { getAllPurchases, getAllRecipes, seedData } from './lib/db'
+import { getAllPurchases, getAllRecipes } from './lib/db'
 import { APP_VERSION_LABEL } from './version'
 import { fetchSettings } from './lib/settings'
 import { getCurrentUser, logoutUser, ROLE_ADMIN } from './lib/auth'
@@ -82,7 +73,6 @@ export default function App() {
 
   // Consolidated Data Loader
   const loadInitialData = async (signal) => {
-    await seedData()
     await refreshAllData(signal)
 
     const params = new URLSearchParams(window.location.search)

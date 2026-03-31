@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: BarcodeSettings.jsx
-//Script Location: src/components/BarcodeSettings.jsx
-//Date: 12/13/2025
-//Created By: T03KNEE
-//Version: 2.3.0 (UI Polish)
-//About: Admin settings for Barcode Provider configuration.
-//       - FIX: Changed Toggle to a Visual Switch for clarity.
-//===============================================================
 
 import { useState, useEffect } from 'react'
 import { Save, ScanBarcode, Zap, ChevronDown, Key, AlertTriangle, Eye, EyeOff } from 'lucide-react'

@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: SupplyChain.jsx
-//Script Location: src/components/SupplyChain.jsx
-//Date: 12/10/2025
-//Created By: T03KNEE
-//Version: 2.6.0
-//About: Market Intelligence.
-//       - FIX: Added missing ShoppingCart icon import.
-//===============================================================
 
 import { useState, useEffect } from 'react'
 // FIX: Added ShoppingCart to imports below

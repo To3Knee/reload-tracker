@@ -1,14 +1,3 @@
-//===============================================================
-//Script Name: Recipes.jsx
-//Script Location: src/components/Recipes.jsx
-//Date: 12/14/2025
-//Created By: T03KNEE
-//Version: 12.6.0 (Logo & Field Fix)
-//About: Manage recipes. 
-//       - FIX: Restored missing "Zero Distance" and "Group Size" inputs.
-//       - FIX: Increased PDF Logo size significantly (30px -> 75px).
-//       - UI: Organized inputs into "Geometry & Ballistics".
-//===============================================================
 
 import { useEffect, useState, useMemo } from 'react'
 import {

@@ -1,14 +1,3 @@
-//===============================================================
-//Script Name: Purchases.jsx
-//Script Location: src/components/Purchases.jsx
-//Date: 12/23/2025
-//Created By: T03KNEE
-//Version: 30.0.0 (Snake_Case Payload Fix)
-//About: Manage component LOT purchases.
-//       - CRITICAL FIX: Mapped payload keys to snake_case (e.g., lot_id) to match DB schema.
-//                       Sending camelCase (lotId) likely caused "Column cannot be null" errors.
-//       - LOGIC: Retains all previous scanner fixes (Auto-Gen ID, 5-Pass Scan).
-//===============================================================
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'

@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: excel.js
-//Script Location: src/lib/excel.js
-//Date: 11/28/2025
-//Created By: T03KNEE
-//Version: 2.0.0
-//About: Generates professional .xlsx files with styling,
-//       colors, and specific column formatting.
-//===============================================================
 
 import ExcelJS from 'exceljs'
 

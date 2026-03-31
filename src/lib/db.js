@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker Frontend DB Client
-//Script Location: src/lib/db.js
-//Date: 12/07/2025
-//Created By: T03KNEE
-//Version: 1.0.0 (Production Ready)
-//About: Frontend data access layer.
-//       Updated: REMOVED AUTO-SEEDING. No more zombie data.
-//===============================================================
 
 const API_BASE_URL =
   (typeof import.meta !== 'undefined' &&

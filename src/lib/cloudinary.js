@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: cloudinary.js
-//Script Location: src/lib/cloudinary.js
-//Date: 11/29/2025
-//Created By: T03KNEE
-//Version: 1.1.0
-//About: Helper to upload images to Cloudinary via Unsigned Preset.
-//       FIXED: Now properly loads Environment Variables.
-//===============================================================
 
 // LOAD CONFIG FROM ENV
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME

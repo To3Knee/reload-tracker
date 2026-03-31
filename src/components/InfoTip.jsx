@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: InfoTip.jsx
-//Script Location: src/components/InfoTip.jsx
-//Date: 2026-03-31
-//Created By: T03KNEE / Claude
-//About: Reusable tooltip/info tip component.
-//       Four color-coded variants signal info type at a glance.
-//       Opens on hover (desktop) and tap (mobile).
-//===============================================================
 
 import { useState } from 'react'
 import { HelpCircle, Zap, AlertTriangle, Info } from 'lucide-react'

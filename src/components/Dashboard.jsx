@@ -1,13 +1,3 @@
-//===============================================================
-//Script Name: Dashboard.jsx
-//Script Location: src/components/Dashboard.jsx
-//Date: 12/14/2025
-//Created By: T03KNEE
-//Version: 5.3.0 (Ammo Box Update)
-//About: Live Round Calculator + ROI Engine.
-//       - TWEAK: Default Lot Size changed to 20 (Standard Rifle Box).
-//       - FEATURE: Added "Per 20" cost breakdown row.
-//===============================================================
 
 import { useEffect, useMemo, useState } from 'react'
 import { saveRecipe } from '../lib/db'

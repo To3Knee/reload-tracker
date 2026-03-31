@@ -1,11 +1,3 @@
-//===============================================================
-//Script Name: Inventory.jsx
-//Script Location: src/components/Inventory.jsx
-//Date: 02/25/2026
-//Created By: T03KNEE
-//Version: 3.0.0 — Design system v4 applied
-//About: Inventory overview and capacity planning.
-//===============================================================
 
 import { useMemo } from 'react'
 import { formatCurrency } from '../lib/db'

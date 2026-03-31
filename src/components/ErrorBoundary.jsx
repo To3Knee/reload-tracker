@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: ErrorBoundary.jsx
-//Script Location: src/components/ErrorBoundary.jsx
-//Date: 02/25/2026
-//Created By: T03KNEE
-//Version: 1.0.0
-//About: React Error Boundary. Catches uncaught component errors
-//       so the whole app doesn't go blank. Shows a reload prompt.
-//===============================================================
 
 import React from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'

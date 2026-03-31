@@ -1,15 +1,3 @@
-//===============================================================
-//Script Name: AiModal.jsx
-//Script Location: src/components/AiModal.jsx
-//Date: 12/12/2025
-//Created By: T03KNEE
-//Version: 6.0.0 (Design System v5 — Terminal Redesign)
-//About: Ballistics AI chat terminal interface.
-//       - FIX: Mobile Input set to 16px (text-base) to prevent iOS auto-zoom.
-//       - FIX: Container uses 100dvh to handle mobile browser address bars.
-//       - v6: JetBrains Mono force-applied via terminal-ui class.
-//             Copper/brass accent system. Immersive terminal aesthetic.
-//===============================================================
 
 import { useState, useEffect, useRef } from 'react'
 import { X, Send, Bot, Trash2, RefreshCw, Cpu, ShieldCheck, TerminalSquare, ChevronRight, Zap } from 'lucide-react'

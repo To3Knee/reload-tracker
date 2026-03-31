@@ -1,13 +1,3 @@
-//===============================================================
-//Script Name: ScannerModal.jsx
-//Script Location: src/components/ScannerModal.jsx
-//Date: 12/23/2025
-//Created By: T03KNEE
-//Version: 1.0.0
-//About: Bulletproof Mobile Barcode Scanner.
-//       - FIX: Handles React Strict Mode (prevents "Camera Busy" flashing).
-//       - FIX: Proper cleanup on close.
-//===============================================================
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'

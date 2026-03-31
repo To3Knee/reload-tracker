@@ -1,14 +1,3 @@
-//===============================================================
-//Script Name: Batches.jsx
-//Script Location: src/components/Batches.jsx
-//Date: 02/25/2026
-//Created By: T03KNEE
-//Version: 3.0.0 (Production Log Redesign)
-//About: Production Log — stats banner + timeline layout.
-//  - Lifetime rounds, monthly production, top caliber stats
-//  - Timeline entry cards with component type chips
-//  - Inline note editing with confirmation
-//===============================================================
 
 import { useEffect, useState, useMemo } from 'react'
 import { getBatches, deleteBatch, updateBatch } from '../lib/batches'

@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: batches.js
-//Script Location: src/lib/batches.js
-//Date: 11/29/2025
-//Created By: T03KNEE
-//Version: 1.2.0
-//About: Client-side helper for Batches API.
-//       Standardized to match Range/Cloudinary implementation.
-//===============================================================
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 

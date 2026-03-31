@@ -1,14 +1,3 @@
-//===============================================================
-//Script Name: Analytics.jsx
-//Script Location: src/components/Analytics.jsx
-//Date: 12/12/2025
-//Created By: T03KNEE
-//Version: 4.6.0 (Visual Polish)
-//About: Visualizes cost history and production metrics. 
-//       - FIX: "Inventory Value" tooltip text is now white/readable.
-//       - FIX: "Production Volume" tooltip now formats numbers (e.g. 1,000 rnds).
-//       - FIX: Explicit text contrast styles for all charts.
-//===============================================================
 
 import { useEffect, useState } from 'react'
 import { 

@@ -1,13 +1,3 @@
-//===============================================================
-//Script Name: Reload Tracker Frontend Auth Client
-//Script Location: src/lib/auth.js
-//Date: 12/07/2025
-//Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.2.0
-//About: Client-side authentication helper.
-//       Updated: Added permanentlyDeleteUser function.
-//===============================================================
 
 const API_BASE_URL =
   (typeof import.meta !== 'undefined' &&

@@ -1,14 +1,3 @@
-//===============================================================
-//Script Name: RangeLogs.jsx
-//Script Location: src/components/RangeLogs.jsx
-//Date: 12/12/2025
-//Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 5.7.1 (Instructional Error Messages)
-//About: Range Logs management.
-//       - FIX: Updated GPS Error messages to guide user to iOS Settings manually
-//              (since PWAs cannot deep-link to system settings).
-//===============================================================
 
 import { useEffect, useState } from 'react'
 import { getRangeLogs, createRangeLog, updateRangeLog, deleteRangeLog } from '../lib/range'

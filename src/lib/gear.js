@@ -1,11 +1,3 @@
-//===============================================================
-//Script Name: gear.js
-//Script Location: src/lib/gear.js
-//Date: 12/07/2025
-//Created By: T03KNEE
-//Version: 1.0.0
-//About: Client-side API for Gear Locker.
-//===============================================================
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 

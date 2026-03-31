@@ -1,10 +1,3 @@
-//===============================================================
-//Script Name: ai.js
-//Script Location: src/lib/ai.js
-//Date: 11/30/2025
-//Created By: T03KNEE
-//About: Client-side helper to talk to the AI Netlify Function.
-//===============================================================
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 

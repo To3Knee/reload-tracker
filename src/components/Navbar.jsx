@@ -1,11 +1,3 @@
-//===============================================================
-//Script Name: Navbar.jsx
-//Script Location: src/components/Navbar.jsx
-//Date: 02/25/2026
-//Created By: T03KNEE
-//Version: 4.0.0 (Precision Engineering Redesign)
-//About: Unified nav. Desktop = top bar. Mobile = slim header + bottom tabs.
-//===============================================================
 
 import { Settings, Bot } from 'lucide-react'
 import logo from '../assets/logo.png'

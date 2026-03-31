@@ -1,11 +1,3 @@
-//===============================================================
-//Script Name: haptics.js
-//Script Location: src/lib/haptics.js
-//Date: 11/30/2025
-//Created By: T03KNEE
-//Version: 1.0.0
-//About: Safe wrapper for the Web Vibration API.
-//===============================================================
 
 /**
  * Triggers a short vibration on supported devices (Android).

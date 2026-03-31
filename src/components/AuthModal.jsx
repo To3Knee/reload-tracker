@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: AuthModal.jsx
-//Script Location: src/components/AuthModal.jsx
-//Date: 12/13/2025
-//Created By: T03KNEE
-//Version: 6.1.0 (Scanner Tab Added)
-//About: Login/Admin Modal.
-//       - FEATURE: Added 'Scanner' tab to integrate BarcodeSettings.
-//===============================================================
 
 import { useEffect, useState } from 'react'
 import { X, Shield, UserCircle2, Users, LogIn, Lock, Settings, Bot, AlertTriangle, ChevronDown, Eye, EyeOff, Ban, Trash2, Power, Save, Key, Terminal, Play, CheckCircle, Database, Zap, ScanBarcode } from 'lucide-react'

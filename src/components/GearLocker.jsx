@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: GearLocker.jsx
-//Script Location: src/components/GearLocker.jsx
-//Date: 12/08/2025
-//Created By: T03KNEE
-//Version: 1.6.0
-//About: Manage accessories.
-//       - FIX: Removed browser alerts (Added Error Banner).
-//===============================================================
 
 import { useState, useEffect } from 'react'
 import { getGear, saveGear, deleteGear } from '../lib/gear'

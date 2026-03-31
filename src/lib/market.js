@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: market.js
-//Script Location: src/lib/market.js
-//Date: 12/12/2025
-//Created By: T03KNEE
-//Github: https://github.com/To3Knee/reload-tracker
-//Version: 1.1.0 (Mobile Optimized)
-//About: Client-side API for Market Watch with timeouts & robust error handling.
-//===============================================================
 
 // Ensure no trailing slash to prevent double-slash issues (e.g. //api/market)
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');

@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: ballistics.js
-//Script Location: src/lib/ballistics.js
-//Date: 12/12/2025
-//Created By: T03KNEE
-//Version: 3.1.0 (Robust String Matching)
-//About: Scientific Ballistics Engine.
-//       - FIX: guessDiameter now strips spaces to handle "45ACP" vs "45 ACP" consistently.
-//===============================================================
 
 // --- CONSTANTS ---
 const G_GRAVITY = 32.174 // ft/s^2

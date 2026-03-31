@@ -1,17 +1,3 @@
-//===============================================================
-//Script Name: CartridgeVisualizer.jsx
-//Script Location: src/components/CartridgeVisualizer.jsx
-//Date: 02/25/2026
-//Created By: T03KNEE
-//Version: 4.1.0 (Fixed orientation — bullet tip at top)
-//About: Real-time SVG cutaway diagram engine.
-//  Coordinate system: y=0 = bullet TIP (top), y=totalH = case BASE (bottom)
-//  LEFT HALF: External profile with extractor groove & rim
-//  RIGHT HALF: Internal cross-section (powder grains, primer, bullet core)
-//  Accurate ogive geometry per bullet type (Spitzer, RN, BTHP)
-//  Deterministic powder grain scatter (density tracks charge/capacity)
-//  SAAMI-style dimension callouts (COAL, case length)
-//===============================================================
 
 import { useMemo } from 'react'
 

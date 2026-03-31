@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: csv.js
-//Script Location: src/lib/csv.js
-//Date: 11/28/2025
-//Created By: T03KNEE
-//Version: 1.1.1
-//About: Export data arrays to CSV file download.
-//       Updated: Adds BOM for correct Excel character rendering.
-//===============================================================
 
 export function downloadCsv(data, columns, filename) {
   if (!data || !data.length) return

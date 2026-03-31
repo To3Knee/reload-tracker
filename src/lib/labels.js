@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: labels.js
-//Script Location: src/lib/labels.js
-//Date: 02/25/2026
-//Created By: T03KNEE
-//Version: 2.0.0 — Redesigned for Precision Engineering aesthetic
-//About: Generates printable labels (Dymo 30334 / 2.25" x 1.25").
-//       Both label types: Batch (loaded ammo) and Purchase (component LOT).
-//===============================================================
 
 import QRCode from 'qrcode'
 

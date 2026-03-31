@@ -1,13 +1,3 @@
-//===============================================================
-//Script Name: Armory.jsx
-//Script Location: src/components/Armory.jsx
-//Date: 12/10/2025
-//Created By: T03KNEE
-//Version: 3.0.0 (Data Saving Fix)
-//About: The Digital Armory. 
-//       - FIX: Ensures Round Count is sent as integer.
-//       - FIX: Ensures Specs are mapped correctly.
-//===============================================================
 
 import { useEffect, useState, useMemo } from 'react'
 import { getFirearms, saveFirearm, deleteFirearm } from '../lib/armory'

@@ -1,12 +1,3 @@
-//===============================================================
-//Script Name: analytics.js
-//Script Location: src/lib/analytics.js
-//Date: 12/10/2025
-//Created By: T03KNEE
-//Version: 1.2.0
-//About: Client-side API for Analytics.
-//       - FIX: Restored exports for Volume and Forecast.
-//===============================================================
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
