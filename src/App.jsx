@@ -48,7 +48,11 @@ const MENU_ITEMS = [
 
 export default function App() {
   // Navigation & Data State
-  const [activeTab, setActiveTab] = useState('calculator')
+  const VALID_TABS = MENU_ITEMS.map(m => m.id)
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = localStorage.getItem('activeTab')
+    return saved && VALID_TABS.includes(saved) ? saved : 'calculator'
+  })
   const [purchases, setPurchases] = useState([])
   const [recipes, setRecipes] = useState([]) 
   const [selectedRecipe, setSelectedRecipe] = useState(null)
@@ -121,7 +125,7 @@ export default function App() {
 
   const confirmAge = () => { localStorage.setItem('ageConfirmed', 'true'); setAgeConfirmed(true); HAPTIC.click(); }
   const handleUseRecipe = useCallback((recipe) => { setSelectedRecipe(recipe); setActiveTab('calculator'); HAPTIC.soft() }, [])
-  const handleTabChange  = useCallback((t) => { setActiveTab(t); HAPTIC.soft() }, [])
+  const handleTabChange  = useCallback((t) => { setActiveTab(t); localStorage.setItem('activeTab', t); HAPTIC.soft() }, [])
   const handleOpenSettings = useCallback(() => { setIsAuthOpen(true); HAPTIC.click() }, [])
   const handleOpenAi     = useCallback(() => { setIsAiOpen(true); HAPTIC.click() }, [])
   const handleLogin      = useCallback((user) => { setCurrentUser(user); setIsAuthOpen(false); HAPTIC.success() }, [])
