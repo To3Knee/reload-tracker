@@ -226,7 +226,7 @@ export default function App() {
           pb-[calc(72px+env(safe-area-inset-bottom))]
           lg:pt-[88px] lg:pb-10
           transition-transform duration-200"
-        style={{ transform: `translateY(${pullDistance > 0 ? pullDistance / 2 : 0}px)` }}
+        style={pullDistance > 0 ? { transform: `translateY(${pullDistance / 2}px)` } : undefined}
       >
 
         {activeTab === 'calculator' && <Dashboard purchases={purchases} recipes={recipes} selectedRecipe={selectedRecipe} onSelectRecipe={handleUseRecipe} canEdit={!!isAdmin} />}
