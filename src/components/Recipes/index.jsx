@@ -20,7 +20,7 @@ import { BatchModal } from './BatchModal'
 import { RecipeCard } from './RecipeCard'
 
 export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
-  const { recipes, refresh } = useAppStore(s => ({ recipes: s.recipes, refresh: s.refresh }))
+  const { recipes, refresh } = useAppStore()
   const [guns, setGuns] = useState([])
   const [form, setForm] = useState(DEFAULT_FORM)
   const [error, setError] = useState(null)
