@@ -76,9 +76,3 @@ export async function getSetting(key) {
 export async function setSetting(key, value) {
   try { window.localStorage.setItem(`rt_setting_${key}`, JSON.stringify(value)) } catch {}
 }
-
-// --- SEED DATA ENGINE (DISABLED FOR PRODUCTION) ---
-export async function seedData() {
-  // In Production/Demo, we do NOT want to auto-populate data when the user deletes items.
-  // This function is intentionally left empty to prevent "Zombie Data".
-}
