@@ -53,7 +53,13 @@ export default function App() {
   const [ageConfirmed, setAgeConfirmed] = useState(
     typeof window !== 'undefined' ? localStorage.getItem('ageConfirmed') === 'true' : false
   )
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') !== 'light')
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', !isDark)
+    localStorage.setItem('theme', isDark ? 'dark' : 'light')
+  }, [isDark])
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true)
@@ -172,6 +178,8 @@ export default function App() {
         onOpenAi={handleOpenAi}
         isAiEnabled={aiEnabled}
         menuItems={MENU_ITEMS}
+        isDark={isDark}
+        onToggleTheme={() => setIsDark(d => !d)}
       />
 
       {/* Pull To Refresh indicator */}

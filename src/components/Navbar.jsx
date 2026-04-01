@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings, Bot, MoreHorizontal, X } from 'lucide-react'
+import { Settings, Bot, MoreHorizontal, X, Sun, Moon } from 'lucide-react'
 import logo from '../assets/logo.png'
 
 // Primary 5 tabs always visible in mobile bottom bar
@@ -24,7 +24,9 @@ export default function Navbar({
   onOpenSettings,
   onOpenAi,
   isAiEnabled,
-  menuItems
+  menuItems,
+  isDark = true,
+  onToggleTheme,
 }) {
   const [moreOpen, setMoreOpen] = useState(false)
 
@@ -89,6 +91,10 @@ export default function Navbar({
             <span className="text-[11px] font-bold text-[#f2f2f4] tracking-wide">{sessionName}</span>
             <span className="text-[8px] text-[#484854] uppercase tracking-[0.2em]">{sessionRole}</span>
           </div>
+          <button onClick={onToggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="rt-btn rt-btn-ghost rt-btn-icon">
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
           <button onClick={() => onOpenSettings?.()} title="Settings" className="rt-btn rt-btn-ghost rt-btn-icon">
             <Settings size={16} />
           </button>
@@ -112,6 +118,10 @@ export default function Navbar({
               <Bot size={18} />
             </button>
           )}
+          <button onClick={onToggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="p-2 rounded border border-[#1e1e1e] bg-[#0f0f0f] text-[#484854] active:scale-95 transition-transform">
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <button onClick={() => onOpenSettings?.()}
             className="p-2 rounded border border-[#1e1e1e] bg-[#0f0f0f] text-[#484854] active:scale-95 transition-transform">
             <Settings size={18} />
