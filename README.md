@@ -1,32 +1,13 @@
 <p align="center">
-  <img src="src/assets/logo.png" alt="Reload Tracker logo" width="260">
+  <img src="src/assets/logo.png" alt="Reload Tracker" width="220">
 </p>
 
-<h1 align="center">💥 Reload Tracker 💥</h1>
-
-<p align="center">
-  <strong>The professional inventory & cost management system for reloaders.</strong><br>
-  Now with secure multi-user authentication, audit trails, and precision math.
-</p>
+<h1 align="center">Reload Tracker</h1>
 
 <p align="center">
-  <a href="#"><img alt="ChatGPT" src="https://img.shields.io/badge/ChatGPT-74aa9c?logo=openai&logoColor=white"></a>
-  <a href="#"><img alt="Firefox" src="https://img.shields.io/badge/Firefox-FF7139?logo=firefoxbrowser&logoColor=white"></a>
-  <a href="#"><img alt="Netlify" src="https://img.shields.io/badge/Netlify-%23000000.svg?logo=netlify&logoColor=%2300C7B7"></a>
-  <a href="#"><img alt="Notepad++" src="https://img.shields.io/badge/Notepad++-90E59A.svg?&logo=notepad%2b%2b&logoColor=black"></a>
-  <a href="#"><img alt="Postgres" src="https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white"></a>
-  <a href="#"><img alt="npm" src="https://img.shields.io/badge/npm-CB3837?logo=npm&logoColor=fff"></a>
-  <a href="#"><img alt="Node.js" src="https://img.shields.io/badge/Node.js-6DA55F?logo=node.js&logoColor=white"></a>
-  <a href="#"><img alt="Vite" src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff"></a>
-  <a href="#"><img alt="React" src="https://img.shields.io/badge/React-%2320232a.svg?logo=react&logoColor=%2361DAFB"></a>
-  <a href="#"><img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind%20CSS-%2338B2AC.svg?logo=tailwind-css&logoColor=white"></a>
-  <a href="#"><img alt="TOML" src="https://img.shields.io/badge/TOML-9C4121?logo=toml&logoColor=fff"></a>
-  <a href="#"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=fff"></a>
-  <a href="#"><img alt="iOS" src="https://img.shields.io/badge/iOS-000000?&logo=apple&logoColor=white"></a>
-  <a href="#"><img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white"></a>
-  <a href="#"><img alt="Cloudflare"src="https://img.shields.io/badge/Cloudflare-F38020?logo=Cloudflare&logoColor=white"></a>
+  <strong>Professional inventory, cost management, and ballistics logging for handloaders.</strong><br>
+  Multi-user · PWA · Offline-capable · Precision decimal math
 </p>
-<h2 align="center">LIVE RELOAD TRACKER DEMO</h2>
 
 <p align="center">
   <a href="https://demo.reloadtracker.com">
@@ -34,248 +15,368 @@
   </a>
 </p>
 
----
-
-> ⚠️ **Safety & Responsibility**
->
-> Reload Tracker is a **data management** tool only. Follow local laws, and reload at your own risk. Always verify load data against published manuals
-
----
-
-## 📸 Screenshot 
-
 <p align="center">
-  <img src="docs/screenshot.png" alt="Reload Tracker – main dashboard" width="900">
+  <img alt="React" src="https://img.shields.io/badge/React-20232a?logo=react&logoColor=61DAFB">
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff">
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-38B2AC?logo=tailwind-css&logoColor=white">
+  <img alt="Node.js" src="https://img.shields.io/badge/Node.js-6DA55F?logo=node.js&logoColor=white">
+  <img alt="Postgres" src="https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white">
+  <img alt="Netlify" src="https://img.shields.io/badge/Netlify-000000?logo=netlify&logoColor=00C7B7">
+  <img alt="iOS" src="https://img.shields.io/badge/iOS-000000?logo=apple&logoColor=white">
+  <img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white">
 </p>
 
 ---
 
-## 🎯 Why Reload Tracker?
-
-Reloading costs can get fuzzy fast:
-
-- Powder by the pound (or kilo)  
-- Bullets by the thousand  
-- Primers in sleeves, cases in bulk  
-- Shipping, HazMat, and tax sprinkled on top  
-
-Reload Tracker turns all of that into **clear per-round math** with a **clean, modern UI**:
-
-- No more “🤷‍♂️ I think my 9mm is about 20¢/rd?”
-- Know **exactly** what your match, range, or subsonic loads cost.
-- Keep a living record of every LOT you’ve ever bought.
+> **Safety & Responsibility**
+> Reload Tracker is a **data management tool only**. Always verify load data against published manuals. Reload at your own risk and follow all local laws.
 
 ---
 
-# 📚 Features
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/calculator.png" alt="Live Round Calculator" width="900">
+  <br><em>Live Round Calculator — real-time per-round cost with component breakdown and factory ammo ROI comparison</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/recipes.png" alt="Recipes" width="900">
+  <br><em>Recipes — full load definitions with cartridge visualizer, ballistic stability gauge, and ingredient lots</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/range.png" alt="Range Logs" width="900">
+  <br><em>Range Logs — digital shooting journal with MOA calc, SD/ES tracking, target photos, and PDF binder export</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/armory.png" alt="Armory" width="900">
+  <br><em>Armory — firearms roster with gear locker, round counts, and spec tracking</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/analytics.png" alt="Analytics" width="900">
+  <br><em>Analytics — cost trends, velocity consistency charts, and component spend breakdown</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/mobile.png" alt="Mobile PWA" width="380">
+  <br><em>Installable PWA — full offline support, pull-to-refresh, and haptic feedback on iOS and Android</em>
+</p>
+
+---
+
+## Why Reload Tracker?
+
+Reloading costs are easy to lose track of:
+
+- Powder by the pound or kilo, charged by the grain
+- Bullets by the thousand, priced per hundred
+- Primers in sleeves, cases in bulk
+- Shipping, HazMat fees, and tax on top of everything
+
+Reload Tracker turns all of that into **exact per-round math** with a fast, mobile-first UI:
+
+- No more "I think my 9mm is around 20¢?" — know it to four decimal places
+- Track every LOT you've ever bought with full cost attribution
+- See exactly what your inventory can build right now
+- Keep a complete shooting journal tied to the exact components on your bench
+
+---
+
+## Features
 
 ### 🧮 Live Round Calculator
-The heart of the app.
-- Exact cost per round, per 50/100/1000.
-- Factors in **Brass Reuse**, **HazMat fees**, and **Shipping**.
-- Compare "Saved Scenarios" side-by-side.
+The heart of the app. Select your caliber, recipe, and component lots — the calculator shows:
+- **Exact cost** per round, per 50 / 100 / 1,000, and for a full lot
+- **Brass reuse amortization** — spreads case cost across expected firings
+- **HazMat & shipping** factored into every per-unit price
+- **Factory ammo ROI** — compare your handload cost against a tracked market price
+- **Capacity Engine** — tells you which component is your bottleneck and how many rounds you can build right now
+- **Save Scenarios** — snapshot multiple configs side-by-side
 
-### 🧾 Inventory & Batches
-- Track **LOTs** of Powder, Bullets, Primers, and Brass.
-- **Capacity Engine:** Tells you exactly how many rounds you can build right now.
-- **Batch Logging:** Record exactly when you loaded ammo and which components you used.
-- **QR Label Printing:** Generate 2.25" x 1.25" thermal labels for your ammo boxes. Scan the label to open the log.
+### 📦 Purchases & Inventory
+- Track **LOTs** of powder, bullets, primers, and brass with full cost breakdown
+- Per-unit cost calculated from price + shipping + HazMat/tax combined
+- **Barcode scanner** — scan a UPC from your phone camera or photo to auto-fill product data
+- **Status tracking** — active / depleted / archived
+- Multi-user attribution shows who added or last edited each lot
 
-### 🎯 Range Logs & Ballistics
-- **Digital Range Journal:** Log group sizes, velocities (SD/ES), and weather conditions.
-- **Photo Storage:** Upload target photos directly from your phone (hosted via Cloudinary).
-- **MOA Calculator:** Auto-calculates MOA based on distance and group size.
-- **Binder Export:** Print beautiful, "Pro-style" PDF reports for your physical logbook.
+### 🧪 Recipes
+- Full load definitions: caliber, charge weight, COAL, bullet length, case capacity, profile type
+- Links to specific inventory lots (powder, bullet, primer, brass)
+- **Cartridge visualizer** — live cross-section diagram as you fill out specs
+- **Gyroscopic stability gauge** — calculates Miller stability factor from your firearm's twist rate
+- Archive loads without deleting them
+- Export to **Excel** or print a **Pro-style PDF data sheet** with QR code
 
-### 🛡️ Admin & Security
-- **Invite-Only System:** Admins create accounts for other users.
-- **Secure Auth:** HttpOnly session cookies (no localStorage tokens).
-- **Portable API:** Runs on Netlify Functions or any Node.js server.
+### 📋 Batches
+- Log a production run: "50 rounds of 6.5CM on 2024-11-15, Lot VAR-2024A powder"
+- Inventory auto-decrements on save (powder by grains used, bullets/primers by count)
+- **QR label printing** — generate 2.25" × 1.25" thermal labels for your ammo boxes
+- Scan a label at the range to deep-link directly to that batch
+
+### 🎯 Range Logs
+- **Digital shooting journal**: date, firearm, distance, group size, velocity string, weather, temperature
+- **SD / ES** — enter a velocity string and stats calculate automatically
+- **MOA calculator** — auto-calculates from group size and distance
+- **Target photo upload** — snap and attach a target image from your phone (Cloudinary hosted)
+- **Print to PDF** — high-contrast ballistic certificate for your physical binder, includes QR back-link
+- Deep-link from a QR-coded ammo box directly to the matching range session
+
+### 🔫 Armory
+- Firearms roster with platform, caliber, manufacturer, model, specs, and round count
+- Round count auto-increments when you log a range session
+- **Gear Locker** — track suppressors, optics, bipods, chronographs, and other accessories
+- Auto-fill gear entries from a product URL (scrapes name, price, and image)
+- Link gear to specific firearms
+
+### 📊 Analytics
+- Cost per round over time by caliber
+- Velocity consistency charts (SD and ES trends across sessions)
+- Component spend breakdown
+- Production history (rounds loaded per month)
+
+### 🤖 AI Assistant
+- Optional AI chat assistant (powered by Google Gemini or compatible API)
+- Asks about load data, troubleshooting, or general reloading questions
+- Toggle enabled/disabled from admin settings
+
+### 📱 PWA / Offline
+- Installable as a native app on iOS and Android
+- Offline mode — cached data available without a connection
+- Pull-to-refresh gesture
+- Haptic feedback throughout
+- Ambient offline banner when disconnected
+
+### 🔐 Auth & Multi-User
+- **Invite-only** — admins create accounts, no public registration
+- **HttpOnly session cookies** — no localStorage tokens, resistant to XSS
+- Role system: `admin` (full read/write) and `shooter` (read-only)
+- Full audit trail — every record shows who created and last modified it
+- Password change and user management from Settings
 
 ---
 
-## 🧭 Tour of the App
+## Tab Navigation
 
-The app is organized into clean tabs in the top-right navigation bar:
-
-- **Calculator** – Live round cost calculator.
-- **Purchases** – Add/edit LOTs and see per-unit costs.
-- **Inventory** – High-level investment + capacity overview.
-- **Recipes** – Manage recipes and ballistics data.
-- **Batches** – Track production history and print labels.
-- **Range** – Log shooting sessions and target photos.
-
-### 🧮 Live Round Calculator
-
-Use the **Calculator** tab to see real-time costs:
-- Pick a **caliber** (`9mm`, `.308`, `6.5 Creedmoor`, etc.).
-- Select an optional **recipe** (or run purely manual).
-- Choose which LOTs of **powder, bullets, primers, and brass** you’re pulling from.
-- Enter your **charge weight (grains)** and **brass reuse**.
-
-The calculator shows:
-- Cost per round, per 50 / 100 / 1,000.
-- Detailed per-round breakdown for each component.
-
-### 📦 Batches & QR Codes
-
-The **Batches** tab creates a bridge between your reloading bench and the range:
-1. **Log a Batch:** "I loaded 100 rounds of .308 using Recipe X on Nov 29th."
-2. **Print Label:** Click the printer icon to generate a QR sticker for your ammo box.
-3. **Scan:** At the range, scan the box with your phone to instantly pull up the load data in the app.
-
-### 🎯 Range Performance
-
-The **Range** tab is your performance database:
-- **Log Session:** Enter distance, group size, velocity data, and notes.
-- **Upload Photo:** Use your phone's camera to snap the target. The app auto-resizes and stores it securely.
-- **Print to PDF:** Export a high-contrast page for your physical 3-ring binder, complete with a QR code that links back to the digital record.
+| Tab | Description |
+|-----|-------------|
+| **Calculator** | Live round cost calculator with scenario comparison |
+| **Purchases** | Add and manage inventory lots with per-unit cost |
+| **Inventory** | High-level investment summary and capacity overview |
+| **Recipes** | Load definitions, ballistics, and PDF export |
+| **Batches** | Production history and QR label printing |
+| **Range** | Shooting session journal with photo and PDF export |
+| **Armory** | Firearms roster and gear locker |
+| **Analytics** | Cost and performance charts |
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
-* **Frontend:** React 18, Vite, Tailwind CSS (Glassmorphism theme)
-* **Backend:** Node.js API (Adapter-based for Netlify Functions)
-* **Database:** PostgreSQL (Neon, Supabase, or self-hosted)
-* **Storage:** Cloudinary (for target images)
-* **Auth:** Custom session-based auth with PBKDF2 hashing.
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 18, Vite, Tailwind CSS (glassmorphism dark theme) |
+| **Backend** | Node.js (Netlify Functions or standalone Express-compatible) |
+| **Database** | PostgreSQL — Neon, Supabase, or self-hosted |
+| **Auth** | Custom session auth with bcrypt password hashing |
+| **Storage** | Cloudinary (target photos and gear images) |
+| **PWA** | vite-plugin-pwa + Workbox service worker |
 
-### 📦 Core Dependencies
-The app relies on these packages (auto-installed via `npm install`):
-| Package | Usage |
-| :--- | :--- |
-| **`pg`** | Database connection for Netlify Functions. |
-| **`qrcode`** | Generates QR labels for Batches and Range Logs. |
-| **`lucide-react`** | The modern UI icon set. |
-| **`exceljs`** | Powers the "Export to Excel" reporting. |
-| **`recharts`** | Renders the Analytics charts. |
-| **`@google/generative-ai`** | Powers the AI assistant. |
+### Core Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `pg` | PostgreSQL client |
+| `bcryptjs` | Password hashing |
+| `qrcode` | QR generation for labels and PDF exports |
+| `html5-qrcode` | Barcode / QR camera scanner |
+| `recharts` | Analytics charts |
+| `exceljs` | Excel recipe export |
+| `lucide-react` | UI icon set |
+| `@google/generative-ai` | AI assistant (optional) |
+| `vite-plugin-pwa` | PWA + service worker |
+| `zustand` | Client-side state management |
+
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Node.js **18+**
-- (Optional) [Netlify CLI](https://docs.netlify.com/cli/get-started/) for local function dev
+- **Node.js 18+**
+- **PostgreSQL** database (Neon, Supabase, or local)
+- (Optional) **Netlify CLI** for running functions locally
+- (Optional) **Cloudinary** account for image uploads
 
-### Quick Start (local dev)
+### Local Development
 
 ```bash
-# Clone your fork
-git clone [https://github.com/To3Knee/reload-tracker.git](https://github.com/To3Knee/reload-tracker.git)
+# Clone
+git clone https://github.com/To3Knee/reload-tracker.git
 cd reload-tracker
 
-# Install ALL dependencies
-# (This includes pg, qrcode, exceljs, recharts, etc.)
+# Install dependencies
 npm install
 
-# Start Vite dev server (front-end only)
-npm run dev
-````
+# Copy and fill in env vars
+cp .env.example .env   # edit with your values
 
-If you’re using Netlify Functions + Database:
+# Start Vite dev server (frontend only)
+npm run dev
+```
+
+To run with the backend functions locally:
 
 ```bash
-# Install Netlify CLI globally
 npm install -g netlify-cli
-
-# Start combined front-end + functions dev environment
 netlify dev
 ```
-### 🔑 First Run (Create Admin User)
 
-After deploying to Netlify and connecting your Database, your app will be empty and locked.
-To create your first **Admin** account:
+### Environment Variables
 
-1. Open your Database SQL Editor (Neon, Supabase, etc).
-2. Run the schema script: `backend/sql/schema_full.sql` (Creates tables).
-3. Run the bootstrap script: `backend/sql/bootstrap_admin.sql` (Creates Admin user).
-4. Log in with:
-   * **User:** `admin`
-   * **Pass:** `admin`
-   
-> **Note:** Immediately go to Settings > Access & Roles and change your password!
-
-### 🌱 Environment Variables
-
-Create a `.env` file in the root directory:
+Create a `.env` file in the project root:
 
 ```bash
 # Database
 DATABASE_URL=postgres://user:password@host:5432/reload_tracker
 PGSSLMODE=require
 
-# API Base
-VITE_API_BASE_URL=/ 
+# API endpoint (/ for Netlify, http://localhost:3001 for standalone)
+VITE_API_BASE_URL=/
 
-# Cloudinary (Images)
+# Require login before showing any data (true/false)
+VITE_REQUIRE_LOGIN=true
+
+# Cloudinary — for target photos and gear images
 VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
 VITE_CLOUDINARY_UPLOAD_PRESET=reload_tracker
 ```
 
------
+AI assistant (configured in-app via Settings, but can be pre-set here):
+```bash
+# These are set via the Settings UI — no env var needed
+# ai_enabled, ai_api_key, ai_model stored in the settings table
+```
 
-## 💡 Examples / Workflows
+### Database Setup
 
-### 1\. The "Full Loop" (Load -\> Shoot -\> Log)
+1. Create a PostgreSQL database
+2. Run the schema to create all tables:
+   ```sql
+   -- In your DB SQL editor or psql:
+   \i backend/sql/schema_gold_master.sql
+   ```
+3. Seed demo data (optional):
+   ```sql
+   \i backend/sql/seed_demo_full.sql
+   -- Creates an admin user (username: admin, password: admin123)
+   -- CHANGE THIS PASSWORD before sharing access
+   ```
+4. To generate a bcrypt hash for a custom password:
+   ```bash
+   node backend/tools/generate_hash.js yourpassword
+   ```
 
-1.  **Bench:** In **Recipes**, click "Load Batch". Enter 50 rounds.
-2.  **Label:** Click "Print Label" on the new Batch. Stick the QR code on your ammo box.
-3.  **Range:** Finish shooting. Scan the QR code on the box.
-4.  **Log:** The app opens. Click "Log Session". Snap a photo of your target. Enter your group size (e.g., 0.75").
-5.  **Archive:** Back home, click "Print" on the Range Log to put a physical page in your binder.
+### First Admin Account
 
-### 2\. Inventory Capacity Check
+After running the schema, create your admin account manually via SQL or use the seed script. Then log in and go to **Settings → Access & Roles** to:
+- Change your password
+- Create accounts for other shooters
 
-1.  Select your primary match recipe.
-2.  Go to **Inventory**.
-3.  Look at the capacity pills to see what is holding you back (e.g., "Primer-limited: 450 rounds").
+### Resetting Data (Keep Users)
 
------
+To wipe all data without deleting user accounts (useful for dev/demo cleanup):
 
-## 🗺 Roadmap
+```sql
+\i backend/sql/reset_data_keep_users.sql
+```
 
-  * ✅ Recipe card export to PDF (Pro styling)
-  * ✅ Range Logs with Cloudinary Image Hosting
-  * ✅ Batch Tracking with Printable QR Labels
-  * ✅ Deep Linking (Scan to open)
-  * ✅ Cloud sync & multi-device support via shared DB
-  * 🌗 Light mode / theme toggle
-  * ✅ Analytics Dashboard (Cost over time, Velocity consistency charts)
-  * 🔍 Ammo Price Finder (External API integration)
+---
 
------
+## Deployment (Netlify)
 
-## 🤝 Contributing
+1. Push to GitHub
+2. Connect repo to Netlify
+3. Set **environment variables** in Netlify dashboard (same as `.env` above)
+4. Build settings:
+   - **Build command:** `npm run build`
+   - **Publish directory:** `dist`
+5. Netlify Functions handle the API automatically from `netlify/functions/`
 
-Pull requests, issues, and ideas are all welcome.
+The app auto-deploys on every push to `main`.
 
-If you want to contribute:
+---
 
-1.  Fork the repo.
-2.  Create a feature branch: `git checkout -b feature/your-idea`
-3.  Make your changes.
-4.  Open a PR with screenshots if it impacts the UI.
+## Workflow Examples
 
------
+### Full Loop: Bench → Range → Log
 
-## 📜 License
+1. **Bench:** In **Recipes**, click *Load Batch* → enter rounds loaded
+2. **Label:** Print a QR sticker from the new Batch → stick it on the ammo box
+3. **Range:** Shoot. Scan the QR label with your phone
+4. **Log:** App opens the matching batch — tap *Log Session*, upload a target photo, enter group size
+5. **Archive:** Print a PDF ballistic certificate for your binder
+
+### Inventory Capacity Check
+
+1. Go to **Calculator**, select your primary recipe
+2. The capacity panel shows which component is your bottleneck
+   - *"Powder-limited: 312 rounds"*
+3. Go to **Purchases** → reorder the limiting component
+
+### Cost Comparison
+
+1. In **Analytics**, select **Calculator** tab
+2. Compare handload cost against factory ammo price side-by-side
+3. See your savings percentage and break-even point
+
+---
+
+## Roadmap
+
+- ✅ Live Round Calculator with scenario comparison
+- ✅ LOT-based inventory with per-unit decimal math
+- ✅ Recipe card export to PDF (pro data sheet)
+- ✅ Range logs with Cloudinary image hosting
+- ✅ Batch tracking with printable QR labels
+- ✅ Deep linking (scan to open)
+- ✅ Multi-user auth with role-based access
+- ✅ Analytics dashboard (cost trends, velocity charts)
+- ✅ Armory — firearms roster and gear locker
+- ✅ Barcode scanner for product lookup
+- ✅ PWA — installable, offline-capable
+- ✅ AI assistant integration
+- 🔲 Light mode / theme toggle
+- 🔲 Supply chain tracker (price watching for components)
+- 🔲 Shared range sessions (multi-shooter logs)
+
+---
+
+## Contributing
+
+Pull requests, issues, and ideas are welcome.
+
+1. Fork the repo
+2. Create a feature branch: `git checkout -b feature/your-idea`
+3. Make your changes
+4. Open a PR — include screenshots if it touches the UI
+
+---
+
+## License
 
 Reload Tracker is licensed under the **High Five License**. 🙌
 
 By using this project you agree to:
+- Give a high five (virtual or real) for the work
+- Take full responsibility for how you use the data
+- Always follow safe reloading practices
 
-  * Give a **high five** (virtual or real) for the work,
-  * Take full responsibility for how you use the data, and
-  * Always follow safe reloading practices.
-
-See the [LICENSE](LICENSE) file for the full, fist-bumping details!
+See the [LICENSE](LICENSE) file for full details.
 
 ---
 
 **Stop guessing what your ammo costs. Start knowing.**
-Clone it, deploy it, and make Reload Tracker your own. 🔧💥
-
-
