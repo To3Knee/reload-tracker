@@ -27,7 +27,7 @@ function ComponentChips({ components = '' }) {
 function RoundBar({ count, max }) {
   const pct = max > 0 ? Math.min(100, (count / max) * 100) : 0
   return (
-    <div className="mt-2 h-[2px] w-full rounded-full bg-[#1e1e1e] overflow-hidden">
+    <div className="mt-2 h-[2px] w-full rounded-full bg-[var(--border)] overflow-hidden">
       <div
         className="h-full rounded-full transition-all duration-500"
         style={{
@@ -152,18 +152,18 @@ export function Batches({ highlightId }) {
       {/* ── BATCH LIST ── */}
       <div className="rt-card p-0 overflow-hidden">
         {loading && (
-          <div className="px-6 py-8 text-center text-[11px] text-[#484854] uppercase tracking-[0.2em] animate-pulse">
+          <div className="px-6 py-8 text-center text-[11px] text-[var(--text-lo)] uppercase tracking-[0.2em] animate-pulse">
             Loading production log…
           </div>
         )}
         {error && (
-          <div className="px-6 py-4 text-[11px] text-red-400 border-b border-[#1e1e1e]">{error}</div>
+          <div className="px-6 py-4 text-[11px] text-red-400 border-b border-[var(--border)]">{error}</div>
         )}
         {!loading && batches.length === 0 && !error && (
           <div className="px-6 py-12 text-center space-y-2">
-            <Layers size={28} className="mx-auto text-[#2a2a2a]" />
-            <p className="text-[11px] text-[#3a3a3a] uppercase tracking-[0.2em]">No batches recorded</p>
-            <p className="text-[10px] text-[#2a2a2a]">Save a recipe and press "Load Batch" to begin.</p>
+            <Layers size={28} className="mx-auto text-[var(--border)]" />
+            <p className="text-[11px] text-[var(--text-lo)] uppercase tracking-[0.2em]">No batches recorded</p>
+            <p className="text-[10px] text-[var(--text-lo)]">Save a recipe and press "Load Batch" to begin.</p>
           </div>
         )}
 
@@ -181,11 +181,11 @@ export function Batches({ highlightId }) {
               <div
                 id={`batch-${batch.id}`}
                 key={batch.id}
-                className={`relative transition-colors duration-300 ${isHighlighted ? 'bg-[#1a1400]' : 'hover:bg-[#0f0f0f]'}`}
+                className={`relative transition-colors duration-300 ${isHighlighted ? 'bg-[#1a1400]' : 'hover:bg-[var(--surface)]'}`}
               >
                 {/* Highlight accent */}
                 {isHighlighted && (
-                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#f2f2f4]" />
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--text-hi)]" />
                 )}
 
                 {/* Main row */}
@@ -196,21 +196,21 @@ export function Batches({ highlightId }) {
                     <div className="text-[1.6rem] font-black leading-none rt-data">
                       {batch.rounds}
                     </div>
-                    <div className="text-[7px] text-[#484854] uppercase tracking-[0.18em] mt-0.5">rds</div>
+                    <div className="text-[7px] text-[var(--text-lo)] uppercase tracking-[0.18em] mt-0.5">rds</div>
                     <RoundBar count={Number(batch.rounds)} max={stats?.maxBatch || 1} />
                   </div>
 
                   {/* Info column */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[8px] text-[#3a3a3a] font-mono">#{batch.id}</span>
-                      <h3 className="text-[13px] font-bold text-[#f2f2f4] truncate leading-tight">
+                      <span className="text-[8px] text-[var(--text-lo)] font-mono">#{batch.id}</span>
+                      <h3 className="text-[13px] font-bold text-[var(--text-hi)] truncate leading-tight">
                         {batch.recipe || 'Custom Load'}
                       </h3>
                     </div>
                     <ComponentChips components={batch.components} />
                     {!isExpanded && batch.notes && (
-                      <p className="text-[10px] text-[#484854] italic mt-1.5 line-clamp-1 pl-2 border-l border-[#2a2a2a]">
+                      <p className="text-[10px] text-[var(--text-lo)] italic mt-1.5 line-clamp-1 pl-2 border-l border-[var(--border)]">
                         {batch.notes}
                       </p>
                     )}
@@ -218,11 +218,11 @@ export function Batches({ highlightId }) {
 
                   {/* Date + actions column */}
                   <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                    <span className="text-[9px] text-[#484854] font-mono tracking-wide whitespace-nowrap">
+                    <span className="text-[9px] text-[var(--text-lo)] font-mono tracking-wide whitespace-nowrap">
                       {fmtDate(batch.date)}
                     </span>
                     {attribution && (
-                      <span className="text-[8px] text-[#2a2a2a] tracking-wide">{attribution}</span>
+                      <span className="text-[8px] text-[var(--text-lo)] tracking-wide">{attribution}</span>
                     )}
                     {/* Actions */}
                     {!isEditing && (
@@ -270,7 +270,7 @@ export function Batches({ highlightId }) {
 
                 {/* Expanded edit panel */}
                 {isExpanded && isAdmin && (
-                  <div className="px-5 pb-4 border-t border-[#1a1a1a] bg-[#0c0c0c]">
+                  <div className="px-5 pb-4 border-t border-[var(--border)] bg-[var(--bg)]">
                     {isEditing ? (
                       <div className="pt-3 space-y-2">
                         <label className="rt-label">Notes</label>
@@ -293,8 +293,8 @@ export function Batches({ highlightId }) {
                       </div>
                     ) : (
                       <div className="pt-3 flex items-start justify-between gap-4">
-                        <p className="text-[11px] text-[#6a6460] italic flex-1">
-                          {batch.notes || <span className="text-[#3a3a3a]">No notes recorded.</span>}
+                        <p className="text-[11px] text-[var(--text-lo)] italic flex-1">
+                          {batch.notes || <span className="text-[var(--text-lo)]">No notes recorded.</span>}
                         </p>
                         <button onClick={() => startEdit(batch)} className="rt-btn rt-btn-ghost" style={{ padding: '5px 10px' }}>
                           <Edit2 size={10} /> Edit Notes

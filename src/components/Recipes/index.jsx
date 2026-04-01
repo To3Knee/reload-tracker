@@ -377,12 +377,12 @@ ${recipe.notes ? `<div class="sect">Load Notes</div><div class="notes-box"><div 
 
               {/* Stability analysis */}
               <div className="pt-2">
-                <div className={`border rounded-xl transition-all duration-300 ${stability ? stability.border + ' ' + stability.bg : 'border-steel-700 bg-black/40'}`}>
+                <div className={`border rounded-xl transition-all duration-300 ${stability ? stability.border + ' ' + stability.bg : 'border-steel-700 bg-panel'}`}>
                   <div className="p-3 flex items-center justify-between border-b border-steel-700/50">
                     <div className="flex items-center gap-2"><Crosshair size={14} className={stability ? stability.color : 'text-steel-500'} /><span className="text-[10px] uppercase tracking-[0.2em] font-bold text-steel-400">Stability Analysis</span></div>
                     <div className="flex items-center gap-2">{stability && (<span className={`text-[10px] font-black uppercase tracking-wider ${stability.color}`}>{stability.status} (SG: {stability.sg})</span>)}<button type="button" onClick={() => setShowStabilityHelp(!showStabilityHelp)} className="text-steel-500 hover:text-white transition"><HelpCircle size={14} /></button></div>
                   </div>
-                  {showStabilityHelp && (<div className="px-3 py-2 bg-black/40 text-[10px] text-steel-400 border-b border-steel-700/50"><strong>Miller Stability:</strong> Uses Bullet Length, Weight, and Twist Rate.<br /><span className="text-emerald-400">1.4+ (Green)</span> = Safe. <span className="text-red-400">&lt;1.0 (Red)</span> = Unstable.</div>)}
+                  {showStabilityHelp && (<div className="px-3 py-2 bg-panel text-[10px] text-steel-400 border-b border-steel-700/50"><strong>Miller Stability:</strong> Uses Bullet Length, Weight, and Twist Rate.<br /><span className="text-emerald-400">1.4+ (Green)</span> = Safe. <span className="text-red-400">&lt;1.0 (Red)</span> = Unstable.</div>)}
                   <div className="p-3 grid grid-cols-2 gap-3">
                     <div><FieldLabel label="Bullet Wt (gr)" help="Weight of projectile." /><input type="number" className={inputClass} placeholder="e.g. 168" value={form.bulletWeightGr} onChange={e => updateField('bulletWeightGr', e.target.value)} /></div>
                     <div><FieldLabel label="Velocity (fps)" help="Estimated muzzle velocity." /><input type="number" className={inputClass} placeholder="e.g. 2650" value={form.muzzleVelocityFps} onChange={e => updateField('muzzleVelocityFps', e.target.value)} /></div>
@@ -406,7 +406,7 @@ ${recipe.notes ? `<div class="sect">Load Notes</div><div class="notes-box"><div 
             </div>
           </form>
         ) : (
-          <div className="mt-3 text-xs text-steel-400 border border-dashed border-steel-600/70 rounded-xl px-3 py-3 bg-black/30">Read-only mode. Sign in as a Reloader.</div>
+          <div className="mt-3 text-xs text-steel-400 border border-dashed border-steel-600/70 rounded-xl px-3 py-3 bg-panel">Read-only mode. Sign in as a Reloader.</div>
         )}
       </div>
 

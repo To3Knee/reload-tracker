@@ -208,16 +208,16 @@ export default function AuthModal({
   const inputClass = "rt-input"
   const labelClass = "block text-xs font-semibold text-steel-300 mb-1"
   const subLabelClass = "text-[10px] text-steel-500 font-normal ml-2 italic tracking-normal"
-  const tabBtnClass = (active) => `px-4 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0 ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-black/40 border-steel-700 text-steel-400 hover:text-steel-200'}`
+  const tabBtnClass = (active) => `px-4 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider border transition whitespace-nowrap flex-shrink-0 ${active ? 'bg-red-900/20 border-red-500/50 text-red-200' : 'bg-panel border-steel-700 text-steel-400 hover:text-steel-200'}`
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-4 pt-[env(safe-area-inset-top)]">
-      <div className={`bg-[#0f0f10] border-steel-700 md:border shadow-2xl overflow-hidden flex flex-col md:flex-row 
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-scrim backdrop-blur-sm p-0 md:p-4 pt-[env(safe-area-inset-top)]">
+      <div className={`bg-[var(--surface)] border-steel-700 md:border shadow-2xl overflow-hidden flex flex-col md:flex-row
           w-full h-full md:w-full md:max-w-5xl md:h-auto md:max-h-[90vh]
           rounded-none md:rounded-xl relative`}>
         
         {/* LEFT PANEL */}
-        <div className={`bg-black/40 p-6 flex flex-col relative border-b border-steel-700 md:border-b-0 md:border-r ${isAdmin ? "w-full md:w-[30%] shrink-0" : "w-full flex-1"}`}>
+        <div className={`bg-panel p-6 flex flex-col relative border-b border-steel-700 md:border-b-0 md:border-r ${isAdmin ? "w-full md:w-[30%] shrink-0" : "w-full flex-1"}`}>
           {canClose && !isAdmin && (<button onClick={onClose} className="absolute top-4 right-4 rt-btn rt-btn-icon"><X size={16} /></button>)}
           <div className="mb-6 flex flex-col items-center md:items-start text-center md:text-left border-b border-steel-700/50 pb-6">
             <div className="relative mb-3">
@@ -249,15 +249,15 @@ export default function AuthModal({
           ) : (
              <div className="mt-auto"><button type="button" onClick={onLogout} className="rt-btn rt-btn-ghost w-full justify-center">Sign Out</button></div>
           )}
-          {(statusMessage || errorMessage) && (<div className="mt-4 p-3 rounded-md bg-black/40 border border-steel-700">{statusMessage && <p className="text-[10px] text-steel-300">{statusMessage}</p>}{errorMessage && <p className="text-[10px] text-red-400">{errorMessage}</p>}</div>)}
+          {(statusMessage || errorMessage) && (<div className="mt-4 p-3 rounded-md bg-panel border border-steel-700">{statusMessage && <p className="text-[10px] text-steel-300">{statusMessage}</p>}{errorMessage && <p className="text-[10px] text-red-400">{errorMessage}</p>}</div>)}
         </div>
 
         {/* RIGHT PANEL: ADMIN FEATURES */}
         {isAdmin && (
-          <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-br from-[#121214] to-[#0a0a0a]">
+          <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-br from-[var(--surface)] to-[var(--bg)]">
             
             {/* ADMIN HEADER */}
-            <div className="flex-shrink-0 border-b border-steel-700 p-4 bg-[#0f0f10]/95 backdrop-blur z-10 flex items-center justify-between">
+            <div className="flex-shrink-0 border-b border-steel-700 p-4 bg-[var(--surface)]/95 backdrop-blur z-10 flex items-center justify-between">
                 <div className="flex gap-2 overflow-x-auto min-w-0 pr-2 custom-scrollbar">
                     <button onClick={() => setActiveTab('manage')} className={tabBtnClass(activeTab === 'manage')}><Users size={12} className="inline mr-1"/> Users</button>
                     <button onClick={() => setActiveTab('reset')} className={tabBtnClass(activeTab === 'reset')}><Lock size={12} className="inline mr-1"/> Security</button>
@@ -284,7 +284,7 @@ export default function AuthModal({
                       <div className="pt-2 flex justify-end gap-2">{editingUserId && <button type="button" onClick={handleCancelEdit} className="rt-btn rt-btn-ghost">Cancel</button>}<button type="submit" disabled={busy} className="rt-btn rt-btn-danger disabled:opacity-50">{busy ? 'Saving...' : editingUserId ? 'Save Changes' : 'Create User'}</button></div>
                     </form>
                   </div>
-                  <div><p className={labelClass + " mb-2"}>User Directory</p><div className="grid gap-2">{adminUsers.map(u => (<div key={u.id} className={`flex items-center justify-between p-3 rounded-lg border transition-all ${u.isActive ? 'bg-black/20 border-steel-700/50' : 'bg-red-900/10 border-red-900/30 opacity-70 grayscale-[0.5]'}`}><div className="flex items-center gap-3"><div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-steel-500'}`} /><div className="min-w-0"><div className="flex items-center gap-2"><p className={`text-xs font-bold truncate ${u.isActive ? 'text-steel-100' : 'text-steel-400 line-through'}`}>{u.username}</p>{!u.isActive && (<span className="flex items-center gap-1 text-[9px] bg-red-900/60 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"><Ban size={8} /> Deactivated</span>)}</div><p className="text-[10px] text-steel-400 truncate">{u.email}</p></div></div><div className="flex gap-2">{verifyActionId === u.id ? (<div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200"><span className="text-[10px] text-steel-300 font-bold hidden sm:inline">Sure?</span><button onClick={() => confirmAction(u.id)} className="px-3 py-1.5 rounded bg-red-600 text-[10px] text-white font-bold shadow-lg hover:bg-red-500 transition">Yes</button><button onClick={cancelDelete} className="px-3 py-1.5 rounded bg-steel-700 text-[10px] text-steel-300 font-medium hover:bg-steel-600 transition">No</button></div>) : (<><button onClick={() => handleEditUser(u)} className="px-3 py-1.5 rounded bg-steel-700 text-[10px] text-steel-200 font-medium border border-steel-600/50 hover:border-steel-500 transition">Edit</button>{u.isActive ? (<button onClick={() => initiateDelete(u.id, 'soft')} className="px-3 py-1.5 rounded bg-amber-900/20 text-[10px] text-amber-500 font-medium border border-amber-900/30 hover:bg-amber-900/30 transition flex items-center gap-1"><Power size={10} /> Disable</button>) : (<button onClick={() => initiateDelete(u.id, 'hard')} className="px-3 py-1.5 rounded bg-red-900/20 text-[10px] text-red-400 font-medium border border-red-900/30 hover:bg-red-900/30 transition flex items-center gap-1"><Trash2 size={10} /> Delete</button>)}</>)}</div></div>))}</div></div>
+                  <div><p className={labelClass + " mb-2"}>User Directory</p><div className="grid gap-2">{adminUsers.map(u => (<div key={u.id} className={`flex items-center justify-between p-3 rounded-lg border transition-all ${u.isActive ? 'bg-panel-sm border-steel-700/50' : 'bg-red-900/10 border-red-900/30 opacity-70 grayscale-[0.5]'}`}><div className="flex items-center gap-3"><div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.role === ROLE_ADMIN ? 'bg-red-500' : 'bg-steel-500'}`} /><div className="min-w-0"><div className="flex items-center gap-2"><p className={`text-xs font-bold truncate ${u.isActive ? 'text-steel-100' : 'text-steel-400 line-through'}`}>{u.username}</p>{!u.isActive && (<span className="flex items-center gap-1 text-[9px] bg-red-900/60 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"><Ban size={8} /> Deactivated</span>)}</div><p className="text-[10px] text-steel-400 truncate">{u.email}</p></div></div><div className="flex gap-2">{verifyActionId === u.id ? (<div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200"><span className="text-[10px] text-steel-300 font-bold hidden sm:inline">Sure?</span><button onClick={() => confirmAction(u.id)} className="px-3 py-1.5 rounded bg-red-600 text-[10px] text-white font-bold shadow-lg hover:bg-red-500 transition">Yes</button><button onClick={cancelDelete} className="px-3 py-1.5 rounded bg-steel-700 text-[10px] text-steel-300 font-medium hover:bg-steel-600 transition">No</button></div>) : (<><button onClick={() => handleEditUser(u)} className="px-3 py-1.5 rounded bg-steel-700 text-[10px] text-steel-200 font-medium border border-steel-600/50 hover:border-steel-500 transition">Edit</button>{u.isActive ? (<button onClick={() => initiateDelete(u.id, 'soft')} className="px-3 py-1.5 rounded bg-amber-900/20 text-[10px] text-amber-500 font-medium border border-amber-900/30 hover:bg-amber-900/30 transition flex items-center gap-1"><Power size={10} /> Disable</button>) : (<button onClick={() => initiateDelete(u.id, 'hard')} className="px-3 py-1.5 rounded bg-red-900/20 text-[10px] text-red-400 font-medium border border-red-900/30 hover:bg-red-900/30 transition flex items-center gap-1"><Trash2 size={10} /> Delete</button>)}</>)}</div></div>))}</div></div>
                 </div>
               )}
 
@@ -308,12 +308,12 @@ export default function AuthModal({
                      <div className="bg-steel-800/30 rounded-md p-4 border border-steel-700/60">
                         <h3 className="text-sm font-bold text-steel-200 flex items-center gap-2 mb-4"><Settings size={16} className="text-red-500" />System Configuration</h3>
                         
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-steel-700 rounded-md mb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-panel-sm border border-steel-700 rounded-md mb-4">
                             <div className="flex items-start gap-3"><div className="p-2 rounded-md bg-steel-700 text-steel-400 mt-1"><Bot size={18} /></div><div><p className="text-xs font-bold text-steel-100">AI Ballistics Expert</p><p className="text-[10px] text-steel-400 leading-relaxed mt-1">Enable the generative AI chat assistant via OpenRouter.</p></div></div>
                             <div className="flex items-center justify-end">{systemSettings.hasAiKey || systemSettings.ai_api_key ? (<button onClick={() => toggleAi(systemSettings.ai_enabled === 'true' ? 'false' : 'true')} className={`rt-btn w-full sm:w-auto ${systemSettings.ai_enabled === 'true' ? 'rt-btn-danger' : 'rt-btn-ghost'}`}>{systemSettings.ai_enabled === 'true' ? 'Enabled' : 'Disabled'}</button>) : (<span className="px-3 py-1 rounded bg-amber-900/20 text-amber-500 text-[10px] border border-amber-900/50 flex items-center gap-1"><AlertTriangle size={10} /> Missing API Key</span>)}</div>
                         </div>
 
-                        <div className="p-4 bg-black/20 border border-steel-700 rounded-md space-y-4">
+                        <div className="p-4 bg-panel-sm border border-steel-700 rounded-md space-y-4">
                             <div>
                                 <label className={labelClass}>AI Model <span className={subLabelClass}>(OpenRouter Free Tier)</span></label>
                                 <div className="relative">

@@ -60,14 +60,14 @@ export default function AiModal({ open, onClose }) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-0 md:p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-scrim backdrop-blur-md p-0 md:p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
 
       {/* terminal-ui forces JetBrains Mono across all children */}
-      <div className="terminal-ui bg-[#050507] border border-steel-700 w-full max-w-3xl h-[100dvh] md:h-[85vh] md:rounded-sm flex flex-col shadow-2xl relative overflow-hidden"
+      <div className="terminal-ui bg-[var(--bg)] border border-steel-700 w-full max-w-3xl h-[100dvh] md:h-[85vh] md:rounded-sm flex flex-col shadow-2xl relative overflow-hidden"
            style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.04), 0 25px 50px rgba(0,0,0,0.8)' }}>
 
         {/* ── HEADER ────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-steel-800 bg-black/60 z-10 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-steel-800 bg-scrim z-10 flex-shrink-0">
           <div className="flex items-center gap-3">
             {/* Accent bar */}
             <div className="w-0.5 h-7 rounded-sm" style={{ background: 'var(--copper)' }} />
@@ -104,7 +104,7 @@ export default function AiModal({ open, onClose }) {
         </div>
 
         {/* ── CHAT AREA ─────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#050507] pb-20 md:pb-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[var(--bg)] pb-20 md:pb-4">
           {messages.map((m, i) => (
             <div
               key={i}
@@ -185,7 +185,7 @@ export default function AiModal({ open, onClose }) {
 
         {/* ── INPUT AREA ────────────────────────────────────────── */}
         <div
-          className="p-3 border-t border-steel-800 bg-black/70 z-20 flex-shrink-0"
+          className="p-3 border-t border-steel-800 bg-scrim z-20 flex-shrink-0"
           style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
         >
           <form onSubmit={handleSend} className="relative flex items-center">

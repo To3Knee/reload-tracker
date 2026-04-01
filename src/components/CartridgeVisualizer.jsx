@@ -290,7 +290,7 @@ export function CartridgeVisualizer({
   const seatWarning = g.seatingDepth < 0.05 && g.seatingDepth > 0
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#080808] rounded-lg border border-[#1e1e1e] overflow-hidden relative">
+    <div className="w-full h-full flex flex-col bg-[var(--bg)] rounded-lg border border-[var(--border)] overflow-hidden relative">
 
       {/* ── HUD OVERLAY ── */}
       <div className="absolute top-2 left-2 right-2 flex items-start justify-between z-10 pointer-events-none">

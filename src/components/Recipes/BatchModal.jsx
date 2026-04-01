@@ -66,9 +66,9 @@ export function BatchModal({ recipe, purchases, onClose, onSuccess }) {
   const set = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.value }))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)]">
       <div className="glass border border-steel-700 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="p-4 border-b border-steel-700 flex justify-between items-center bg-black/40">
+        <div className="p-4 border-b border-steel-700 flex justify-between items-center bg-panel">
           <h3 className="text-sm font-bold text-steel-200 flex items-center">
             Load Batch: {recipe.name}
             <InfoTip variant="tip" title="Load Batch" text="Records a production run — links rounds loaded to this recipe and specific component lots for quality traceability and per-round cost accuracy." side="bottom" />

@@ -216,19 +216,19 @@ export function GearLocker() {
             {gearList.map(item => (
                 <div key={item.id} className="rt-card flex flex-col hover:border-steel-600 transition-colors group min-h-[96px]">
                     <div className="flex h-full">
-                        <div className="w-24 bg-black flex-shrink-0 border-r border-steel-700 relative">
+                        <div className="w-24 bg-[var(--bg)] flex-shrink-0 border-r border-steel-700 relative">
                             {item.imageUrl ? (
                                 <img src={item.imageUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-steel-600"><Box size={24}/></div>
                             )}
-                            {item.price > 0 && <div className="absolute bottom-1 right-1 bg-black/80 text-[9px] text-emerald-400 px-1.5 rounded border border-emerald-900/50">{formatCurrency(item.price)}</div>}
+                            {item.price > 0 && <div className="absolute bottom-1 right-1 bg-scrim text-[9px] text-emerald-400 px-1.5 rounded border border-emerald-900/50">{formatCurrency(item.price)}</div>}
                         </div>
                         <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
                             <div>
                                 <div className="flex justify-between items-start gap-2">
                                     <h4 className="text-sm font-bold text-steel-100 truncate pr-1">{item.name}</h4>
-                                    <span className="text-[9px] uppercase tracking-wider text-steel-400 border border-steel-700 px-1.5 rounded bg-black/20 whitespace-nowrap flex-shrink-0">{TYPES.find(t=>t.value===item.type)?.label.split(' ')[0]}</span>
+                                    <span className="text-[9px] uppercase tracking-wider text-steel-400 border border-steel-700 px-1.5 rounded bg-panel-sm whitespace-nowrap flex-shrink-0">{TYPES.find(t=>t.value===item.type)?.label.split(' ')[0]}</span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
                                     <p className="text-[10px] text-steel-300 truncate flex-1">{item.brand} {item.model}</p>

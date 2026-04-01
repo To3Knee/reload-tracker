@@ -46,7 +46,7 @@ function ForecastItem({ item }) {
     else if (item.days < 90) colorClass = "bg-steel-400"
 
     return (
-        <div className="flex items-center justify-between p-3 bg-black/40 border border-steel-700 rounded-md mb-2 last:mb-0">
+        <div className="flex items-center justify-between p-3 bg-panel border border-steel-700 rounded-md mb-2 last:mb-0">
             <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full ${colorClass}`} />
                 <div>
@@ -175,7 +175,7 @@ export function Analytics() {
                         Vs Factory
                     </button>
                     {showFactoryLine && (
-                        <div className="flex items-center bg-black/40 border border-blue-900/50 rounded px-2">
+                        <div className="flex items-center bg-panel border border-blue-900/50 rounded px-2">
                             <span className="text-[10px] text-blue-500 mr-1">$</span>
                             <input 
                                 type="number" 

@@ -8,13 +8,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Base surfaces — clean neutral dark, lets brass/copper accents own the warmth
-        bg:      '#0a0a0c',
-        surface: '#111113',
-        card:    '#181819',
-        overlay: '#1e1e21',
+        // Surface colors — reference CSS vars so they flip with the theme
+        // Stored as RGB triplets so Tailwind opacity modifiers work (bg-surface/50 etc.)
+        bg:      'rgb(var(--bg-rgb) / <alpha-value>)',
+        surface: 'rgb(var(--surface-rgb) / <alpha-value>)',
+        card:    'rgb(var(--card-rgb) / <alpha-value>)',
+        overlay: 'rgb(var(--overlay-rgb) / <alpha-value>)',
 
-        // Primary accent — rifle red
+        // Primary accent — rifle red (same in both themes)
         red: {
           400: '#e05252',
           500: '#c42b21',
@@ -23,7 +24,7 @@ export default {
           900: '#2d1111',
         },
 
-        // Secondary accent — deep red (matches --copper)
+        // Secondary / tertiary accents (same in both themes)
         copper: {
           300: '#f08888',
           400: '#e05252',
@@ -32,8 +33,6 @@ export default {
           700: '#8b1e16',
           900: '#2d1111',
         },
-
-        // Tertiary accent — lighter red / rose (matches --brass)
         brass: {
           300: '#f4aaaa',
           400: '#e87070',
@@ -41,19 +40,18 @@ export default {
           600: '#c42b21',
         },
 
-        // Neutral steel — clean grays, no warm or cool cast
-        // Brass/copper accents provide all the warmth; steel stays out of the way
+        // Neutral steel — flips with theme via CSS vars (RGB triplets for opacity support)
         steel: {
-          50:  '#f4f4f6',
-          100: '#e8e8ec',
-          200: '#c8c8d0',
-          300: '#9898a4',
-          400: '#686874',
-          500: '#484854',
-          600: '#34343e',
-          700: '#26262e',
-          800: '#1a1a20',
-          900: '#10101a',
+          50:  'rgb(var(--steel-50)  / <alpha-value>)',
+          100: 'rgb(var(--steel-100) / <alpha-value>)',
+          200: 'rgb(var(--steel-200) / <alpha-value>)',
+          300: 'rgb(var(--steel-300) / <alpha-value>)',
+          400: 'rgb(var(--steel-400) / <alpha-value>)',
+          500: 'rgb(var(--steel-500) / <alpha-value>)',
+          600: 'rgb(var(--steel-600) / <alpha-value>)',
+          700: 'rgb(var(--steel-700) / <alpha-value>)',
+          800: 'rgb(var(--steel-800) / <alpha-value>)',
+          900: 'rgb(var(--steel-900) / <alpha-value>)',
         },
       },
       fontFamily: {

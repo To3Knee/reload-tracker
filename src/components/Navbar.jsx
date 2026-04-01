@@ -48,9 +48,8 @@ export default function Navbar({
       {/* ═══════════════════════════════════════════════════════
           DESKTOP — Full top bar (lg and up)
       ═══════════════════════════════════════════════════════ */}
-      <nav className="hidden lg:flex fixed z-50 top-0 left-0 right-0 h-[72px] items-center px-6 gap-4
-                      bg-[#080808]/96 backdrop-blur-xl border-b border-[#1e1e1e]
-                      shadow-[0_1px_0_#2a2a2a,0_4px_24px_rgba(0,0,0,0.6)]">
+      <nav className="nav-bg hidden lg:flex fixed z-50 top-0 left-0 right-0 h-[72px] items-center px-6 gap-4
+                      backdrop-blur-xl border-b shadow-[0_1px_0_var(--border),0_4px_24px_rgba(0,0,0,0.3)]">
 
         {/* Branding */}
         <div className="flex items-center w-48 flex-shrink-0">
@@ -66,13 +65,13 @@ export default function Navbar({
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={`relative flex items-center gap-2 px-3 h-full text-[11px] font-bold uppercase tracking-[0.12em] transition-colors whitespace-nowrap
-                  ${active ? 'text-[#f2f2f4]' : 'text-[#484854] hover:text-[#82828e]'}`}
+                  ${active ? 'text-[var(--text-hi)]' : 'text-[var(--text-lo)] hover:text-[var(--text-md)]'}`}
               >
-                <item.icon size={14} strokeWidth={active ? 2.5 : 1.5} className={active ? 'text-[#c42b21]' : ''} />
+                <item.icon size={14} strokeWidth={active ? 2.5 : 1.5} className={active ? 'text-red-500' : ''} />
                 {item.label}
                 {active && (
                   <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-t-sm"
-                        style={{ background: 'linear-gradient(90deg, transparent, #c42b21 30%, #f2f2f4 50%, #c42b21 70%, transparent)' }} />
+                        style={{ background: 'linear-gradient(90deg, transparent, var(--red) 30%, var(--text-hi) 50%, var(--red) 70%, transparent)' }} />
                 )}
               </button>
             )
@@ -88,8 +87,8 @@ export default function Navbar({
             </button>
           )}
           <div className="hidden lg:flex flex-col items-end leading-tight">
-            <span className="text-[11px] font-bold text-[#f2f2f4] tracking-wide">{sessionName}</span>
-            <span className="text-[8px] text-[#484854] uppercase tracking-[0.2em]">{sessionRole}</span>
+            <span className="text-[11px] font-bold text-[var(--text-hi)] tracking-wide">{sessionName}</span>
+            <span className="text-[8px] text-[var(--text-lo)] uppercase tracking-[0.2em]">{sessionRole}</span>
           </div>
           <button onClick={onToggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             className="rt-btn rt-btn-ghost rt-btn-icon">
@@ -105,9 +104,9 @@ export default function Navbar({
           MOBILE — Slim top header (branding + utility only)
       ═══════════════════════════════════════════════════════ */}
       <header
-        className="lg:hidden fixed z-50 top-0 left-0 right-0
+        className="nav-bg lg:hidden fixed z-50 top-0 left-0 right-0
                    flex items-center justify-between px-4
-                   bg-[#080808]/97 backdrop-blur-xl border-b border-[#1e1e1e]"
+                   backdrop-blur-xl border-b"
         style={{ height: 'calc(48px + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
       >
         <img src={logo} alt="Reload Tracker" className="h-12 w-auto object-contain opacity-95" />
@@ -119,11 +118,11 @@ export default function Navbar({
             </button>
           )}
           <button onClick={onToggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="p-2 rounded border border-[#1e1e1e] bg-[#0f0f0f] text-[#484854] active:scale-95 transition-transform">
+            className="p-2 rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text-lo)] active:scale-95 transition-transform">
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button onClick={() => onOpenSettings?.()}
-            className="p-2 rounded border border-[#1e1e1e] bg-[#0f0f0f] text-[#484854] active:scale-95 transition-transform">
+            className="p-2 rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text-lo)] active:scale-95 transition-transform">
             <Settings size={18} />
           </button>
         </div>
@@ -133,8 +132,8 @@ export default function Navbar({
           MOBILE — Fixed bottom tab bar (5 primary + More)
       ═══════════════════════════════════════════════════════ */}
       <nav
-        className="lg:hidden fixed z-50 bottom-0 left-0 right-0 flex items-stretch
-                   bg-[#080808]/98 backdrop-blur-xl border-t border-[#1e1e1e]"
+        className="nav-bg lg:hidden fixed z-50 bottom-0 left-0 right-0 flex items-stretch
+                   backdrop-blur-xl border-t"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: 'calc(58px + env(safe-area-inset-bottom))' }}
       >
         {primaryItems.map(item => {
@@ -144,11 +143,11 @@ export default function Navbar({
               key={item.id}
               onClick={() => handleTabChange(item.id)}
               className={`flex-1 flex flex-col items-center justify-center gap-[3px] pt-2 pb-1 relative transition-colors
-                ${active ? 'text-[#c42b21]' : 'text-[#3a3a3a]'}`}
+                ${active ? 'text-red-500' : 'text-[var(--text-lo)]'}`}
             >
-              {active && <span className="absolute top-0 left-2 right-2 h-[1.5px] rounded-b-sm bg-[#c42b21]" />}
+              {active && <span className="absolute top-0 left-2 right-2 h-[1.5px] rounded-b-sm bg-red-500" />}
               <item.icon size={20} strokeWidth={active ? 2.5 : 1.5} />
-              <span className={`text-[8px] font-bold uppercase tracking-[0.1em] leading-none ${active ? 'text-[#c42b21]' : 'text-[#3a3a3a]'}`}>
+              <span className={`text-[8px] font-bold uppercase tracking-[0.1em] leading-none ${active ? 'text-red-500' : 'text-[var(--text-lo)]'}`}>
                 {SHORT_LABELS[item.id] || item.label}
               </span>
             </button>
@@ -159,11 +158,11 @@ export default function Navbar({
         <button
           onClick={() => setMoreOpen(o => !o)}
           className={`flex-1 flex flex-col items-center justify-center gap-[3px] pt-2 pb-1 relative transition-colors
-            ${overflowActive || moreOpen ? 'text-[#c42b21]' : 'text-[#3a3a3a]'}`}
+            ${overflowActive || moreOpen ? 'text-red-500' : 'text-[var(--text-lo)]'}`}
         >
-          {(overflowActive || moreOpen) && <span className="absolute top-0 left-2 right-2 h-[1.5px] rounded-b-sm bg-[#c42b21]" />}
+          {(overflowActive || moreOpen) && <span className="absolute top-0 left-2 right-2 h-[1.5px] rounded-b-sm bg-red-500" />}
           {moreOpen ? <X size={20} strokeWidth={2} /> : <MoreHorizontal size={20} strokeWidth={1.5} />}
-          <span className={`text-[8px] font-bold uppercase tracking-[0.1em] leading-none ${overflowActive || moreOpen ? 'text-[#c42b21]' : 'text-[#3a3a3a]'}`}>
+          <span className={`text-[8px] font-bold uppercase tracking-[0.1em] leading-none ${overflowActive || moreOpen ? 'text-red-500' : 'text-[var(--text-lo)]'}`}>
             More
           </span>
         </button>
@@ -174,7 +173,7 @@ export default function Navbar({
       ═══════════════════════════════════════════════════════ */}
       {moreOpen && (
         <div
-          className="lg:hidden fixed z-40 left-0 right-0 bg-[#0a0a0a]/98 backdrop-blur-xl border-t border-[#1e1e1e]
+          className="nav-bg lg:hidden fixed z-40 left-0 right-0 backdrop-blur-xl border-t
                      animate-in slide-in-from-bottom-2 duration-150"
           style={{ bottom: 'calc(58px + env(safe-area-inset-bottom))' }}
         >
@@ -187,8 +186,8 @@ export default function Navbar({
                   onClick={() => handleTabChange(item.id)}
                   className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-lg border transition-colors
                     ${active
-                      ? 'bg-red-900/20 border-red-900/40 text-[#c42b21]'
-                      : 'bg-[#111] border-[#1e1e1e] text-[#484854] active:bg-[#1a1a1a]'
+                      ? 'bg-red-900/20 border-red-900/40 text-red-500'
+                      : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-lo)] active:bg-[var(--overlay)]'
                     }`}
                 >
                   <item.icon size={22} strokeWidth={active ? 2.5 : 1.5} />

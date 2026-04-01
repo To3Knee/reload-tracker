@@ -142,7 +142,7 @@ export default function App() {
   }
 
   if (!ageConfirmed) return (
-    <div className="min-h-[100dvh] bg-[#080808] text-gray-100 flex items-center justify-center px-4">
+    <div className="min-h-[100dvh] bg-[var(--bg)] text-[var(--text-hi)] flex items-center justify-center px-4">
       <div className="glass max-w-lg w-full text-center p-10">
         <div className="relative mb-6 flex justify-center">
           <div className="absolute inset-0 blur-3xl rounded-full bg-red-900/25 scale-150" />
@@ -159,7 +159,7 @@ export default function App() {
 
   return (
     <div
-      className="min-h-[100dvh] bg-[#080808] text-gray-100"
+      className="min-h-[100dvh] bg-[var(--bg)] text-[var(--text-hi)]"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -261,7 +261,7 @@ export default function App() {
       </Suspense>
 
       <div className="hidden lg:block fixed bottom-2 right-3 z-50 text-[10px] text-steel-500">
-        <span className="px-2 py-[2px] rounded border border-red-600/30 bg-black/70 backdrop-blur font-mono tracking-wider">
+        <span className="px-2 py-[2px] rounded border border-red-600/30 bg-[var(--surface)] border-[var(--border)] font-mono tracking-wider">
           Reload Tracker {APP_VERSION_LABEL}
         </span>
       </div>

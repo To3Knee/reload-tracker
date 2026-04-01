@@ -20,7 +20,7 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
   return (
     <div
       id={`purchase-${p.id}`}
-      className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg bg-black/20 border transition ${
+      className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg bg-panel-sm border transition ${
         isHighlighted
           ? 'border-copper-500 ring-1 ring-copper-500/50 shadow-lg shadow-copper-900/20'
           : 'border-steel-700 hover:border-steel-600'
@@ -28,7 +28,7 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
     >
       <div className="flex-1 flex gap-4">
         {p.imageUrl && (
-          <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-steel-600 bg-black">
+          <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-steel-600 bg-[var(--bg)]">
             <img src={p.imageUrl} alt="Lot" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition" />
           </div>
         )}
@@ -43,18 +43,18 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
           <div className="text-[11px] text-steel-400 mt-1 flex flex-wrap gap-2">
             {p.caliber      && <span className="text-steel-300">{p.caliber}</span>}
             {p.typeDetail   && <span className="text-steel-300 italic">{p.typeDetail}</span>}
-            {p.vendor       && <span className="px-2 py-[1px] bg-black/40 border border-steel-700 rounded">{p.vendor}</span>}
-            {p.purchaseDate && <span className="px-2 py-[1px] bg-black/40 border border-steel-700 rounded">{p.purchaseDate.substring(0, 10)}</span>}
-            {p.caseCondition && <span className="px-2 py-[1px] bg-black/40 border border-steel-700 rounded">{CASE_CONDITIONS.find(c => c.value === p.caseCondition)?.label || p.caseCondition}</span>}
+            {p.vendor       && <span className="px-2 py-[1px] bg-panel border border-steel-700 rounded">{p.vendor}</span>}
+            {p.purchaseDate && <span className="px-2 py-[1px] bg-panel border border-steel-700 rounded">{p.purchaseDate.substring(0, 10)}</span>}
+            {p.caseCondition && <span className="px-2 py-[1px] bg-panel border border-steel-700 rounded">{CASE_CONDITIONS.find(c => c.value === p.caseCondition)?.label || p.caseCondition}</span>}
             {p.url && (
-              <a href={p.url} target="_blank" rel="noreferrer" className="px-2 py-[1px] bg-black/40 border border-copper-900/50 text-copper-400 hover:text-copper-300 hover:border-copper-500/50 rounded transition">
+              <a href={p.url} target="_blank" rel="noreferrer" className="px-2 py-[1px] bg-panel border border-copper-900/50 text-copper-400 hover:text-copper-300 hover:border-copper-500/50 rounded transition">
                 Page ↗
               </a>
             )}
           </div>
           {attribution && (
             <div className="mt-2 flex items-center gap-2">
-              <span className="flex items-center gap-1 text-[9px] text-steel-400 px-2 py-0.5 bg-black/20 rounded border border-steel-700">
+              <span className="flex items-center gap-1 text-[9px] text-steel-400 px-2 py-0.5 bg-panel-sm rounded border border-steel-700">
                 {p.updatedByUsername ? <Clock size={10} /> : <User size={10} />} {attribution}
               </span>
             </div>

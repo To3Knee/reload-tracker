@@ -9,42 +9,66 @@
 
 /* ── CSS CUSTOM PROPERTIES ─────────────────────────────────── */
 :root {
-  /* Surfaces — clean neutral dark */
+  /* Surfaces — hex for direct var() usage in CSS */
   --bg:           #0a0a0c;
   --surface:      #111113;
   --card:         #181819;
   --overlay:      #1e1e21;
 
-  /* Borders — clean neutral hairlines */
+  /* Surfaces — RGB triplets for Tailwind opacity modifiers (bg-surface/50 etc.) */
+  --bg-rgb:       10 10 12;
+  --surface-rgb:  17 17 19;
+  --card-rgb:     24 24 25;
+  --overlay-rgb:  30 30 33;
+
+  /* Borders */
   --border:       #222226;
   --border-md:    #2e2e34;
   --border-hi:    #3e3e48;
 
-  /* Primary — rifle red */
+  /* Primary — rifle red (unchanged across themes) */
   --red:          #c42b21;
   --red-dim:      #8b1e16;
   --red-glow:     rgba(196, 43, 33, 0.18);
-
-  /* Secondary — deep red gradient accent */
   --copper:       #c42b21;
   --copper-dim:   #8b1e16;
   --copper-glow:  rgba(196, 43, 33, 0.18);
-
-  /* Tertiary — lighter red for secondary accents */
   --brass:        #e05252;
   --brass-dim:    #a82418;
   --brass-glow:   rgba(224, 82, 82, 0.12);
 
-  /* Text — clean neutral hierarchy */
+  /* Text */
   --text-hi:      #f2f2f4;
   --text-md:      #82828e;
   --text-lo:      #46464e;
+
+  /* Steel — RGB triplets (dark scale: low = bright, high = dark) */
+  --steel-50:  244 244 246;
+  --steel-100: 232 232 236;
+  --steel-200: 200 200 208;
+  --steel-300: 152 152 164;
+  --steel-400: 104 104 116;
+  --steel-500: 72  72  84;
+  --steel-600: 52  52  62;
+  --steel-700: 38  38  46;
+  --steel-800: 26  26  32;
+  --steel-900: 16  16  26;
 
   /* Glass panel */
   --glass-bg:           rgba(18, 18, 20, 0.97);
   --glass-shadow-ring:  rgba(0, 0, 0, 0.45);
   --glass-shadow-drop:  rgba(0, 0, 0, 0.65);
   --glass-inset:        rgba(255, 255, 255, 0.025);
+
+  /* Semi-transparent panel overlays (replaces bg-black/XX in components) */
+  --panel-bg:     rgba(0, 0, 0, 0.40);
+  --panel-bg-sm:  rgba(0, 0, 0, 0.20);
+  --panel-bg-xs:  rgba(0, 0, 0, 0.10);
+  --scrim-bg:     rgba(0, 0, 0, 0.80);
+
+  /* Nav bar backgrounds */
+  --nav-bg:       rgba(8, 8, 8, 0.97);
+  --nav-border:   #1e1e1e;
 }
 
 /* ── LIGHT THEME ────────────────────────────────────────────── */
@@ -54,6 +78,11 @@ html.light {
   --card:         #ededf0;
   --overlay:      #e4e4e8;
 
+  --bg-rgb:       245 245 247;
+  --surface-rgb:  255 255 255;
+  --card-rgb:     237 237 240;
+  --overlay-rgb:  228 228 232;
+
   --border:       #d4d4da;
   --border-md:    #c4c4cc;
   --border-hi:    #a8a8b4;
@@ -62,10 +91,30 @@ html.light {
   --text-md:      #5a5a6a;
   --text-lo:      #9898a8;
 
+  /* Steel — inverted: low numbers = dark text, high numbers = light backgrounds */
+  --steel-50:  24  24  30;
+  --steel-100: 36  36  48;
+  --steel-200: 58  58  76;
+  --steel-300: 88  88  106;
+  --steel-400: 104 104 116;
+  --steel-500: 136 136 156;
+  --steel-600: 172 172 188;
+  --steel-700: 210 210 222;
+  --steel-800: 232 232 240;
+  --steel-900: 244 244 248;
+
   --glass-bg:           rgba(255, 255, 255, 0.96);
   --glass-shadow-ring:  rgba(0, 0, 0, 0.06);
   --glass-shadow-drop:  rgba(0, 0, 0, 0.10);
   --glass-inset:        rgba(255, 255, 255, 0.80);
+
+  --panel-bg:     rgba(0, 0, 0, 0.04);
+  --panel-bg-sm:  rgba(0, 0, 0, 0.03);
+  --panel-bg-xs:  rgba(0, 0, 0, 0.02);
+  --scrim-bg:     rgba(0, 0, 0, 0.60);
+
+  --nav-bg:       rgba(245, 245, 247, 0.97);
+  --nav-border:   #d4d4da;
 }
 
 /* ── RESET & GLOBALS ────────────────────────────────────────── */
@@ -135,6 +184,19 @@ h1 {
   letter-spacing: -0.03em;
   line-height: 1;
   color: var(--text-hi);
+}
+
+/* ── THEME-AWARE PANEL OVERLAYS ─────────────────────────────── */
+/* Replace bg-black/40, bg-black/20 etc. — flips correctly in light mode */
+.bg-panel    { background: var(--panel-bg); }
+.bg-panel-sm { background: var(--panel-bg-sm); }
+.bg-panel-xs { background: var(--panel-bg-xs); }
+.bg-scrim    { background: var(--scrim-bg); }
+
+/* Nav bar — themed backdrop */
+.nav-bg {
+  background: var(--nav-bg);
+  border-color: var(--nav-border);
 }
 
 /* ── CARDS ──────────────────────────────────────────────────── */

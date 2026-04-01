@@ -37,11 +37,11 @@ export function RangeLogCard({
       }`}
     >
       {/* Image panel */}
-      <div className="w-full md:w-48 h-48 md:h-auto bg-black/40 relative flex-shrink-0 border-b md:border-b-0 md:border-r border-steel-700">
+      <div className="w-full md:w-48 h-48 md:h-auto bg-panel relative flex-shrink-0 border-b md:border-b-0 md:border-r border-steel-700">
         {log.imageUrl ? (
           <div className="relative w-full h-full group-image">
             <img src={log.imageUrl} alt="Target" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
-            <a href={log.imageUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 bg-black/60 p-1.5 rounded-full text-steel-300 hover:text-white hover:bg-black/90 transition opacity-0 group-hover:opacity-100">
+            <a href={log.imageUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 bg-scrim p-1.5 rounded-full text-steel-300 hover:text-white hover:bg-black/90 transition opacity-0 group-hover:opacity-100">
               <ExternalLink size={12} />
             </a>
           </div>
@@ -49,7 +49,7 @@ export function RangeLogCard({
           <div className="w-full h-full flex items-center justify-center text-steel-700"><Target size={32} /></div>
         )}
         {log.groupSize && (
-          <div className="absolute top-2 left-2 bg-black/80 backdrop-blur border border-copper-500/30 px-2 py-1 rounded-md shadow-lg">
+          <div className="absolute top-2 left-2 bg-scrim backdrop-blur border border-copper-500/30 px-2 py-1 rounded-md shadow-lg">
             <span className="text-xs font-bold text-steel-200">{log.groupSize}"</span>
           </div>
         )}
@@ -87,14 +87,14 @@ export function RangeLogCard({
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center">
+          <div className="bg-panel rounded p-2 border border-steel-700/60 text-center">
             <span className="flex items-center justify-center text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">
               Performance
               <InfoTip variant="info" title="MOA" text="Minutes of Angle — 1 MOA ≈ 1 inch at 100 yards. Calculated from group size and distance. Lower is better." size={9} />
             </span>
             <span className="block text-[10px] font-mono text-steel-200">{calculateMoa(log.groupSize, log.distance)}</span>
           </div>
-          <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center">
+          <div className="bg-panel rounded p-2 border border-steel-700/60 text-center">
             <span className="flex items-center justify-center text-[9px] text-steel-500 uppercase tracking-wider mb-0.5">
               Velocity
               <InfoTip variant="info" text="Muzzle velocity in fps measured by chronograph. Used to calculate SD and ES for load consistency analysis." size={9} />
@@ -102,7 +102,7 @@ export function RangeLogCard({
             <span className="block text-sm font-bold text-steel-200">{log.velocity || '---'}</span>
             <span className="block text-[9px] text-steel-500">fps</span>
           </div>
-          <div className="bg-black/40 rounded p-2 border border-steel-700/60 text-center flex flex-col justify-center">
+          <div className="bg-panel rounded p-2 border border-steel-700/60 text-center flex flex-col justify-center">
             <div className="flex justify-between px-2 text-[10px] border-b border-steel-700/50 pb-0.5 mb-0.5">
               <span className="text-steel-500 flex items-center gap-0.5">SD<InfoTip variant="tip" title="Standard Deviation" text="Under 15 fps = excellent. Under 30 fps = acceptable. High SD means inconsistent pressure — check powder charge and seating depth." size={9} side="bottom" /></span>
               <span className="text-steel-300 font-mono">{log.sd || '-'}</span>

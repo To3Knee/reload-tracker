@@ -314,7 +314,7 @@ ${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div 
               <div><label className={labelClass}>Date</label><input type="date" className={inputClass} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
             </div>
 
-            <div className="bg-black/30 p-3 rounded-xl border border-steel-700">
+            <div className="bg-panel p-3 rounded-xl border border-steel-700">
               <div className="flex items-center justify-between mb-2">
                 <label className={labelClass}><Calculator size={12} className="inline mr-1" /> Shot String Calculator</label>
                 <span className="text-[9px] text-steel-500">{shotString.length} shots recorded</span>
@@ -361,7 +361,7 @@ ${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div 
                 </div>
                 <div>
                   <label className={labelClass}>Target Image</label>
-                  <div className="bg-black/20 rounded-xl p-3 border border-steel-700 flex flex-col justify-center h-[100px]">
+                  <div className="bg-panel-sm rounded-xl p-3 border border-steel-700 flex flex-col justify-center h-[100px]">
                     <UploadButton currentImageUrl={form.imageUrl} onUploadComplete={(url) => setForm(prev => ({ ...prev, imageUrl: url }))} />
                   </div>
                 </div>

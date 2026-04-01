@@ -291,7 +291,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
   const labelClass       = 'rt-label'
   const helpClass        = 'text-[9px] text-steel-500 mt-0.5 italic flex items-center gap-1'
   const sectionLabelClass = 'rt-label block mb-4'
-  const tabBtnClass = (active) => `pb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] transition border-b-2 flex items-center gap-2 ${active ? 'border-[#c42b21] text-[#f2f2f4]' : 'border-transparent text-[#484854] hover:text-[#82828e]'}`
+  const tabBtnClass = (active) => `pb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] transition border-b-2 flex items-center gap-2 ${active ? 'border-[#c42b21] text-[var(--text-hi)]' : 'border-transparent text-[var(--text-lo)] hover:text-[var(--text-md)]'}`
 
   return (
     <>
@@ -340,11 +340,11 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
             {/* Scanner modal */}
             {showScanner && createPortal(
-              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-scrim backdrop-blur-md p-4 animate-in fade-in duration-200">
                 <div className="glass w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
-                  <button onClick={() => { stopScanner(); setShowScanner(false) }} className="absolute top-4 right-4 text-steel-400 hover:text-white bg-black/50 p-2 rounded-full z-20 cursor-pointer"><X size={20} /></button>
+                  <button onClick={() => { stopScanner(); setShowScanner(false) }} className="absolute top-4 right-4 text-steel-400 hover:text-white bg-panel p-2 rounded-full z-20 cursor-pointer"><X size={20} /></button>
                   <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2"><ScanBarcode className="text-[var(--copper)]" /> Scanner</h3>
-                  <div className="relative w-full h-[300px] bg-black rounded-lg overflow-hidden border-2 border-[var(--copper)]/30 flex flex-col items-center justify-center group">
+                  <div className="relative w-full h-[300px] bg-[var(--bg)] rounded-lg overflow-hidden border-2 border-[var(--copper)]/30 flex flex-col items-center justify-center group">
                     {!scannerActive && !cameraLoading && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-steel-800 z-50 space-y-4 animate-in fade-in">
                         <button onClick={startScanner} className="w-48 px-4 py-3 bg-red-700 hover:bg-red-600 text-white rounded-md font-bold shadow-lg transition flex items-center justify-center gap-2 cursor-pointer relative z-50"><Camera size={18} /> Live Camera</button>
@@ -353,7 +353,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                       </div>
                     )}
                     {cameraLoading && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-40">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-scrim z-40">
                         <Loader2 className="animate-spin text-[var(--copper)] mb-2" size={32} />
                         <span className="text-xs text-steel-300">Starting Camera...</span>
                       </div>
@@ -402,7 +402,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-steel-700 bg-black/20 p-3 rounded-xl">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-steel-700 bg-panel-sm p-3 rounded-xl">
                     <div><label className={labelClass}>{qtyLabel}</label><input type="number" step="0.01" className={inputClass} value={form.qty} onChange={e => setForm({ ...form, qty: e.target.value })} placeholder="e.g. 1000" /></div>
                     <div><label className={labelClass}>Unit</label><select className={inputClass} value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}>{UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}</select></div>
                     <div><label className={labelClass}>Total Paid</label><input type="number" step="0.01" className={inputClass} value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} placeholder="0.00" /><p className={helpClass}>Pre-tax price</p></div>
@@ -433,7 +433,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
             {/* Inventory list */}
             <div className="glass p-6">
-              <div className="flex items-center gap-2 mb-6 bg-black/40 p-2 rounded-xl border border-steel-700">
+              <div className="flex items-center gap-2 mb-6 bg-panel p-2 rounded-xl border border-steel-700">
                 <Search size={16} className="text-steel-400 ml-2" />
                 <input className="bg-transparent border-none focus:outline-none text-xs text-steel-100 w-full placeholder:text-steel-500" placeholder="Search purchases..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
               </div>
@@ -466,7 +466,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
         {/* Delete modal */}
         {deleteModalOpen && itemToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
             <div className="glass border border-red-900/50 shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
               <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto"><Trash2 className="text-red-500" size={24} /></div>
               <div><h3 className="text-lg font-bold text-white">Delete Lot?</h3><p className="text-sm text-steel-300 mt-1">Are you sure you want to delete <span className="text-white font-medium">{itemToDelete.brand} {itemToDelete.name}</span>?<br />This action cannot be undone.</p></div>

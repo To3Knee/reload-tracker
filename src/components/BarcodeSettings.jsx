@@ -95,7 +95,7 @@ export function BarcodeSettings({ settings, onSave }) {
                 </h3>
 
                 {/* STATUS CARD */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-black/20 border border-steel-700 rounded-md mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-panel-sm border border-steel-700 rounded-md mb-4">
                     <div className="flex items-start gap-3">
                         <div className="p-2 rounded-md bg-steel-700 text-steel-400 mt-1">
                             <ScanBarcode size={18} />
@@ -122,7 +122,7 @@ export function BarcodeSettings({ settings, onSave }) {
                 </div>
 
                 {/* CONFIG FORM */}
-                <div className={`p-4 bg-black/20 border border-steel-700 rounded-md space-y-4 transition-opacity duration-300 ${enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                <div className={`p-4 bg-panel-sm border border-steel-700 rounded-md space-y-4 transition-opacity duration-300 ${enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
                     <div>
                         <label className={labelClass}>Provider <span className={subLabelClass}>(Service API)</span></label>
                         <div className="relative">
