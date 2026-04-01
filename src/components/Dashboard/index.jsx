@@ -7,14 +7,14 @@ import {
   calculateBrassCostPerRound,
   convertToGrains,
 } from '../../lib/math'
-import { X, DollarSign } from 'lucide-react'
+import { DollarSign } from 'lucide-react'
 import { ErrorBanner } from '../ErrorBanner'
 import { renderOptionLabel, toStandardMoney, toPrecisionMoney } from './dashboardHelpers'
 import { CostResults } from './CostResults'
 
 const inputClass = 'rt-input'
 
-export default function Dashboard({ purchases = [], recipes: recipesProp = [], selectedRecipe, onSelectRecipe }) {
+export default function Dashboard({ purchases = [], recipes: recipesProp = [], selectedRecipe, onSelectRecipe, canEdit = false }) {
   const [chargeGrains,      setChargeGrains]      = useState('')
   const [lotSize,           setLotSize]           = useState(20)
   const [caseReuse,         setCaseReuse]         = useState(5)
@@ -33,7 +33,9 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
 
   useEffect(() => {
     let mounted = true
-    getMarketListings().catch(() => []).then(data => { if (mounted) setMarketItems(data) })
+    getMarketListings()
+      .then(data => { if (mounted) setMarketItems(data) })
+      .catch(err => { if (mounted) console.warn('Market listings unavailable:', err) })
     return () => { mounted = false }
   }, [])
 
@@ -198,6 +200,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
   function handleDeleteScenario(id) { setScenarios(prev => prev.filter(s => s.id !== id)) }
 
   async function handleSaveScenarioAsRecipe(scenario) {
+    if (!canEdit) return
     setSavingRecipeId(scenario.id); setError(null)
     try {
       await saveRecipe({ name: scenario.name || 'Saved config', caliber: scenario.caliber || '', profileType: 'custom', chargeGrains: scenario.chargeGrains || 0, brassReuse: scenario.caseReuse || 1, lotSize: scenario.lotSize || 0, notes: 'Saved from Live Round Calculator config.' })
@@ -288,7 +291,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span onClick={() => handleDeleteScenario(s.id)} className="rt-btn rt-btn-danger">Remove</span>
-                      <span onClick={() => handleSaveScenarioAsRecipe(s)} className="rt-btn rt-btn-confirm disabled:opacity-50">{savingRecipeId === s.id ? 'Saving…' : 'Save recipe'}</span>
+                      {canEdit && <span onClick={() => handleSaveScenarioAsRecipe(s)} className="rt-btn rt-btn-confirm disabled:opacity-50">{savingRecipeId === s.id ? 'Saving…' : 'Save recipe'}</span>}
                     </div>
                   </div>
                 ))}

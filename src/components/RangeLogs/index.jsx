@@ -8,13 +8,8 @@ import UploadButton from '../UploadButton'
 import QRCode from 'qrcode'
 import { HAPTIC } from '../../lib/haptics'
 import { RangeLogCard, calculateMoa } from './RangeLogCard'
-
-const getLocalDate = () => {
-  const now = new Date()
-  const offset = now.getTimezoneOffset()
-  const local = new Date(now.getTime() - (offset * 60 * 1000))
-  return local.toISOString().split('T')[0]
-}
+import { ErrorBanner } from '../ErrorBanner'
+import { getLocalDate } from '../Purchases/purchaseHelpers'
 
 const DEFAULT_FORM = {
   recipeId: '', batchId: '', firearmId: '', roundsFired: '',
@@ -28,6 +23,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
   const [isFormOpen,     setIsFormOpen]     = useState(false)
   const [editingId,      setEditingId]      = useState(null)
   const [verifyDeleteId, setVerifyDeleteId] = useState(null)
+  const [error,          setError]          = useState(null)
   const [weatherError,   setWeatherError]   = useState(null)
   const [shotInput,      setShotInput]      = useState('')
   const [shotString,     setShotString]     = useState([])
@@ -124,6 +120,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    setError(null)
     try {
       const payload = { ...form, shots: shotString }
       if (editingId) {
@@ -133,12 +130,14 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
         setLastUsedValues({ firearmId: form.firearmId, batchId: form.batchId, recipeId: form.recipeId, date: form.date, weather: form.weather, temp: form.temp })
       }
       HAPTIC.success(); handleCancel(); refresh()
-    } catch (err) { HAPTIC.error(); console.error(err) }
+    } catch (err) { setError(`Failed to save: ${err.message || 'Unknown error'}`); HAPTIC.error() }
   }
 
   async function handleDelete(id) {
-    setVerifyDeleteId(null); HAPTIC.error()
-    await deleteRangeLog(id); refresh()
+    setVerifyDeleteId(null); HAPTIC.soft()
+    try {
+      await deleteRangeLog(id); HAPTIC.success(); refresh()
+    } catch (err) { setError(`Failed to delete: ${err.message || 'Unknown error'}`); HAPTIC.error() }
   }
 
   const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -152,7 +151,7 @@ export function RangeLogs({ recipes = [], canEdit, highlightId }) {
   async function handlePrintLog(log) {
     HAPTIC.click()
     const win = window.open('', '_blank')
-    if (!win) { alert('Popup blocked. Please allow popups.'); return }
+    if (!win) { setError('Pop-up blocked. Please allow popups for this site.'); return }
     win.document.write('<html><body style="background:#fff"><p style="color:#aaa;font-family:monospace;padding:20px;font-size:12px">Generating Ballistic Certificate...</p></body></html>')
 
     const title = getRecipeDisplay(log)
@@ -265,6 +264,8 @@ ${log.notes ? `<div class="sect">Session Notes</div><div class="notes-box"><div 
           <h2 className="rt-section-title">RANGE LOGS</h2>
         </div>
       </div>
+
+      <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <div className="flex justify-end border-b border-steel-700 pb-2 mb-6">
         {canEdit && !isFormOpen && (

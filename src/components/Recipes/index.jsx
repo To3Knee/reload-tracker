@@ -1,9 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
-import { saveRecipe, formatCurrency } from '../../lib/db'
+import { saveRecipe } from '../../lib/db'
 import { getFirearms } from '../../lib/armory'
 import { downloadExcel } from '../../lib/excel'
 import { HAPTIC } from '../../lib/haptics'
-import { calculateCostPerUnit } from '../../lib/math'
 import { calculateStability, parseTwistRate, guessDiameter } from '../../lib/ballistics'
 import { CartridgeVisualizer } from '../CartridgeVisualizer'
 import { useAppStore } from '../../lib/store'
@@ -16,6 +15,7 @@ import {
   PROFILE_TYPES, DEFAULT_FORM, FieldLabel,
   guessCaseLength, getCaliberDefaults, apiDeleteRecipe
 } from './recipeHelpers.jsx'
+import { renderPurchaseOptionLabel } from '../Purchases/purchaseHelpers'
 import { BatchModal } from './BatchModal'
 import { RecipeCard } from './RecipeCard'
 
@@ -56,11 +56,6 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
   const bullets = useMemo(() => getSmartList('bullet', form.caliber), [activePurchases, form.caliber])
   const primers = useMemo(() => getSmartList('primer', form.caliber), [activePurchases, form.caliber])
   const cases   = useMemo(() => getSmartList('case',   form.caliber), [activePurchases, form.caliber])
-
-  const renderOptionLabel = p => {
-    const cost = calculateCostPerUnit(p.price, p.shipping, p.tax, p.qty)
-    return `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'} ${p.name || ''} (${formatCurrency(cost)}/u)`
-  }
 
   useEffect(() => {
     getFirearms().then(setGuns).catch(e => console.warn(e))
@@ -358,12 +353,12 @@ ${recipe.notes ? `<div class="sect">Load Notes</div><div class="notes-box"><div 
               </div>
               <div className="flex-1 space-y-4 rt-card p-4">
                 <p className="text-[10px] uppercase text-steel-500 tracking-[0.2em] mb-2 border-b border-steel-700 pb-1">Ingredients</p>
-                <div><FieldLabel label="Powder" help="Select from Inventory." /><select className={inputClass} value={form.powderLotId} onChange={e => updateField('powderLotId', e.target.value)}><option value="">Select Powder...</option>{powders.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}</select></div>
+                <div><FieldLabel label="Powder" help="Select from Inventory." /><select className={inputClass} value={form.powderLotId} onChange={e => updateField('powderLotId', e.target.value)}><option value="">Select Powder...</option>{powders.map(p => <option key={p.id} value={p.id}>{renderPurchaseOptionLabel(p)}</option>)}</select></div>
                 <div><FieldLabel label="Charge (gr)" help="Powder weight." /><input type="number" min="0" step="0.01" className={inputClass} value={form.chargeGrains} onChange={e => updateField('chargeGrains', e.target.value)} /></div>
-                <div><FieldLabel label="Bullet" help="Select projectile." /><select className={inputClass} value={form.bulletLotId} onChange={e => updateField('bulletLotId', e.target.value)}><option value="">Select Bullet...</option>{bullets.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}</select></div>
+                <div><FieldLabel label="Bullet" help="Select projectile." /><select className={inputClass} value={form.bulletLotId} onChange={e => updateField('bulletLotId', e.target.value)}><option value="">Select Bullet...</option>{bullets.map(p => <option key={p.id} value={p.id}>{renderPurchaseOptionLabel(p)}</option>)}</select></div>
                 <div><FieldLabel label="Bullet Len (in)" help="Length of projectile." /><input type="number" step="0.001" className={inputClass} placeholder="1.200" value={form.bulletLength} onChange={e => updateField('bulletLength', e.target.value)} /></div>
-                <div><FieldLabel label="Primer" help="Select Primer." /><select className={inputClass} value={form.primerLotId} onChange={e => updateField('primerLotId', e.target.value)}><option value="">Select Primer...</option>{primers.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}</select></div>
-                <div><FieldLabel label="Brass" help="Select Case/Brass." /><select className={inputClass} value={form.caseLotId} onChange={e => updateField('caseLotId', e.target.value)}><option value="">Select Brass...</option>{cases.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}</select></div>
+                <div><FieldLabel label="Primer" help="Select Primer." /><select className={inputClass} value={form.primerLotId} onChange={e => updateField('primerLotId', e.target.value)}><option value="">Select Primer...</option>{primers.map(p => <option key={p.id} value={p.id}>{renderPurchaseOptionLabel(p)}</option>)}</select></div>
+                <div><FieldLabel label="Brass" help="Select Case/Brass." /><select className={inputClass} value={form.caseLotId} onChange={e => updateField('caseLotId', e.target.value)}><option value="">Select Brass...</option>{cases.map(p => <option key={p.id} value={p.id}>{renderPurchaseOptionLabel(p)}</option>)}</select></div>
               </div>
             </div>
 

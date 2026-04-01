@@ -1,3 +1,6 @@
+import { calculateCostPerUnit } from '../../lib/math'
+import { formatCurrency } from '../../lib/db'
+
 export const COMPONENT_TYPES = [
   { value: 'powder', label: 'Powder' },
   { value: 'bullet', label: 'Bullet / Projectile' },
@@ -45,4 +48,10 @@ export function getSmartPrice(type, unitCost) {
   if (type === 'primer')                     return { label: 'Cost / 1k',  val: unitCost * 1000 }
   if (type === 'bullet' || type === 'case')  return { label: 'Cost / 100', val: unitCost * 100 }
   return                                            { label: 'Cost / Unit', val: unitCost }
+}
+
+// Shared option label for purchase lot <select> elements throughout the app
+export function renderPurchaseOptionLabel(p) {
+  const cost = calculateCostPerUnit(p.price, p.shipping, p.tax, p.qty)
+  return `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'} ${p.name || ''} (${formatCurrency(cost)}/u)`
 }

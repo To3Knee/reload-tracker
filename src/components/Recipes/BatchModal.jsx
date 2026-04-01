@@ -1,16 +1,10 @@
 import { useState, useMemo } from 'react'
 import { X } from 'lucide-react'
 import { createBatch } from '../../lib/batches'
-import { calculateCostPerUnit } from '../../lib/math'
-import { formatCurrency } from '../../lib/db'
 import { HAPTIC } from '../../lib/haptics'
 import { InfoTip } from '../InfoTip'
 import { useAppStore } from '../../lib/store'
-
-function renderOptionLabel(p) {
-  const cost = calculateCostPerUnit(p.price, p.shipping, p.tax, p.qty)
-  return `${p.lotId || 'LOT'} — ${p.brand || 'Unknown'} ${p.name || ''} (${formatCurrency(cost)}/u)`
-}
+import { renderPurchaseOptionLabel } from '../Purchases/purchaseHelpers'
 
 export function BatchModal({ recipe, purchases, onClose, onSuccess }) {
   const refresh = useAppStore(s => s.refresh)
@@ -46,7 +40,7 @@ export function BatchModal({ recipe, purchases, onClose, onSuccess }) {
     notes:       '',
   })
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
 
   const inputClass = 'rt-input'
   const labelClass = 'rt-label'
@@ -54,7 +48,7 @@ export function BatchModal({ recipe, purchases, onClose, onSuccess }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setSubmitting(true)
-    setError('')
+    setError(null)
     try {
       await createBatch({ recipeId: recipe.id, ...form })
       HAPTIC.success()
@@ -91,7 +85,7 @@ export function BatchModal({ recipe, purchases, onClose, onSuccess }) {
               <label className={labelClass}>Powder Lot</label>
               <select className={inputClass} value={form.powderLotId} onChange={set('powderLotId')}>
                 <option value="">Select Powder...</option>
-                {powders.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}
+                {powders.map(p => <option key={p.id} value={p.id}>{renderPurchaseOptionLabel(p)}</option>)}
               </select>
             </div>
           </div>
@@ -100,23 +94,27 @@ export function BatchModal({ recipe, purchases, onClose, onSuccess }) {
               <label className={labelClass}>Bullet Lot</label>
               <select className={inputClass} value={form.bulletLotId} onChange={set('bulletLotId')}>
                 <option value="">Select...</option>
-                {bullets.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}
+                {bullets.map(p => <option key={p.id} value={p.id}>{renderPurchaseOptionLabel(p)}</option>)}
               </select>
             </div>
             <div>
               <label className={labelClass}>Primer Lot</label>
               <select className={inputClass} value={form.primerLotId} onChange={set('primerLotId')}>
                 <option value="">Select...</option>
-                {primers.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}
+                {primers.map(p => <option key={p.id} value={p.id}>{renderPurchaseOptionLabel(p)}</option>)}
               </select>
             </div>
             <div>
               <label className={labelClass}>Brass Lot</label>
               <select className={inputClass} value={form.caseLotId} onChange={set('caseLotId')}>
                 <option value="">Select Brass...</option>
-                {cases.map(p => <option key={p.id} value={p.id}>{renderOptionLabel(p)}</option>)}
+                {cases.map(p => <option key={p.id} value={p.id}>{renderPurchaseOptionLabel(p)}</option>)}
               </select>
             </div>
+          </div>
+          <div>
+            <label className={labelClass}>Notes (optional)</label>
+            <textarea className={inputClass + ' h-16 resize-none'} value={form.notes} onChange={set('notes')} placeholder="Any notes about this batch..." />
           </div>
           {error && (
             <div className="p-3 rounded-md bg-red-900/20 border border-red-900/50 text-[11px] text-red-400">{error}</div>

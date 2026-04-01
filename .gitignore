@@ -16,12 +16,34 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # Env files
 .env
 .env.local
 .env.*.local
+.env.production
 
 # Netlify / build artifacts
 .netlify/
-.env
+
+# Claude Code
+.claude/
+
+# Windows scripts (local dev tooling)
+bundler.ps1
+*.ps1
+
+# Backend runtime / secrets
+backend/.env
+backend/node_modules/
+backend/dist/
+
+# Uploaded user files (if stored locally during dev)
+uploads/
+public/uploads/
+
+# Coverage / test artifacts
+coverage/
+.nyc_output/
