@@ -48,6 +48,12 @@ export default defineConfig({
       },
     }),
   ],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/__tests__/setup.js'],
+    coverage: { provider: 'v8', reporter: ['text', 'lcov'] },
+  },
   // This line fixes the white-screen-of-death on Netlify
   base: '/',
   build: {
