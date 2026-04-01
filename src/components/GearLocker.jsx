@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { getGear, saveGear, deleteGear } from '../lib/gear'
 import { Plus, Trash2, Edit, ExternalLink, Box, Wand2, Loader2, AlertTriangle, X, User } from 'lucide-react'
+import { ErrorBanner } from './ErrorBanner'
 import { HAPTIC } from '../lib/haptics'
 import UploadButton from './UploadButton'
 import { formatCurrency } from '../lib/db'
@@ -161,14 +162,7 @@ export function GearLocker() {
                     {editingId ? 'Edit Gear' : 'New Gear'}
                 </h3>
                 
-                {/* ERROR BANNER */}
-                {error && (
-                    <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 mb-4 animate-in fade-in slide-in-from-top-2">
-                        <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
-                        <div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div>
-                        <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button>
-                    </div>
-                )}
+                <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     

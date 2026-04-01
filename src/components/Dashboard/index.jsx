@@ -7,7 +7,8 @@ import {
   calculateBrassCostPerRound,
   convertToGrains,
 } from '../../lib/math'
-import { AlertTriangle, X, DollarSign } from 'lucide-react'
+import { X, DollarSign } from 'lucide-react'
+import { ErrorBanner } from '../ErrorBanner'
 import { renderOptionLabel, toStandardMoney, toPrecisionMoney } from './dashboardHelpers'
 import { CostResults } from './CostResults'
 
@@ -214,13 +215,7 @@ export default function Dashboard({ purchases = [], recipes: recipesProp = [], s
         </div>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
-          <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
-          <div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16} /></button>
-        </div>
-      )}
+      <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <div className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-6 items-start">
         {/* Left column: inputs */}

@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react'
 // FIX: Added ShoppingCart to imports below
-import { Plus, Trash2, RefreshCw, Edit, ExternalLink, Loader2, AlertTriangle, X, ShoppingCart } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Edit, ExternalLink, Loader2, X, ShoppingCart } from 'lucide-react'
+import { ErrorBanner } from './ErrorBanner'
 import { HAPTIC } from '../lib/haptics'
 import { formatCurrency } from '../lib/db'
 
@@ -102,13 +103,7 @@ export function SupplyChain() {
     return (
         <div className="space-y-8 relative">
             
-            {error && (
-                <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
-                    <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
-                    <div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div>
-                    <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16}/></button>
-                </div>
-            )}
+            <ErrorBanner error={error} onDismiss={() => setError(null)} />
             
             <div className="glass p-6 flex gap-2 border border-red-500/30">
                 <input

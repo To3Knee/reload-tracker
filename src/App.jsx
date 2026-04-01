@@ -53,6 +53,15 @@ export default function App() {
   const [ageConfirmed, setAgeConfirmed] = useState(
     typeof window !== 'undefined' ? localStorage.getItem('ageConfirmed') === 'true' : false
   )
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+
+  useEffect(() => {
+    const goOffline = () => setIsOffline(true)
+    const goOnline  = () => setIsOffline(false)
+    window.addEventListener('offline', goOffline)
+    window.addEventListener('online',  goOnline)
+    return () => { window.removeEventListener('offline', goOffline); window.removeEventListener('online', goOnline) }
+  }, [])
 
   // Zustand store
   const { purchases, recipes, currentUser, aiEnabled, refresh, setCurrentUser, clearCurrentUser } = useAppStore()
@@ -149,6 +158,12 @@ export default function App() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {isOffline && (
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-amber-900/90 backdrop-blur border-b border-amber-600/50 px-4 py-2 flex items-center justify-center gap-2 text-[11px] font-bold text-amber-200 uppercase tracking-wider">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          Offline — showing cached data
+        </div>
+      )}
       <Navbar
         activeTab={activeTab}
         setActiveTab={handleTabChange}

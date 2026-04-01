@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom'
 import { getAllPurchases, addPurchase, deletePurchase, calculatePerUnit } from '../../lib/db'
 import { fetchSettings } from '../../lib/settings'
 import {
-  Trash2, Plus, Search, X, Edit, AlertTriangle,
-  Globe, Package, ScanBarcode, Sparkles, Camera, Loader2, Image as ImageIcon, Info,
+  Trash2, Plus, Search, X, Edit,
+  Globe, Package, ScanBarcode, Camera, Loader2, Image as ImageIcon, Info,
 } from 'lucide-react'
+import { ErrorBanner } from '../ErrorBanner'
 import { InfoTip } from '../InfoTip'
 import { HAPTIC } from '../../lib/haptics'
 import UploadButton from '../UploadButton'
@@ -328,13 +329,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
 
         {activeSubTab === 'supply' ? <Market user={user} /> : (
           <>
-            {error && (
-              <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
-                <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
-                <div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div>
-                <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16} /></button>
-              </div>
-            )}
+            <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
             {loading && scanStatus && (
               <div className="flex items-center gap-3 bg-steel-800 border border-steel-700 rounded-md p-3 animate-in fade-in">

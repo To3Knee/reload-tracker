@@ -9,8 +9,9 @@ import { CartridgeVisualizer } from '../CartridgeVisualizer'
 import { useAppStore } from '../../lib/store'
 import QRCode from 'qrcode'
 import {
-  X, HelpCircle, AlertTriangle, Trash2, Crosshair, FileText, Archive
+  X, HelpCircle, Trash2, Crosshair, FileText, Archive
 } from 'lucide-react'
+import { ErrorBanner } from '../ErrorBanner'
 import {
   PROFILE_TYPES, DEFAULT_FORM, FieldLabel,
   guessCaseLength, getCaliberDefaults, apiDeleteRecipe
@@ -338,13 +339,7 @@ ${recipe.notes ? `<div class="sect">Load Notes</div><div class="notes-box"><div 
       {/* Form */}
       <div className="glass p-6 space-y-4">
         <div><h3 className="text-sm font-bold text-steel-200 uppercase tracking-widest border-b border-steel-700 pb-2 mb-4">{editingRecipe ? 'MODIFY LOAD DATA' : 'NEW LOAD DEFINITION'}</h3></div>
-        {error && (
-          <div className="flex items-center gap-3 bg-red-900/20 border border-red-500/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
-            <AlertTriangle className="text-red-500 flex-shrink-0" size={20} />
-            <div className="flex-1"><p className="text-xs font-bold text-red-400">System Notification</p><p className="text-xs text-red-200/80">{error}</p></div>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={16} /></button>
-          </div>
-        )}
+        <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
         {canEdit ? (
           <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
