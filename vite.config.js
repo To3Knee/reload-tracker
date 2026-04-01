@@ -9,6 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Don't precache heavy vendor chunks — runtime-cache them on first use instead.
+        // Saves ~870KB from the initial PWA install payload.
+        globIgnores: ['**/vendor-charts-*.js', '**/vendor-scanner-*.js', '**/vendor-qr-*.js'],
         runtimeCaching: [
           {
             urlPattern: /^\/api\//,
@@ -17,6 +20,15 @@ export default defineConfig({
               cacheName: 'api-cache',
               networkTimeoutSeconds: 5,
               expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+            },
+          },
+          {
+            // Heavy vendor chunks: cache on first use, serve from cache thereafter
+            urlPattern: /\/assets\/vendor-(charts|scanner|qr)-[^/]+\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'vendor-chunks',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
         ],

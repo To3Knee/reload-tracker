@@ -1,12 +1,11 @@
 import { useEffect, useState, useRef, lazy, Suspense, useCallback } from 'react'
 import Navbar from './components/Navbar'
 import Dashboard from './components/Dashboard'
-import { Purchases } from './components/Purchases'
-import { Inventory } from './components/Inventory'
-import { Recipes } from './components/Recipes'
-import { Batches } from './components/Batches'
-import { RangeLogs } from './components/RangeLogs'
-import { Armory } from './components/Armory'
+const Inventory = lazy(() => import('./components/Inventory').then(m => ({ default: m.Inventory })))
+const Recipes   = lazy(() => import('./components/Recipes').then(m => ({ default: m.Recipes })))
+const Batches   = lazy(() => import('./components/Batches').then(m => ({ default: m.Batches })))
+const RangeLogs = lazy(() => import('./components/RangeLogs').then(m => ({ default: m.RangeLogs })))
+const Armory    = lazy(() => import('./components/Armory').then(m => ({ default: m.Armory })))
 import { useAppStore } from './lib/store'
 import { logoutUser, ROLE_ADMIN } from './lib/auth'
 import { APP_VERSION_LABEL } from './version'
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react'
 
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })))
+const Purchases = lazy(() => import('./components/Purchases').then(m => ({ default: m.Purchases })))
 const AuthModal  = lazy(() => import('./components/AuthModal'))
 const AiModal    = lazy(() => import('./components/AiModal'))
 
@@ -201,12 +201,36 @@ export default function App() {
         style={pullDistance > 0 ? { transform: `translateY(${pullDistance / 2}px)` } : undefined}
       >
         {activeTab === 'calculator' && <Dashboard purchases={purchases} recipes={recipes} selectedRecipe={selectedRecipe} onSelectRecipe={handleUseRecipe} canEdit={!!isAdmin} />}
-        {activeTab === 'armory'     && <Armory canEdit={!!isAdmin} />}
-        {activeTab === 'purchases'  && <Purchases onChanged={refresh} canEdit={!!isAdmin} highlightId={scannedId} user={currentUser} />}
-        {activeTab === 'inventory'  && <Inventory purchases={purchases} selectedRecipe={selectedRecipe} />}
-        {activeTab === 'recipes'    && <Recipes onUseRecipe={handleUseRecipe} canEdit={!!isAdmin} purchases={purchases} />}
-        {activeTab === 'batches'    && <Batches highlightId={scannedId} />}
-        {activeTab === 'range'      && <RangeLogs recipes={recipes} canEdit={!!isAdmin} highlightId={scannedId} />}
+        {activeTab === 'armory'     && (
+          <Suspense fallback={<div className="p-8 text-center text-xs text-steel-500 animate-pulse">Loading Armory...</div>}>
+            <Armory canEdit={!!isAdmin} />
+          </Suspense>
+        )}
+        {activeTab === 'purchases'  && (
+          <Suspense fallback={<div className="p-8 text-center text-xs text-steel-500 animate-pulse">Loading Purchases...</div>}>
+            <Purchases onChanged={refresh} canEdit={!!isAdmin} highlightId={scannedId} user={currentUser} />
+          </Suspense>
+        )}
+        {activeTab === 'inventory'  && (
+          <Suspense fallback={<div className="p-8 text-center text-xs text-steel-500 animate-pulse">Loading Inventory...</div>}>
+            <Inventory purchases={purchases} selectedRecipe={selectedRecipe} />
+          </Suspense>
+        )}
+        {activeTab === 'recipes'    && (
+          <Suspense fallback={<div className="p-8 text-center text-xs text-steel-500 animate-pulse">Loading Recipes...</div>}>
+            <Recipes onUseRecipe={handleUseRecipe} canEdit={!!isAdmin} purchases={purchases} />
+          </Suspense>
+        )}
+        {activeTab === 'batches'    && (
+          <Suspense fallback={<div className="p-8 text-center text-xs text-steel-500 animate-pulse">Loading Batches...</div>}>
+            <Batches highlightId={scannedId} />
+          </Suspense>
+        )}
+        {activeTab === 'range'      && (
+          <Suspense fallback={<div className="p-8 text-center text-xs text-steel-500 animate-pulse">Loading Range Logs...</div>}>
+            <RangeLogs recipes={recipes} canEdit={!!isAdmin} highlightId={scannedId} />
+          </Suspense>
+        )}
         {activeTab === 'analytics'  && (
           <Suspense fallback={<div className="p-8 text-center text-xs text-steel-500 animate-pulse">Running Ballistics Calculations...</div>}>
             <Analytics />
