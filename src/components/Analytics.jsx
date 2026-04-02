@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { 
     getMonthlySpendData, 
     getPriceTrendData, 
@@ -22,7 +22,7 @@ const tooltipStyle = {
     backgroundColor: '#09090b',
     borderColor: '#27272a',
     borderRadius: '8px',
-    fontSize: '11px',
+    fontSize: '12px',
     color: '#f4f4f5',
     boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
     outline: 'none',
@@ -70,7 +70,19 @@ function ForecastItem({ item }) {
 
 // --- MAIN COMPONENT ---
 
+function useWindowWidth() {
+  const [width, setWidth] = useState(() => window.innerWidth)
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', handler, { passive: true })
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return width
+}
+
 export function Analytics() {
+  const windowWidth = useWindowWidth()
+  const isMobile = windowWidth < 640
   const [spendData, setSpendData] = useState([])
   const [trendData, setTrendData] = useState([])
   const [distData, setDistData] = useState([])
@@ -146,8 +158,8 @@ export function Analytics() {
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <BarChart data={spendData} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                            <XAxis dataKey="month" stroke="#555" fontSize={10} tickMargin={10} />
-                            <YAxis stroke="#555" fontSize={10} tickFormatter={(val) => `$${val}`} />
+                            <XAxis dataKey="month" stroke="#555" fontSize={isMobile ? 9 : 11} tickMargin={10} />
+                            <YAxis stroke="#555" fontSize={isMobile ? 9 : 11} tickFormatter={(val) => `$${val}`} />
                             <Tooltip 
                                 contentStyle={tooltipStyle}
                                 itemStyle={itemStyle}
@@ -200,8 +212,8 @@ export function Analytics() {
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                            <XAxis dataKey="date" stroke="#555" fontSize={10} tickFormatter={(str) => str.substring(5)} />
-                            <YAxis stroke="#555" fontSize={10} tickFormatter={(val) => `$${val}`} />
+                            <XAxis dataKey="date" stroke="#555" fontSize={isMobile ? 9 : 11} tickFormatter={(str) => str.substring(5)} />
+                            <YAxis stroke="#555" fontSize={isMobile ? 9 : 11} tickFormatter={(val) => `$${val}`} />
                             <Tooltip 
                                 contentStyle={tooltipStyle} 
                                 itemStyle={itemStyle}
@@ -237,8 +249,8 @@ export function Analytics() {
                                 data={distData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
+                                innerRadius={isMobile ? 40 : 60}
+                                outerRadius={isMobile ? 60 : 80}
                                 paddingAngle={5}
                                 dataKey="value"
                                 nameKey="name"
@@ -253,7 +265,7 @@ export function Analytics() {
                                 itemStyle={itemStyle} // FIX: Ensures white text
                                 formatter={(val) => formatCurrency(val)} 
                             />
-                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize: '10px', paddingTop: '10px'}}/>
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize: isMobile ? '9px' : '11px', paddingTop: '10px'}}/>
                         </PieChart>
                     </ResponsiveContainer>
                 ) : <NoData message="Inventory Empty" />}
@@ -284,8 +296,8 @@ export function Analytics() {
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <LineChart data={velocityData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                            <XAxis dataKey="date" stroke="#555" fontSize={10} tickFormatter={(str) => str.substring(5)} />
-                            <YAxis stroke="#555" fontSize={10} label={{ value: 'SD (fps)', angle: -90, position: 'insideLeft', fill: '#666', fontSize: 9 }} />
+                            <XAxis dataKey="date" stroke="#555" fontSize={isMobile ? 9 : 11} tickFormatter={(str) => str.substring(5)} />
+                            <YAxis stroke="#555" fontSize={isMobile ? 9 : 11} label={{ value: 'SD (fps)', angle: -90, position: 'insideLeft', fill: '#666', fontSize: isMobile ? 8 : 10 }} />
                             <Tooltip 
                                 contentStyle={tooltipStyle}
                                 itemStyle={itemStyle}
@@ -311,8 +323,8 @@ export function Analytics() {
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <BarChart data={volumeData} layout="vertical" margin={{ left: 10 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#222" horizontal={true} vertical={false} />
-                            <XAxis type="number" stroke="#555" fontSize={10} />
-                            <YAxis dataKey="name" type="category" stroke="#999" fontSize={10} width={60} />
+                            <XAxis type="number" stroke="#555" fontSize={isMobile ? 9 : 11} />
+                            <YAxis dataKey="name" type="category" stroke="#999" fontSize={isMobile ? 9 : 11} width={isMobile ? 50 : 60} />
                             <Tooltip 
                                 contentStyle={tooltipStyle} 
                                 itemStyle={itemStyle}

@@ -54,6 +54,14 @@
   --steel-800: 26  26  32;
   --steel-900: 16  16  26;
 
+  /* Status dot colors */
+  --dot-active:      #22c55e;
+  --dot-active-glow: rgba(34, 197, 94, 0.55);
+  --dot-low:         #f59e0b;
+  --dot-low-glow:    rgba(245, 158, 11, 0.55);
+  --dot-empty:       #ef4444;
+  --dot-empty-glow:  rgba(239, 68, 68, 0.55);
+
   /* Glass panel */
   --glass-bg:           rgba(18, 18, 20, 0.97);
   --glass-shadow-ring:  rgba(0, 0, 0, 0.45);
@@ -115,6 +123,14 @@ html.light {
 
   --nav-bg:       rgba(245, 245, 247, 0.97);
   --nav-border:   #d4d4da;
+
+  /* Status dot colors — light mode */
+  --dot-active:      #16a34a;
+  --dot-active-glow: rgba(22, 163, 74, 0.40);
+  --dot-low:         #d97706;
+  --dot-low-glow:    rgba(217, 119, 6, 0.40);
+  --dot-empty:       #dc2626;
+  --dot-empty-glow:  rgba(220, 38, 38, 0.40);
 }
 
 /* ── RESET & GLOBALS ────────────────────────────────────────── */
@@ -171,7 +187,7 @@ h1 {
 }
 .rt-section-eyebrow {
   display: block;
-  font-size: 9px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.28em;
   color: var(--text-md);
@@ -279,7 +295,7 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -404,7 +420,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 /* ── FORM LABELS ────────────────────────────────────────────── */
 .rt-label {
   display: block;
-  font-size: 9px !important;
+  font-size: 11px !important;
   font-weight: 700 !important;
   text-transform: uppercase;
   letter-spacing: 0.20em;
@@ -425,12 +441,12 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
   text-transform: uppercase;
   border: 1px solid currentColor;
 }
-.rt-chip-powder { color: var(--text-md); border-color: rgba(130, 130, 142, 0.30); background: rgba(130, 130, 142, 0.06); }
-.rt-chip-bullet { color: var(--text-md); border-color: rgba(130, 130, 142, 0.30); background: rgba(130, 130, 142, 0.06); }
-.rt-chip-primer { color: #c0c8d0;        border-color: rgba(192, 200, 208, 0.30); background: rgba(192, 200, 208, 0.06); }
-.rt-chip-brass  { color: var(--text-md); border-color: rgba(130, 130, 142, 0.30); background: rgba(130, 130, 142, 0.06); }
-.rt-chip-ammo   { color: #e05252;        border-color: rgba(196, 43,  33,  0.30); background: rgba(196, 43,  33,  0.06); }
-.rt-chip-other  { color: var(--text-md); border-color: rgba(130, 130, 142, 0.30); background: rgba(130, 130, 142, 0.06); }
+.rt-chip-powder { color: #e05252; border-color: rgba(196, 43,  33,  0.35); background: rgba(196, 43,  33,  0.12); }
+.rt-chip-bullet { color: #e05252; border-color: rgba(196, 43,  33,  0.35); background: rgba(196, 43,  33,  0.12); }
+.rt-chip-primer { color: #e05252; border-color: rgba(196, 43,  33,  0.35); background: rgba(196, 43,  33,  0.12); }
+.rt-chip-brass  { color: #e05252; border-color: rgba(196, 43,  33,  0.35); background: rgba(196, 43,  33,  0.12); }
+.rt-chip-ammo   { color: #e05252; border-color: rgba(196, 43,  33,  0.35); background: rgba(196, 43,  33,  0.12); }
+.rt-chip-other  { color: var(--text-md); border-color: rgba(130, 130, 142, 0.30); background: rgba(130, 130, 142, 0.08); }
 
 /* ── MONOSPACE DATA READOUTS ────────────────────────────────── */
 /*
@@ -454,9 +470,9 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 
 /* ── STATUS DOTS ────────────────────────────────────────────── */
 .rt-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
-.rt-dot-active   { background: #22c55e; box-shadow: 0 0 5px rgba(34, 197, 94, 0.55); }
-.rt-dot-low      { background: #f59e0b; box-shadow: 0 0 5px rgba(245, 158, 11, 0.55); }
-.rt-dot-empty    { background: #ef4444; box-shadow: 0 0 5px rgba(239, 68, 68, 0.55); }
+.rt-dot-active   { background: var(--dot-active);  box-shadow: 0 0 5px var(--dot-active-glow); }
+.rt-dot-low      { background: var(--dot-low);     box-shadow: 0 0 5px var(--dot-low-glow); }
+.rt-dot-empty    { background: var(--dot-empty);   box-shadow: 0 0 5px var(--dot-empty-glow); }
 .rt-dot-inactive { background: var(--border-md); }
 
 /* ── STAT TILES ─────────────────────────────────────────────── */
@@ -480,7 +496,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
   background: linear-gradient(90deg, transparent, var(--red-dim), var(--red), var(--red-dim), transparent);
 }
 .rt-stat-label {
-  font-size: 8px;
+  font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.22em;
   color: var(--text-lo);
@@ -555,3 +571,34 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 .animate-in             { animation: fadeIn 0.15s ease-out; }
 .fade-in                { animation: fadeIn 0.15s ease-out; }
 .slide-in-from-top-2    { animation: slideUp 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+
+/* ── AI MARKDOWN RENDERER ───────────────────────────────────── */
+.ai-markdown { overflow-x: auto; }
+.ai-markdown table {
+  border-collapse: collapse;
+  font-size: 10px;
+  margin: 0.5rem 0;
+  min-width: 100%;
+  white-space: nowrap;
+}
+.ai-markdown th {
+  text-align: left;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-md);
+  border-bottom: 1px solid var(--border-md);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.ai-markdown td {
+  padding: 3px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-hi);
+  font-variant-numeric: tabular-nums;
+}
+.ai-markdown tr:last-child td { border-bottom: none; }
+.ai-markdown tr:hover td { background: rgba(255,255,255,0.02); }
+.ai-markdown p { margin: 0 0 0.35rem; }
+.ai-markdown p:last-child { margin: 0; }
+.ai-markdown strong { color: var(--text-hi); }
