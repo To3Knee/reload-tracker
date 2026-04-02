@@ -126,10 +126,30 @@ function extractQtyRegex(text) {
 }
 
 // --- In-stock text detection ---
+// Returns true/false/null. null means "can't tell" — caller should keep existing DB value.
 function detectInStock(html) {
     const t = html.toLowerCase()
-    if (t.includes('"instock"') || t.includes('in-stock') || t.match(/\badd[\s-]to[\s-]cart\b/) || t.includes('in stock')) return true
-    if (t.includes('out of stock') || t.includes('outofstock') || t.includes('sold out') || t.includes('notify me when')) return false
+    // Explicit in-stock: JSON-LD value, "add to cart" button, visible "in stock" text
+    // Avoid matching substrings like data-in-stock="false" by requiring word boundaries / quotes
+    const inStockSignals = [
+        /"instock"/,           // JSON-LD: "availability":"InStock"
+        /\badd[\s-]to[\s-]cart\b/,
+        /\bin\s+stock\b/,      // text: "In Stock", "2 in stock"
+        /"availability"\s*:\s*"instock"/i,
+    ]
+    const outOfStockSignals = [
+        /"outofstock"/,        // JSON-LD: "availability":"OutOfStock"
+        /\bout\s+of\s+stock\b/,
+        /\bsold\s+out\b/,
+        /\bnotify\s+me\s+when\b/,
+        /"availability"\s*:\s*"outofstock"/i,
+    ]
+    const isInStock  = inStockSignals.some(r  => r.test(t))
+    const isOutStock = outOfStockSignals.some(r => r.test(t))
+
+    if (isInStock  && !isOutStock) return true
+    if (isOutStock && !isInStock)  return false
+    // Conflicting or no signals — let caller keep existing value
     return null
 }
 
@@ -156,9 +176,10 @@ function extractVendor(url) {
 
 // --- HYBRID SCRAPER: JSON-LD → Regex → AI (if key available) ---
 export async function refreshListing(id, userId) {
-    const itemRes = await query(`SELECT url FROM market_listings WHERE id = $1`, [id])
+    const itemRes = await query(`SELECT url, in_stock FROM market_listings WHERE id = $1`, [id])
     if (itemRes.rows.length === 0) throw new Error("Item not found")
     const url = itemRes.rows[0].url
+    const existingInStock = itemRes.rows[0].in_stock
 
     try {
         const scraperKey = process.env.SCRAPER_API_KEY
@@ -231,12 +252,14 @@ Page: ${snippet}`
         const category = inferCategory(title, url)
         qty = qty || 1 // default to 1 if no pack size detected
 
+        // inStock null means we couldn't determine it — keep the existing DB value via COALESCE
+        const finalInStock = inStock !== null ? inStock : existingInStock
         const updateRes = await query(
             `UPDATE market_listings
              SET name = $1, price = $2, in_stock = $3, image_url = $4, qty_per_unit = $5, vendor = $6, category = $7, status = 'active', last_scraped_at = NOW()
              WHERE id = $8
              RETURNING *, category as "componentType"`,
-            [title.trim(), price || 0, inStock ?? false, image, qty, vendor, category, id]
+            [title.trim(), price || 0, finalInStock ?? false, image, qty, vendor, category, id]
         )
         return updateRes.rows[0]
 
