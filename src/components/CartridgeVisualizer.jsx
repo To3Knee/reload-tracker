@@ -349,7 +349,6 @@ export function CartridgeVisualizer({
 
   // Theme-conditional color palette
   const clr = {
-    grid:       isDark ? '#1c1c1c' : '#d8d4ce',
     divider:    isDark ? '#252525' : '#ccc5bc',
     interior:   isDark ? '#0a0a0c' : '#f5f5f7',
     interiorMid:isDark ? '#111113' : '#ebebee',
@@ -463,11 +462,6 @@ export function CartridgeVisualizer({
             <stop offset="100%" stopColor={isDark ? '#222' : '#555'} />
           </radialGradient>
 
-          {/* Grid */}
-          <pattern id="cvGrid" width="10" height="10" patternUnits="userSpaceOnUse">
-            <path d="M 10 0 L 0 0 0 10" fill="none" stroke={clr.grid} strokeWidth="0.4" />
-          </pattern>
-
           {/* Clip: right half (x ≥ CX) */}
           <clipPath id="cvRightHalf">
             <rect x={CX} y={clipY} width={200} height={clipH} />
@@ -481,10 +475,6 @@ export function CartridgeVisualizer({
             <rect x={CX - 200} y={clipY} width={200} height={g.caseTopY - clipY} />
           </clipPath>
         </defs>
-
-        {/* ── GRID OVERLAY (no background — container CSS bg shows through) ── */}
-        <rect x={CX - g.baseW / 2 - 40} y={viewTop} width={g.baseW + 80} height={viewH}
-              fill="url(#cvGrid)" opacity="0.7" />
 
         {/* ── CENTRE DIVIDER ── */}
         <line x1={CX} y1={viewTop} x2={CX} y2={viewBottom}
