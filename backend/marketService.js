@@ -94,13 +94,35 @@ function parseJsonLd($) {
 }
 
 // --- Regex price fallback ---
+// Takes the median of plausible product prices (> $3) to avoid grabbing shipping costs.
 function extractPriceRegex(text) {
     const matches = text.match(/\$\s*(\d{1,4}(?:\.\d{1,2})?)/g)
     if (!matches) return null
     const prices = matches
         .map(m => parseFloat(m.replace(/[$\s]/g, '')))
-        .filter(p => p > 0.5 && p < 9999)
-    return prices.length ? Math.min(...prices) : null
+        .filter(p => p > 3 && p < 9999)
+    if (!prices.length) return null
+    const sorted = [...prices].sort((a, b) => a - b)
+    return sorted[Math.floor(sorted.length / 2)]
+}
+
+// --- Qty/pack-size extraction ---
+function extractQtyRegex(text) {
+    const patterns = [
+        /(\d[\d,]*)\s*(?:count|ct\.?|rounds?|rds?|pieces?|pcs?)\b/i,
+        /(?:box|pack|pkg\.?|package)\s+of\s+(\d[\d,]*)/i,
+        /(?:per|\/)\s*box[^0-9]*(\d[\d,]*)/i,
+        /(?:quantity|qty)[:\s]+(\d[\d,]*)/i,
+        /(\d[\d,]*)\/(?:box|case|pack|pkg)/i,
+    ]
+    for (const pat of patterns) {
+        const m = text.match(pat)
+        if (m) {
+            const n = parseInt(m[1].replace(/,/g, ''), 10)
+            if (n >= 20 && n <= 10000) return n
+        }
+    }
+    return null
 }
 
 // --- In-stock text detection ---
@@ -176,10 +198,12 @@ export async function refreshListing(id, userId) {
             image = `${u.protocol}//${u.host}${image}`
         }
 
-        // PASS 2: Regex/text fallback for missing price or stock
+        // PASS 2: Regex/text fallback for missing price, stock, or qty
+        $('script, style, nav, footer, svg').remove()
+        const bodyText = $('body').text().replace(/\s+/g, ' ').trim()
+        let qty = extractQtyRegex(bodyText)
+
         if (price == null || inStock == null) {
-            $('script, style, nav, footer, svg').remove()
-            const bodyText = $('body').text().replace(/\s+/g, ' ').trim()
             if (price == null)   price   = extractPriceRegex(bodyText)
             if (inStock == null) inStock = detectInStock(html) ?? false
 
@@ -188,7 +212,7 @@ export async function refreshListing(id, userId) {
                 try {
                     const snippet = bodyText.substring(0, 8000)
                     const prompt = `Extract from this product page text. Return ONLY valid JSON with no commentary:
-{"price": <number or null>, "in_stock": <true|false>, "qty": <pack size number>}
+{"price": <number or null>, "in_stock": <true|false>, "qty": <pack size number or null>}
 Page: ${snippet}`
                     const aiResponse = await chatWithAi(prompt)
                     const match = aiResponse.match(/\{[\s\S]*?\}/)
@@ -196,6 +220,7 @@ Page: ${snippet}`
                         const parsed = JSON.parse(match[0])
                         if (parsed.price != null) price   = parseFloat(parsed.price)
                         if (parsed.in_stock != null) inStock = parsed.in_stock
+                        if (parsed.qty != null && qty == null) qty = parseInt(parsed.qty)
                     }
                 } catch (aiErr) {
                     console.warn('[Market] AI fallback skipped:', aiErr.message)
@@ -204,7 +229,7 @@ Page: ${snippet}`
         }
 
         const category = inferCategory(title, url)
-        const qty = 1 // JSON-LD qty not standard; user can edit
+        qty = qty || 1 // default to 1 if no pack size detected
 
         const updateRes = await query(
             `UPDATE market_listings
