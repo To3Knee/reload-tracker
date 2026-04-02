@@ -16,8 +16,8 @@ export async function addListing(item, userId) {
     
     // Insert using 'componentType' as 'category'
     const res = await query(
-        `INSERT INTO market_listings (user_id, url, name, price, in_stock, status, category) 
-         VALUES ($1, $2, $3, 0, false, 'pending', $4) 
+        `INSERT INTO market_listings (user_id, url, name, price, in_stock, status, category)
+         VALUES ($1, $2, $3, 0, true, 'pending', $4)
          RETURNING *, category as "componentType"`,
         [userId, url, name || 'Scanning...', componentType || 'other']
     )
