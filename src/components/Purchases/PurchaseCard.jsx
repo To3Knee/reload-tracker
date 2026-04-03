@@ -78,9 +78,9 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
         </div>
 
         {/* Right: pricing + actions */}
-        <div className="flex items-center gap-4 flex-shrink-0">
-          {/* Pricing block */}
-          <div className="text-right">
+        <div className="flex items-center gap-3 flex-shrink-0 self-stretch py-1">
+          {/* Pricing block — fixed width so cards align */}
+          <div className="text-right w-28">
             <p className="text-xs font-bold text-[var(--text-hi)] leading-none">
               {p.qty} <span className="text-[10px] font-normal text-[var(--text-lo)]">{p.unit}</span>
             </p>
@@ -95,13 +95,16 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
                 align="right"
               />
             </p>
-            {isPowder && (
-              <p className="text-[9px] text-[var(--text-lo)] font-mono mt-0.5">${grainCost.toFixed(4)}/gr</p>
-            )}
+            <p className="text-[9px] text-[var(--text-lo)] font-mono mt-0.5 h-[13px]">
+              {isPowder ? `$${grainCost.toFixed(4)}/gr` : ''}
+            </p>
           </div>
 
-          {/* Actions — always visible on mobile, hover on desktop */}
-          <div className="flex flex-col gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+          {/* Divider */}
+          <div className="w-px self-stretch bg-[var(--border)]" />
+
+          {/* Actions — always visible */}
+          <div className="flex flex-col gap-1.5">
             {canEdit && (
               <>
                 <button onClick={() => onEdit(p)} title="Edit" className="rt-btn rt-btn-icon"><Edit size={12} /></button>
