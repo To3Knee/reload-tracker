@@ -42,37 +42,32 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
         depleted ? 'opacity-50 grayscale' : 'hover:border-[var(--border-md)]'
       } ${isHighlighted ? 'ring-1 ring-[var(--red)]/40 shadow-lg' : ''}`}
     >
-      <div className="p-3 flex flex-col gap-2">
+      {/* ── CONTENT ── */}
+      <div className="p-3 space-y-2">
 
-        {/* Row 1: type chip + lot ID + name */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={chip}>{p.componentType}</span>
-              <span className="text-[9px] font-mono text-[var(--text-lo)] tracking-widest">{p.lotId}</span>
-              {depleted && (
-                <span className="text-[9px] px-1.5 py-[1px] rounded-sm bg-[var(--overlay)] border border-[var(--border)] text-[var(--text-lo)] uppercase tracking-widest">
-                  Depleted
-                </span>
-              )}
-            </div>
-            <p className="text-xs font-bold text-[var(--text-hi)] mt-1 truncate">
-              {p.brand} {p.name}
-            </p>
+        {/* Chip + lot + name */}
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={chip}>{p.componentType}</span>
+            <span className="text-[9px] font-mono text-[var(--text-lo)] tracking-widest">{p.lotId}</span>
+            {depleted && (
+              <span className="text-[9px] px-1.5 py-[1px] rounded-sm bg-[var(--overlay)] border border-[var(--border)] text-[var(--text-lo)] uppercase tracking-widest">
+                Depleted
+              </span>
+            )}
           </div>
+          <p className="text-sm font-bold text-[var(--text-hi)] mt-1 truncate">
+            {p.brand} {p.name}
+          </p>
         </div>
 
-        {/* Row 2: meta pills */}
+        {/* Meta pills */}
         <div className="flex flex-wrap items-center gap-1.5">
-          {p.caliber      && <span className="text-[10px] text-[var(--text-md)] font-mono">{p.caliber}</span>}
-          {p.typeDetail   && <span className="text-[10px] text-[var(--text-md)] italic">{p.typeDetail}</span>}
-          {p.vendor       && <span className="text-[9px] px-1.5 py-[1px] bg-[var(--overlay)] border border-[var(--border)] rounded-sm text-[var(--text-lo)]">{p.vendor}</span>}
-          {p.purchaseDate && <span className="text-[9px] text-[var(--text-lo)] font-mono">{p.purchaseDate.substring(0, 10)}</span>}
-          {p.caseCondition && (
-            <span className="text-[9px] px-1.5 py-[1px] bg-[var(--overlay)] border border-[var(--border)] rounded-sm text-[var(--text-lo)]">
-              {CASE_CONDITIONS.find(c => c.value === p.caseCondition)?.label || p.caseCondition}
-            </span>
-          )}
+          {p.caliber       && <span className="text-[10px] text-[var(--text-md)] font-mono">{p.caliber}</span>}
+          {p.typeDetail    && <span className="text-[10px] text-[var(--text-md)] italic">{p.typeDetail}</span>}
+          {p.vendor        && <span className="text-[9px] px-1.5 py-[1px] bg-[var(--overlay)] border border-[var(--border)] rounded-sm text-[var(--text-lo)]">{p.vendor}</span>}
+          {p.purchaseDate  && <span className="text-[9px] text-[var(--text-lo)] font-mono">{p.purchaseDate.substring(0, 10)}</span>}
+          {p.caseCondition && <span className="text-[9px] px-1.5 py-[1px] bg-[var(--overlay)] border border-[var(--border)] rounded-sm text-[var(--text-lo)]">{CASE_CONDITIONS.find(c => c.value === p.caseCondition)?.label || p.caseCondition}</span>}
           {p.url && (
             <a href={p.url} target="_blank" rel="noreferrer" className="text-[9px] flex items-center gap-0.5 text-[var(--text-lo)] hover:text-[var(--red)] transition">
               <ExternalLink size={8} /> Link
@@ -85,48 +80,52 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
           )}
         </div>
 
-        {/* Row 3: pricing left, actions right */}
-        <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]">
-
-          {/* Pricing */}
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="text-xs font-bold text-[var(--text-hi)]">
-              {p.qty} <span className="text-[10px] font-normal text-[var(--text-lo)]">{p.unit}</span>
-            </span>
-            <span className="text-xs font-bold text-[var(--text-hi)] flex items-center gap-0.5">
-              {formatMoney(smartPrice.val)}
-              <span className="text-[9px] font-normal text-[var(--text-lo)]">/{smartPrice.label.split(' / ')[1]}</span>
-              <InfoTip
-                variant="tip"
-                title="Smart Price"
-                text="Auto-normalized unit: per 1,000 for primers, per 100 for bullets, per unit for powder — makes comparison across lot sizes intuitive."
-                size={9}
-                align="right"
-              />
-            </span>
-            {isPowder && (
-              <span className="text-[9px] text-[var(--text-lo)] font-mono">${grainCost.toFixed(4)}/gr</span>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {canEdit && (
-              <>
-                <button onClick={() => onEdit(p)} title="Edit" className="rt-btn rt-btn-icon"><Edit size={12} /></button>
-                <button onClick={() => onDelete(p)} title="Remove" className="rt-btn rt-btn-icon hover:text-red-400 hover:border-red-800"><Trash2 size={12} /></button>
-              </>
-            )}
-            <button
-              onClick={() => { HAPTIC.click(); printPurchaseLabel(p) }}
-              title="Print Label"
-              className="rt-btn rt-btn-icon hover:text-[var(--red)] hover:border-[var(--red)]/40"
-            >
-              <Printer size={12} />
-            </button>
-          </div>
-
+        {/* Pricing row */}
+        <div className="flex items-center gap-3 flex-wrap pt-1 border-t border-[var(--border)]">
+          <span className="text-xs font-bold text-[var(--text-hi)]">
+            {p.qty} <span className="text-[10px] font-normal text-[var(--text-lo)]">{p.unit}</span>
+          </span>
+          <span className="text-xs font-bold text-[var(--text-hi)] flex items-center gap-0.5">
+            {formatMoney(smartPrice.val)}
+            <span className="text-[9px] font-normal text-[var(--text-lo)]">/{smartPrice.label.split(' / ')[1]}</span>
+            <InfoTip
+              variant="tip"
+              title="Smart Price"
+              text="Auto-normalized unit: per 1,000 for primers, per 100 for bullets, per unit for powder — makes comparison across lot sizes intuitive."
+              size={9}
+              align="right"
+            />
+          </span>
+          {isPowder && (
+            <span className="text-[9px] text-[var(--text-lo)] font-mono">${grainCost.toFixed(4)}/gr</span>
+          )}
         </div>
+      </div>
+
+      {/* ── ACTIONS ── full-width tap-friendly strip */}
+      <div className="flex border-t border-[var(--border)]">
+        {canEdit && (
+          <>
+            <button
+              onClick={() => onEdit(p)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[var(--text-md)] hover:text-[var(--text-hi)] hover:bg-[var(--overlay)] transition border-r border-[var(--border)]"
+            >
+              <Edit size={12} /> Edit
+            </button>
+            <button
+              onClick={() => onDelete(p)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[var(--text-md)] hover:text-red-400 hover:bg-red-950/20 transition border-r border-[var(--border)]"
+            >
+              <Trash2 size={12} /> Delete
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => { HAPTIC.click(); printPurchaseLabel(p) }}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[var(--text-md)] hover:text-[var(--red)] hover:bg-[var(--overlay)] transition"
+        >
+          <Printer size={12} /> Label
+        </button>
       </div>
     </div>
   )
