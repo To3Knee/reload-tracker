@@ -232,7 +232,19 @@ export function Recipes({ onUseRecipe, canEdit = true, purchases = [] }) {
 <style>
 @page { size: letter portrait; margin: 0.5in; }
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background: #fff; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10px; }
+body { font-family: 'Inter', sans-serif; background: #d4d4d4; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10px; }
+/* Screen: centre a page-sized white card */
+@media screen {
+  body { display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px; min-height: 100vh; }
+  .page-wrap { background: #fff; width: 100%; max-width: 8.5in; min-height: 11in; padding: 0.5in; box-shadow: 0 4px 32px rgba(0,0,0,0.18); }
+  .close-btn { display: flex; }
+}
+@media print {
+  body { background: #fff; }
+  .page-wrap { padding: 0; box-shadow: none; }
+  .close-btn { display: none !important; }
+}
+.close-btn { position: fixed; top: 12px; right: 12px; background: #fff; color: #333; padding: 6px 14px; border-radius: 4px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid #ccc; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 .hdr { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #c42b21; margin-bottom: 16px; }
 .eyebrow { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: #c42b21; margin-bottom: 4px; }
 .rname { font-size: 22px; font-weight: 900; color: #111; line-height: 1; text-transform: uppercase; letter-spacing: -0.02em; }
@@ -240,37 +252,36 @@ body { font-family: 'Inter', sans-serif; background: #fff; color: #111; -webkit-
 .hdr-r { display: flex; align-items: center; gap: 12px; }
 .logo { height: 50px; width: auto; }
 .qr-img { width: 54px; height: 54px; display: block; border: 1px solid #ddd; padding: 2px; }
-.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.28em; color: #c42b21; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid #222; }
+.sect { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.28em; color: #c42b21; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid #ccc; }
 .sect:first-child { margin-top: 0; padding-top: 0; border-top: none; }
-.sect::after { content: ''; flex: 1; height: 1px; background: #333; }
+.sect::after { content: ''; flex: 1; height: 1px; background: #ccc; }
 .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.comp-card { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 8px 10px; }
+.comp-card { background: #f7f7f7; border: 1px solid #e0e0e0; border-radius: 3px; padding: 8px 10px; }
 .clabel { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #999; margin-bottom: 3px; }
 .cval { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #111; }
 .cval.cu { color: #c42b21; } .cval.wn { color: #c42b21; }
 .blt-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.blt-card { background: #faf8f6; border: 1px solid #e0d8cf; border-top: 2px solid #c42b21; border-radius: 3px; padding: 7px 8px; text-align: center; }
+.blt-card { background: #f7f7f7; border: 1px solid #e0e0e0; border-top: 2px solid #c42b21; border-radius: 3px; padding: 7px 8px; text-align: center; }
 .blabel { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #999; margin-bottom: 3px; }
 .bval { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #c42b21; }
 .spec-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.spec-card { background: #faf8f6; border: 1px solid #e0d8cf; border-radius: 3px; padding: 7px 10px; }
+.spec-card { background: #f7f7f7; border: 1px solid #e0e0e0; border-radius: 3px; padding: 7px 10px; }
 .lot-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.lot-tag { font-family: 'JetBrains Mono', monospace; font-size: 7.5px; font-weight: 700; color: #111; border: 1px solid #c8b89a; border-radius: 2px; padding: 3px 7px; background: #faf8f6; letter-spacing: 0.06em; }
+.lot-tag { font-family: 'JetBrains Mono', monospace; font-size: 7.5px; font-weight: 700; color: #111; border: 1px solid #ddd; border-radius: 2px; padding: 3px 7px; background: #f7f7f7; letter-spacing: 0.06em; }
 .lot-tag span { color: #c42b21; margin-right: 4px; font-weight: 400; }
-.tbl-wrap { border: 1px solid #e0d8cf; border-radius: 3px; overflow: hidden; }
+.tbl-wrap { border: 1px solid #e0e0e0; border-radius: 3px; overflow: hidden; }
 .ws-table { width: 100%; border-collapse: collapse; }
-.ws-table th { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #777; text-align: left; padding: 6px 8px; border-bottom: 1px solid #e0d8cf; background: #faf8f6; }
-.ws-table td { height: 30px; border-bottom: 1px solid #ece7e0; padding: 0 8px; }
+.ws-table th { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #777; text-align: left; padding: 6px 8px; border-bottom: 1px solid #e0e0e0; background: #f7f7f7; }
+.ws-table td { height: 30px; border-bottom: 1px solid #ebebeb; padding: 0 8px; }
 .ws-table tr:last-child td { border-bottom: none; }
-.notes-box { background: #faf8f6; border: 1px solid #e0d8cf; border-left: 3px solid #c42b21; border-radius: 0 3px 3px 0; padding: 10px 14px; }
+.notes-box { background: #f7f7f7; border: 1px solid #e0e0e0; border-left: 3px solid #c42b21; border-radius: 0 3px 3px 0; padding: 10px 14px; }
 .notes-body { font-family: 'JetBrains Mono', monospace; font-size: 9px; line-height: 1.7; color: #444; white-space: pre-wrap; }
-.footer { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #e0d8cf; margin-top: 18px; }
+.footer { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #e0e0e0; margin-top: 18px; }
 .footer-l { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: #aaa; text-transform: uppercase; letter-spacing: 0.15em; }
 .footer-r { font-size: 7px; color: #c0392b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
-.close-btn { position: fixed; top: 12px; right: 12px; background: #f0ede8; color: #333; padding: 6px 14px; border-radius: 4px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid #d0c8bf; cursor: pointer; }
-@media print { .close-btn { display: none !important; } }
 </style></head><body>
 <button onclick="window.close()" class="close-btn">✕ Close</button>
+<div class="page-wrap">
 <div class="hdr">
   <div><div class="eyebrow">Precision Load Data Sheet · Reload Tracker</div><div class="rname">${name}</div><div class="rsub">${caliber}${profile ? ' · ' + profile : ''} · Generated ${date}</div></div>
   <div class="hdr-r">${qrImg ? `<img src="${qrImg}" class="qr-img"/>` : ''}<img src="${logoUrl}" class="logo" alt="Reload Tracker"/></div>
@@ -302,6 +313,7 @@ ${hasLots ? `<div class="sect">Component LOT IDs</div><div class="lot-row">${pow
 <div class="tbl-wrap"><table class="ws-table"><thead><tr><th width="20%">Date / Temp</th><th width="16%">Avg Vel (fps)</th><th width="10%">SD</th><th width="10%">ES</th><th width="16%">Group Size</th><th>Notes</th></tr></thead><tbody><tr><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div>
 ${recipe.notes ? `<div class="sect">Load Notes</div><div class="notes-box"><div class="notes-body">${esc(recipe.notes)}</div></div>` : ''}
 <div class="footer"><div class="footer-l">Recipe ID: ${recipe.id || '—'} · Reload Tracker · ${date}</div><div class="footer-r">⚠ Verify all loads · Never exceed max charge</div></div>
+</div>
 <script>window.onload = () => { setTimeout(() => window.print(), 600); }<\/script>
 </body></html>`
 
@@ -349,6 +361,7 @@ ${recipe.notes ? `<div class="sect">Load Notes</div><div class="notes-box"><div 
                   coal={Number(form.coal) || 0}
                   charge={Number(form.chargeGrains) || 0}
                   capacity={Number(form.caseCapacity) || 0}
+                  caliber={form.caliber || ''}
                 />
               </div>
               <div className="flex-1 space-y-4 rt-card p-4">
@@ -396,13 +409,29 @@ ${recipe.notes ? `<div class="sect">Load Notes</div><div class="notes-box"><div 
                 <FieldLabel label="Notes" help="Performance data, weather conditions, or load details." />
                 <textarea className={inputClass + ' h-full resize-none'} placeholder="Intended use, COAL, etc." value={form.notes} onChange={e => updateField('notes', e.target.value)} />
               </div>
+
+              {/* Load Reference */}
+              <div>
+                <FieldLabel label="Load Reference" help="Manual name, edition, and page — or a URL. Confirms this charge came from a published source, not a guess." />
+                <input
+                  className={inputClass}
+                  placeholder="Hodgdon 2024 Annual p.142  ·  https://hodgdon.com/load-data/..."
+                  value={form.source}
+                  onChange={e => updateField('source', e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 pt-2 border-t border-steel-700/50">
-              {editingRecipe
-                ? <button type="button" onClick={resetForm} className="inline-flex items-center rt-btn rt-btn-secondary">Cancel edit</button>
-                : <button type="button" onClick={resetForm} className="inline-flex items-center rt-btn rt-btn-secondary">Clear</button>}
-              <button type="submit" disabled={saving} className="rt-btn rt-btn-primary disabled:opacity-60">{saving ? 'Saving…' : 'Save Recipe'}</button>
+            <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-2 pt-2 border-t border-steel-700/50">
+              <p className="text-[10px] text-steel-600 italic leading-relaxed">
+                Always verify all charges against a current published reloading manual before loading. This app records your data — it does not validate safety.
+              </p>
+              <div className="flex justify-end gap-3">
+                {editingRecipe
+                  ? <button type="button" onClick={resetForm} className="inline-flex items-center rt-btn rt-btn-secondary">Cancel edit</button>
+                  : <button type="button" onClick={resetForm} className="inline-flex items-center rt-btn rt-btn-secondary">Clear</button>}
+                <button type="submit" disabled={saving} className="rt-btn rt-btn-primary disabled:opacity-60">{saving ? 'Saving…' : 'Save Recipe'}</button>
+              </div>
             </div>
           </form>
         ) : (
@@ -451,7 +480,7 @@ ${recipe.notes ? `<div class="sect">Load Notes</div><div class="notes-box"><div 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
           <div className="glass border border-red-900/50 shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
             <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto"><Trash2 className="text-red-500" size={24} /></div>
-            <div><h3 className="text-lg font-bold text-white">Delete Recipe?</h3><p className="text-sm text-steel-400 mt-1">Are you sure you want to delete <span className="text-white font-medium">"{recipeToDelete.name}"</span>?<br />This action cannot be undone.</p></div>
+            <div><h3 className="text-lg font-bold text-[var(--text-hi)]">Delete Recipe?</h3><p className="text-sm text-steel-400 mt-1">Are you sure you want to delete <span className="text-[var(--text-hi)] font-medium">"{recipeToDelete.name}"</span>?<br />This action cannot be undone.</p></div>
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-md border border-steel-600 text-steel-300 hover:bg-steel-700 font-medium text-sm transition">Cancel</button>
               <button onClick={() => executeDelete(false)} disabled={isDeleting} className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button>
@@ -468,14 +497,14 @@ ${recipe.notes ? `<div class="sect">Load Notes</div><div class="notes-box"><div 
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-red-900/20 rounded-full flex items-center justify-center flex-shrink-0 border border-red-900/50"><AlertTriangle className="text-red-400" size={28} /></div>
               <div>
-                <h3 className="text-lg font-bold text-white">Recipe In Use</h3>
+                <h3 className="text-lg font-bold text-[var(--text-hi)]">Recipe In Use</h3>
                 <p className="text-xs text-steel-400 leading-relaxed mt-1">The recipe <span className="text-steel-100 font-medium">"{recipeToDelete.name}"</span> has batches associated with it. You cannot delete it without losing that history.</p>
               </div>
             </div>
             <div className="rt-card p-4 border border-steel-700 text-sm text-steel-300">
               <p className="mb-2 font-bold text-steel-200">Recommended Action:</p>
               <p className="text-xs text-steel-400 mb-4">Archive the recipe instead. It will be hidden from the active list but your batch history will be preserved.</p>
-              <button onClick={() => handleResolveConflict('archive')} className="w-full py-3 rounded-md bg-steel-700 hover:bg-steel-600 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition shadow-lg"><Archive size={14} /> Archive Recipe (Safe)</button>
+              <button onClick={() => handleResolveConflict('archive')} className="w-full py-3 rounded-md bg-steel-700 hover:bg-steel-600 text-[var(--text-hi)] font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition shadow-lg"><Archive size={14} /> Archive Recipe (Safe)</button>
             </div>
             <div className="pt-2 border-t border-steel-700/50">
               <button onClick={() => handleResolveConflict('cascade')} className="w-full py-2 rounded-lg border border-red-900/50 text-red-500 hover:bg-red-900/20 hover:text-red-400 font-bold text-[10px] uppercase tracking-wide transition flex items-center justify-center gap-2">I don't care, delete everything (Destructive)</button>
