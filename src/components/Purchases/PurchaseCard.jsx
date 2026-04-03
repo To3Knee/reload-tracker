@@ -5,7 +5,6 @@ import { HAPTIC } from '../../lib/haptics'
 import { InfoTip } from '../InfoTip'
 import { CASE_CONDITIONS, formatMoney, getSmartPrice } from './purchaseHelpers'
 
-// Left-edge accent color per component type
 const ACCENT = {
   powder: 'border-l-amber-700',
   bullet: 'border-l-blue-800',
@@ -39,52 +38,62 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
   return (
     <div
       id={`purchase-${p.id}`}
-      className={`group flex items-stretch border-l-[3px] rounded-r rt-card transition-all duration-150 ${accent} ${
+      className={`border-l-[3px] rounded-r rt-card transition-all duration-150 ${accent} ${
         depleted ? 'opacity-50 grayscale' : 'hover:border-[var(--border-md)]'
       } ${isHighlighted ? 'ring-1 ring-[var(--red)]/40 shadow-lg' : ''}`}
     >
-      {/* Main content */}
-      <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 p-3 min-w-0">
+      <div className="p-3 flex flex-col gap-2">
 
-        {/* Left: identity */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={chip}>{p.componentType}</span>
-            <span className="text-[9px] font-mono text-[var(--text-lo)] tracking-widest">{p.lotId}</span>
-            {depleted && <span className="text-[9px] px-1.5 py-[1px] rounded-sm bg-[var(--overlay)] border border-[var(--border)] text-[var(--text-lo)] uppercase tracking-widest">Depleted</span>}
-          </div>
-
-          <p className="text-xs font-bold text-[var(--text-hi)] mt-1 truncate">
-            {p.brand} {p.name}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-            {p.caliber      && <span className="text-[10px] text-[var(--text-md)] font-mono">{p.caliber}</span>}
-            {p.typeDetail   && <span className="text-[10px] text-[var(--text-md)] italic">{p.typeDetail}</span>}
-            {p.vendor       && <span className="text-[9px] px-1.5 py-[1px] bg-[var(--overlay)] border border-[var(--border)] rounded-sm text-[var(--text-lo)]">{p.vendor}</span>}
-            {p.purchaseDate && <span className="text-[9px] text-[var(--text-lo)] font-mono">{p.purchaseDate.substring(0, 10)}</span>}
-            {p.caseCondition && <span className="text-[9px] px-1.5 py-[1px] bg-[var(--overlay)] border border-[var(--border)] rounded-sm text-[var(--text-lo)]">{CASE_CONDITIONS.find(c => c.value === p.caseCondition)?.label || p.caseCondition}</span>}
-            {p.url && (
-              <a href={p.url} target="_blank" rel="noreferrer" className="text-[9px] flex items-center gap-0.5 text-[var(--text-lo)] hover:text-[var(--red)] transition">
-                <ExternalLink size={8} /> Link
-              </a>
-            )}
-            {attribution && (
-              <span className="flex items-center gap-1 text-[9px] text-[var(--text-lo)]">
-                {p.updatedByUsername ? <Clock size={8} /> : <User size={8} />} {attribution}
-              </span>
-            )}
+        {/* Row 1: type chip + lot ID + name */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={chip}>{p.componentType}</span>
+              <span className="text-[9px] font-mono text-[var(--text-lo)] tracking-widest">{p.lotId}</span>
+              {depleted && (
+                <span className="text-[9px] px-1.5 py-[1px] rounded-sm bg-[var(--overlay)] border border-[var(--border)] text-[var(--text-lo)] uppercase tracking-widest">
+                  Depleted
+                </span>
+              )}
+            </div>
+            <p className="text-xs font-bold text-[var(--text-hi)] mt-1 truncate">
+              {p.brand} {p.name}
+            </p>
           </div>
         </div>
 
-        {/* Right: pricing + actions */}
-        <div className="flex items-center gap-3 flex-shrink-0 self-stretch py-1">
-          {/* Pricing block — fixed width so cards align */}
-          <div className="text-right w-28">
-            <p className="text-xs font-bold text-[var(--text-hi)] leading-none">
+        {/* Row 2: meta pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {p.caliber      && <span className="text-[10px] text-[var(--text-md)] font-mono">{p.caliber}</span>}
+          {p.typeDetail   && <span className="text-[10px] text-[var(--text-md)] italic">{p.typeDetail}</span>}
+          {p.vendor       && <span className="text-[9px] px-1.5 py-[1px] bg-[var(--overlay)] border border-[var(--border)] rounded-sm text-[var(--text-lo)]">{p.vendor}</span>}
+          {p.purchaseDate && <span className="text-[9px] text-[var(--text-lo)] font-mono">{p.purchaseDate.substring(0, 10)}</span>}
+          {p.caseCondition && (
+            <span className="text-[9px] px-1.5 py-[1px] bg-[var(--overlay)] border border-[var(--border)] rounded-sm text-[var(--text-lo)]">
+              {CASE_CONDITIONS.find(c => c.value === p.caseCondition)?.label || p.caseCondition}
+            </span>
+          )}
+          {p.url && (
+            <a href={p.url} target="_blank" rel="noreferrer" className="text-[9px] flex items-center gap-0.5 text-[var(--text-lo)] hover:text-[var(--red)] transition">
+              <ExternalLink size={8} /> Link
+            </a>
+          )}
+          {attribution && (
+            <span className="flex items-center gap-1 text-[9px] text-[var(--text-lo)]">
+              {p.updatedByUsername ? <Clock size={8} /> : <User size={8} />} {attribution}
+            </span>
+          )}
+        </div>
+
+        {/* Row 3: pricing left, actions right */}
+        <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]">
+
+          {/* Pricing */}
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <span className="text-xs font-bold text-[var(--text-hi)]">
               {p.qty} <span className="text-[10px] font-normal text-[var(--text-lo)]">{p.unit}</span>
-            </p>
-            <p className="text-xs font-bold text-[var(--text-hi)] mt-1 flex items-center justify-end gap-0.5">
+            </span>
+            <span className="text-xs font-bold text-[var(--text-hi)] flex items-center gap-0.5">
               {formatMoney(smartPrice.val)}
               <span className="text-[9px] font-normal text-[var(--text-lo)]">/{smartPrice.label.split(' / ')[1]}</span>
               <InfoTip
@@ -94,17 +103,14 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
                 size={9}
                 align="right"
               />
-            </p>
-            <p className="text-[9px] text-[var(--text-lo)] font-mono mt-0.5 h-[13px]">
-              {isPowder ? `$${grainCost.toFixed(4)}/gr` : ''}
-            </p>
+            </span>
+            {isPowder && (
+              <span className="text-[9px] text-[var(--text-lo)] font-mono">${grainCost.toFixed(4)}/gr</span>
+            )}
           </div>
 
-          {/* Divider */}
-          <div className="w-px self-stretch bg-[var(--border)]" />
-
-          {/* Actions — always visible */}
-          <div className="flex flex-col gap-1.5">
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             {canEdit && (
               <>
                 <button onClick={() => onEdit(p)} title="Edit" className="rt-btn rt-btn-icon"><Edit size={12} /></button>
@@ -119,8 +125,8 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
               <Printer size={12} />
             </button>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   )
