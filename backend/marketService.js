@@ -182,28 +182,50 @@ export async function refreshListing(id, userId) {
     const existingInStock = itemRes.rows[0].in_stock
 
     try {
-        const scraperKey = process.env.SCRAPER_API_KEY
-        let fetchUrl = scraperKey
-            ? `http://api.scrape.do?token=${scraperKey}&url=${encodeURIComponent(url)}`
-            : url
+        let html
 
-        const response = await fetch(fetchUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://www.google.com/',
-            }
-        })
+        const firecrawlUrl = process.env.FIRECRAWL_URL
+        const firecrawlKey = process.env.FIRECRAWL_API_KEY
 
-        if (!response.ok) throw new Error(`HTTP ${response.status} from site`)
-        const html = await response.text()
+        if (firecrawlUrl) {
+            // Firecrawl path — JS-rendered HTML, handles bot protection
+            const fcRes = await fetch(`${firecrawlUrl}/v1/scrape`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(firecrawlKey && { 'X-Api-Key': firecrawlKey }),
+                },
+                body: JSON.stringify({ url, formats: ['html'] }),
+            })
+            if (!fcRes.ok) throw new Error(`Firecrawl HTTP ${fcRes.status}`)
+            const fcData = await fcRes.json()
+            if (!fcData.success) throw new Error(fcData.error || 'Firecrawl scrape failed')
+            html = fcData.data?.html
+            if (!html) throw new Error('Firecrawl returned no HTML')
+        } else {
+            // Fallback: direct fetch (works for simple sites, blocked by Cloudflare on major retailers)
+            const scraperKey = process.env.SCRAPER_API_KEY
+            const fetchUrl = scraperKey
+                ? `http://api.scrape.do?token=${scraperKey}&url=${encodeURIComponent(url)}`
+                : url
+            const response = await fetch(fetchUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Referer': 'https://www.google.com/',
+                },
+            })
+            if (!response.ok) throw new Error(`HTTP ${response.status} from site`)
+            html = await response.text()
+        }
+
         const $ = cheerio.load(html)
 
-        // Bot-block detection
+        // Bot-block detection (still relevant for fallback path)
         const rawTitle = $('meta[property="og:title"]').attr('content') || $('title').text() || ''
         const badTitles = ['Access Denied', 'Just a moment', 'Attention Required', 'Security Check', '403 Forbidden', 'Cloudflare']
-        if (badTitles.some(t => rawTitle.includes(t))) throw new Error("Site blocked the request (Cloudflare). A SCRAPER_API_KEY is required for this retailer.")
+        if (badTitles.some(t => rawTitle.includes(t))) throw new Error("Site blocked the request. Try again later.")
 
         // PASS 1: JSON-LD structured data (most reliable)
         const ld = parseJsonLd($)
