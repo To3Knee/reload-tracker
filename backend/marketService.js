@@ -150,30 +150,33 @@ function extractQtyRegex(text) {
 }
 
 // --- In-stock text detection ---
-// Returns true/false/null. null means "can't tell" — caller should keep existing DB value.
+// Returns true/false/null. Uses weighted signal counting so that a page
+// with 20 "add-to-cart" signals and 2 "out of stock" (from related items)
+// correctly returns true instead of null.
 function detectInStock(html) {
     const t = html.toLowerCase()
-    // Explicit in-stock: JSON-LD value, "add to cart" button, visible "in stock" text
-    // Avoid matching substrings like data-in-stock="false" by requiring word boundaries / quotes
-    const inStockSignals = [
-        /"instock"/,           // JSON-LD: "availability":"InStock"
-        /\badd[\s-]to[\s-]cart\b/,
-        /\bin\s+stock\b/,      // text: "In Stock", "2 in stock"
-        /"availability"\s*:\s*"instock"/i,
-    ]
-    const outOfStockSignals = [
-        /"outofstock"/,        // JSON-LD: "availability":"OutOfStock"
-        /\bout\s+of\s+stock\b/,
-        /\bsold\s+out\b/,
-        /\bnotify\s+me\s+when\b/,
-        /"availability"\s*:\s*"outofstock"/i,
-    ]
-    const isInStock  = inStockSignals.some(r  => r.test(t))
-    const isOutStock = outOfStockSignals.some(r => r.test(t))
 
-    if (isInStock  && !isOutStock) return true
-    if (isOutStock && !isInStock)  return false
-    // Conflicting or no signals — let caller keep existing value
+    // Weighted in-stock score
+    let inScore = 0
+    inScore += (t.match(/\badd[\s-]to[\s-]cart\b/g) || []).length * 3  // strongest signal
+    inScore += (t.match(/\bin[\s-]stock\b/g) || []).length * 2
+    inScore += (t.match(/"instock"/g) || []).length * 4                 // JSON-LD value
+    inScore += (t.match(/"availability":\s*"instock"/gi) || []).length * 5
+
+    // Weighted out-of-stock score
+    let outScore = 0
+    outScore += (t.match(/\bout[\s-]of[\s-]stock\b/g) || []).length * 2
+    outScore += (t.match(/\bsold[\s-]out\b/g) || []).length * 3
+    outScore += (t.match(/\bnotify\s+me\s+when\b/g) || []).length * 4  // strongest OOS signal
+    outScore += (t.match(/"outofstock"/g) || []).length * 4             // JSON-LD value
+    outScore += (t.match(/"availability":\s*"outofstock"/gi) || []).length * 5
+
+    if (inScore === 0 && outScore === 0) return null
+    if (inScore > 0  && outScore === 0) return true
+    if (outScore > 0 && inScore === 0)  return false
+    // Both present — trust whichever dominates by at least 2:1
+    if (inScore >= outScore * 2) return true
+    if (outScore >= inScore * 2) return false
     return null
 }
 
