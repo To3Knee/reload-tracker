@@ -6,6 +6,27 @@ import { Plus, Trash2, RefreshCw, Edit, ExternalLink, Search, Globe, Lock, Alert
 import { HAPTIC } from '../lib/haptics'
 import { formatCurrency } from '../lib/db'
 
+// Known scraper compatibility by domain
+const DOMAIN_COMPAT = {
+  'midwayusa.com':        { level: 'blocked',  msg: 'MidwayUSA actively blocks scrapers — tracking will likely fail.' },
+  'ammoseek.com':         { level: 'blocked',  msg: 'AmmoSeek is an aggregator, not a product page — tracking not supported.' },
+  'brownells.com':        { level: 'ok',       msg: null },
+  'grafs.com':            { level: 'ok',       msg: null },
+  'powdervalleyinc.com':  { level: 'ok',       msg: null },
+  'natchezss.com':        { level: 'ok',       msg: null },
+  'midsouthshooterssupply.com': { level: 'warn', msg: 'Midsouth may return limited data — price and image may be incomplete.' },
+  'cabelas.com':          { level: 'warn',     msg: 'Cabela\'s has bot protection — results may be incomplete.' },
+  'basspro.com':          { level: 'warn',     msg: 'Bass Pro has bot protection — results may be incomplete.' },
+  'amazon.com':           { level: 'blocked',  msg: 'Amazon blocks all scrapers — tracking will fail.' },
+}
+
+function getDomainCompat(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '')
+    return DOMAIN_COMPAT[host] || null
+  } catch { return null }
+}
+
 // Matches Inventory.jsx structure + 'ammo' for factory rounds
 const COMPONENT_TYPES = [
   { value: 'powder', label: 'Powder' },
@@ -21,6 +42,7 @@ export function Market({ user }) {
   const [loading, setLoading] = useState(false)
   const [newItemUrl, setNewItemUrl] = useState('')
   const [addError, setAddError] = useState('')
+  const [urlWarning, setUrlWarning] = useState(null)
   const [refreshingId, setRefreshingId] = useState(null)
   const [refreshErrors, setRefreshErrors] = useState({}) // id → error message
   const [editError, setEditError] = useState('')
@@ -172,13 +194,27 @@ export function Market({ user }) {
                       className="w-full bg-black/60 border border-steel-600 rounded-xl pl-10 pr-4 py-3 text-sm text-steel-100 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500/50 placeholder:text-steel-500"
                       placeholder="Paste Product URL (Midway, Brownells, etc)..."
                       value={newItemUrl}
-                      onChange={e => { setNewItemUrl(e.target.value); if (addError) setAddError('') }}
+                      onChange={e => {
+                          setNewItemUrl(e.target.value)
+                          if (addError) setAddError('')
+                          setUrlWarning(getDomainCompat(e.target.value))
+                      }}
                   />
               </div>
               <button disabled={loading} type="submit" className="bg-red-700 hover:bg-red-600 text-white font-bold px-3 md:px-6 rounded-xl transition flex items-center gap-2 text-sm">
                   {loading ? <RefreshCw size={16} className="animate-spin"/> : <Plus size={16}/>} <span className="hidden md:inline">Track</span>
               </button>
           </form>
+          {urlWarning && urlWarning.msg && (
+              <div className={`mt-2 flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${
+                  urlWarning.level === 'blocked'
+                      ? 'text-red-400 bg-red-900/20 border border-red-800/40'
+                      : 'text-amber-400 bg-amber-900/20 border border-amber-800/40'
+              }`}>
+                  <AlertTriangle size={12} className="shrink-0" />
+                  <span>{urlWarning.msg}</span>
+              </div>
+          )}
           {addError && (
               <div className="mt-2 flex items-center gap-2 text-xs text-red-400 bg-red-900/20 border border-red-800/40 rounded-lg px-3 py-2">
                   <AlertTriangle size={12} className="shrink-0" />
