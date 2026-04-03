@@ -58,8 +58,9 @@ function MarketCard({ item, refreshingId, refreshErrors, onRefresh, onEdit, onDe
   const isSpinning = refreshingId === item.id
   const refreshErr = refreshErrors[item.id]
   const typeLabel  = COMPONENT_TYPES.find(t => t.value === (item.componentType || 'other'))?.label || 'Other'
-  const perUnit    = item.qty_per_unit > 1 && item.price > 0
-    ? formatCurrency(item.price / item.qty_per_unit)
+  const qty        = parseInt(item.qty_per_unit) || 1
+  const perUnit    = qty > 1 && item.price > 0
+    ? formatCurrency(item.price / qty)
     : null
 
   return (
@@ -511,7 +512,7 @@ export function Market({ user }) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="rt-label block mb-1">Pack Qty</label>
-                <input type="number" className={inputCls} value={editingItem.qty_per_unit} onChange={e => setEditingItem({ ...editingItem, qty_per_unit: e.target.value })} />
+                <input type="number" step="1" className={inputCls} value={parseInt(editingItem.qty_per_unit) || 1} onChange={e => setEditingItem({ ...editingItem, qty_per_unit: parseInt(e.target.value) || 1 })} />
                 <p className="text-[10px] text-[var(--text-lo)] mt-1">e.g. 1000 for primers</p>
               </div>
               <div>
