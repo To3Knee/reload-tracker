@@ -96,7 +96,9 @@ function parseJsonLd($) {
 }
 
 // --- Regex price fallback ---
-// Takes the median of plausible product prices (> $3) to avoid grabbing shipping costs.
+// Use mode (most frequent price) — the real product price typically appears in
+// multiple spots on the page (display, cart, meta) while related-item prices appear once.
+// Falls back to median if no price repeats.
 function extractPriceRegex(text) {
     const matches = text.match(/\$\s*(\d{1,4}(?:\.\d{1,2})?)/g)
     if (!matches) return null
@@ -104,24 +106,44 @@ function extractPriceRegex(text) {
         .map(m => parseFloat(m.replace(/[$\s]/g, '')))
         .filter(p => p > 3 && p < 9999)
     if (!prices.length) return null
+
+    const freq = {}
+    prices.forEach(p => { const k = p.toFixed(2); freq[k] = (freq[k] || 0) + 1 })
+    const maxFreq = Math.max(...Object.values(freq))
+
+    if (maxFreq > 1) {
+        // Return the highest-frequency price (ties: take highest value — more likely to be the product)
+        const top = Object.entries(freq)
+            .filter(([, f]) => f === maxFreq)
+            .map(([p]) => parseFloat(p))
+        return top.sort((a, b) => b - a)[0]
+    }
+
+    // No repeats — fall back to median
     const sorted = [...prices].sort((a, b) => a - b)
     return sorted[Math.floor(sorted.length / 2)]
 }
 
 // --- Qty/pack-size extraction ---
+// Only extract counts that clearly describe a reloading component pack size.
+// Avoids matching cart quantities, percentages, review counts, etc.
 function extractQtyRegex(text) {
     const patterns = [
-        /(\d[\d,]*)\s*(?:count|ct\.?|rounds?|rds?|pieces?|pcs?)\b/i,
+        // "box of 500", "package of 1000"
         /(?:box|pack|pkg\.?|package)\s+of\s+(\d[\d,]*)/i,
-        /(?:per|\/)\s*box[^0-9]*(\d[\d,]*)/i,
-        /(?:quantity|qty)[:\s]+(\d[\d,]*)/i,
-        /(\d[\d,]*)\/(?:box|case|pack|pkg)/i,
+        // "500/box", "1000/case"
+        /(\d[\d,]*)\/(?:box|case|pack|pkg)\b/i,
+        // "500 count", "1000 rounds" — require 3+ digits to avoid matching "1 round" or cart qty
+        /(\d{3}[\d,]*)\s*(?:count|ct\.?|rounds?|rds?|pieces?|pcs?)\b/i,
+        // "per box of 500"
+        /per\s+(?:box|pack|pkg)\s+of\s+(\d[\d,]*)/i,
     ]
     for (const pat of patterns) {
         const m = text.match(pat)
         if (m) {
             const n = parseInt(m[1].replace(/,/g, ''), 10)
-            if (n >= 20 && n <= 10000) return n
+            // Sanity check: must be a plausible reloading pack size
+            if (n >= 100 && n <= 10000) return n
         }
     }
     return null
