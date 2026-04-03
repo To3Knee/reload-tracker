@@ -70,7 +70,9 @@ function parseJsonLd($) {
     const result = {}
     $('script[type="application/ld+json"]').each((_, el) => {
         try {
-            let data = JSON.parse($(el).html())
+            // Strip control characters that some sites embed in JSON-LD
+            const raw = ($(el).html() || '').replace(/[\x00-\x09\x0b\x0c\x0e-\x1f]/g, ' ')
+            let data = JSON.parse(raw)
             // Handle @graph array or direct object
             if (data['@graph']) data = data['@graph']
             const items = Array.isArray(data) ? data : [data]
@@ -195,12 +197,12 @@ export async function refreshListing(id, userId) {
                     'Content-Type': 'application/json',
                     ...(firecrawlKey && { 'X-Api-Key': firecrawlKey }),
                 },
-                body: JSON.stringify({ url, formats: ['html'] }),
+                body: JSON.stringify({ url, formats: ['rawHtml'] }),
             })
             if (!fcRes.ok) throw new Error(`Firecrawl HTTP ${fcRes.status}`)
             const fcData = await fcRes.json()
             if (!fcData.success) throw new Error(fcData.error || 'Firecrawl scrape failed')
-            html = fcData.data?.html
+            html = fcData.data?.rawHtml
             if (!html) throw new Error('Firecrawl returned no HTML')
         } else {
             // Fallback: direct fetch (works for simple sites, blocked by Cloudflare on major retailers)
