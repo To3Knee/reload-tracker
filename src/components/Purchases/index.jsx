@@ -5,6 +5,7 @@ import { fetchSettings } from '../../lib/settings'
 import {
   Trash2, Plus, Search, X, Edit,
   Globe, Package, ScanBarcode, Camera, Loader2, Image as ImageIcon, Info,
+  Flame, Crosshair, Layers, Shield,
 } from 'lucide-react'
 import { ErrorBanner } from '../ErrorBanner'
 import { InfoTip } from '../InfoTip'
@@ -343,7 +344,7 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
               <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-scrim backdrop-blur-md p-4 animate-in fade-in duration-200">
                 <div className="glass w-full max-w-sm overflow-hidden p-6 relative flex flex-col items-center shadow-2xl">
                   <button onClick={() => { stopScanner(); setShowScanner(false) }} className="absolute top-4 right-4 text-steel-400 hover:text-white bg-panel p-2 rounded-full z-20 cursor-pointer"><X size={20} /></button>
-                  <h3 className="text-lg font-bold text-white mb-4 text-center flex items-center justify-center gap-2"><ScanBarcode className="text-[var(--copper)]" /> Scanner</h3>
+                  <h3 className="text-lg font-bold text-[var(--text-hi)] mb-4 text-center flex items-center justify-center gap-2"><ScanBarcode className="text-[var(--copper)]" /> Scanner</h3>
                   <div className="relative w-full h-[300px] bg-[var(--bg)] rounded-lg overflow-hidden border-2 border-[var(--copper)]/30 flex flex-col items-center justify-center group">
                     {!scannerActive && !cameraLoading && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-steel-800 z-50 space-y-4 animate-in fade-in">
@@ -432,19 +433,42 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
             )}
 
             {/* Inventory list */}
-            <div className="glass p-6">
-              <div className="flex items-center gap-2 mb-6 bg-panel p-2 rounded-xl border border-steel-700">
-                <Search size={16} className="text-steel-400 ml-2" />
-                <input className="bg-transparent border-none focus:outline-none text-xs text-steel-100 w-full placeholder:text-steel-500" placeholder="Search purchases..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <div className="space-y-2">
+              {/* Search */}
+              <div className="flex items-center gap-2 glass px-3 py-2.5 border border-[var(--border-md)]">
+                <Search size={14} className="text-[var(--text-lo)] flex-shrink-0" />
+                <input
+                  className="bg-transparent border-none focus:outline-none text-xs text-[var(--text-hi)] w-full placeholder:text-[var(--text-lo)]"
+                  placeholder="Search by brand, name, lot, vendor…"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="text-[var(--text-lo)] hover:text-[var(--text-hi)] transition flex-shrink-0">
+                    <X size={13} />
+                  </button>
+                )}
               </div>
-              <div className="space-y-8">
+
+              {/* Groups */}
+              <div className="space-y-6 pt-2">
                 {COMPONENT_TYPES.map(type => {
                   const lots = lotsByType[type.value]
                   if (!lots?.length) return null
+                  const icons = { powder: Flame, bullet: Crosshair, primer: Layers, case: Shield, other: Package }
+                  const accents = { powder: 'from-amber-700', bullet: 'from-blue-800', primer: 'from-violet-800', case: 'from-emerald-800', other: 'from-steel-700' }
+                  const Icon = icons[type.value] || Package
+                  const accentFrom = accents[type.value] || accents.other
                   return (
                     <div key={type.value}>
-                      <h3 className="text-sm font-semibold text-steel-100 mb-2 uppercase tracking-wider border-b border-steel-700 pb-1 inline-block pr-4">{type.label}</h3>
-                      <div className="grid md:grid-cols-2 gap-3">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`w-[2px] self-stretch bg-gradient-to-b ${accentFrom} to-transparent rounded-full`} />
+                        <Icon size={12} className="text-[var(--text-md)]" />
+                        <h3 className="text-xs font-bold text-[var(--text-md)] uppercase tracking-[0.2em]">{type.label}</h3>
+                        <span className="text-[10px] font-mono text-[var(--text-lo)]">{lots.length}</span>
+                        <div className="flex-1 h-px bg-[var(--border)]" />
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-2">
                         {lots.map(p => (
                           <PurchaseCard
                             key={p.id}
@@ -459,23 +483,42 @@ export function Purchases({ onChanged, canEdit = false, highlightId, user }) {
                     </div>
                   )
                 })}
+                {filteredPurchases.length === 0 && (
+                  <div className="glass p-10 flex flex-col items-center text-center gap-3">
+                    <Package size={28} className="text-[var(--text-lo)]" />
+                    <div>
+                      <p className="text-sm font-bold text-[var(--text-hi)]">{searchTerm ? 'No matches' : 'No purchases yet'}</p>
+                      <p className="text-xs text-[var(--text-md)] mt-1">{searchTerm ? 'Try a different search term.' : 'Add your first lot with the New Lot button above.'}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </>
         )}
 
         {/* Delete modal */}
-        {deleteModalOpen && itemToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim backdrop-blur-sm p-4 pt-[env(safe-area-inset-top)] animate-in fade-in duration-200">
-            <div className="glass border border-red-900/50 shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-4">
-              <div className="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mx-auto"><Trash2 className="text-red-500" size={24} /></div>
-              <div><h3 className="text-lg font-bold text-white">Delete Lot?</h3><p className="text-sm text-steel-300 mt-1">Are you sure you want to delete <span className="text-white font-medium">{itemToDelete.brand} {itemToDelete.name}</span>?<br />This action cannot be undone.</p></div>
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 rounded-md border border-steel-600 text-steel-200 hover:bg-steel-700 font-medium text-sm transition">Cancel</button>
-                <button onClick={executeDelete} disabled={isDeleting} className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-500 font-bold text-sm shadow-lg shadow-red-900/20 transition">{isDeleting ? 'Deleting...' : 'Delete Forever'}</button>
+        {deleteModalOpen && itemToDelete && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-[var(--scrim-bg)] backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="glass w-full max-w-sm p-6 text-center space-y-4 shadow-2xl">
+              <div className="w-12 h-12 rounded-full bg-red-950/40 border border-red-900/40 flex items-center justify-center mx-auto">
+                <Trash2 size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[var(--text-hi)]">Delete Lot?</h3>
+                <p className="text-sm text-[var(--text-md)] mt-1">
+                  Remove <span className="text-[var(--text-hi)] font-semibold">{itemToDelete.brand} {itemToDelete.name}</span>? This cannot be undone.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => setDeleteModalOpen(false)} className="py-2 rounded border border-[var(--border-md)] text-[var(--text-md)] hover:text-[var(--text-hi)] font-medium text-sm transition">Cancel</button>
+                <button onClick={executeDelete} disabled={isDeleting} className="py-2 rounded bg-red-700 hover:bg-red-600 text-white font-bold text-sm transition">
+                  {isDeleting ? 'Removing…' : 'Delete Forever'}
+                </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </>
