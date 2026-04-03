@@ -65,6 +65,45 @@ export async function updateListing(id, data, userId) {
     return res.rows[0]
 }
 
+// --- Microdata extractor (itemprop="price" / Schema.org embedded in HTML) ---
+function parseMicrodata($) {
+    const result = {}
+    // itemprop="price" — content attr preferred (canonical), text fallback
+    const priceEl = $('[itemprop="price"]').first()
+    if (priceEl.length) {
+        const raw = priceEl.attr('content') || priceEl.text().replace(/[^0-9.]/g, '')
+        const p = parseFloat(raw)
+        if (!isNaN(p) && p > 0) result.price = p
+    }
+    // itemprop="availability"
+    const availEl = $('[itemprop="availability"]').first()
+    if (availEl.length) {
+        const avail = (availEl.attr('content') || availEl.text()).toLowerCase()
+        result.inStock = avail.includes('instock') || avail.includes('in stock')
+    }
+    // itemprop="name"
+    const nameEl = $('[itemprop="name"]').first()
+    if (nameEl.length && !result.name) result.name = nameEl.text().trim()
+    // itemprop="image"
+    const imgEl = $('[itemprop="image"]').first()
+    if (imgEl.length && !result.image) result.image = imgEl.attr('src') || imgEl.attr('content') || ''
+    return result
+}
+
+// --- Meta price tags (og:price:amount, product:price:amount) ---
+function parseMetaPrice($) {
+    const result = {}
+    const amount =
+        $('meta[property="product:price:amount"]').attr('content') ||
+        $('meta[property="og:price:amount"]').attr('content') ||
+        $('meta[name="twitter:data1"]').attr('content')
+    if (amount) {
+        const p = parseFloat(amount.replace(/[^0-9.]/g, ''))
+        if (!isNaN(p) && p > 0) result.price = p
+    }
+    return result
+}
+
 // --- JSON-LD structured data extractor (schema.org/Product) ---
 function parseJsonLd($) {
     const result = {}
@@ -254,12 +293,17 @@ export async function refreshListing(id, userId) {
         const badTitles = ['Access Denied', 'Just a moment', 'Attention Required', 'Security Check', '403 Forbidden', 'Cloudflare']
         if (badTitles.some(t => rawTitle.includes(t))) throw new Error("Site blocked the request. Try again later.")
 
-        // PASS 1: JSON-LD structured data (most reliable)
-        const ld = parseJsonLd($)
-        let title   = ld.name   || $('meta[property="og:title"]').attr('content') || rawTitle || 'Unknown Item'
-        let image   = ld.image  || $('meta[property="og:image"]').attr('content') || ''
-        let price   = ld.price  ?? null
-        let inStock = ld.inStock ?? null
+        // PASS 1: JSON-LD structured data
+        const ld   = parseJsonLd($)
+        // PASS 2: Schema.org microdata (itemprop attrs) — many sites use this instead of JSON-LD
+        const md   = parseMicrodata($)
+        // PASS 3: Meta price tags (og:price:amount, product:price:amount)
+        const meta = parseMetaPrice($)
+
+        let title   = ld.name   || md.name  || $('meta[property="og:title"]').attr('content') || rawTitle || 'Unknown Item'
+        let image   = ld.image  || md.image || $('meta[property="og:image"]').attr('content') || ''
+        let price   = ld.price  ?? md.price ?? meta.price ?? null
+        let inStock = ld.inStock ?? md.inStock ?? null
         const vendor = extractVendor(url)
 
         // Fix relative image URLs
@@ -268,7 +312,7 @@ export async function refreshListing(id, userId) {
             image = `${u.protocol}//${u.host}${image}`
         }
 
-        // PASS 2: Regex/text fallback for missing price, stock, or qty
+        // PASS 4: Regex/text fallback for missing price, stock, or qty
         $('script, style, nav, footer, svg').remove()
         const bodyText = $('body').text().replace(/\s+/g, ' ').trim()
         let qty = extractQtyRegex(bodyText)
@@ -277,7 +321,7 @@ export async function refreshListing(id, userId) {
             if (price == null)   price   = extractPriceRegex(bodyText)
             if (inStock == null) inStock = detectInStock(html) ?? false
 
-            // PASS 3: AI fallback — only if key is configured and still missing price
+            // PASS 5: AI fallback — only if key is configured and still missing price
             if (price == null) {
                 try {
                     const snippet = bodyText.substring(0, 8000)
