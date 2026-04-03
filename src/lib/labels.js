@@ -7,13 +7,13 @@ const SHARED_CSS = `
 
   @page { size: 2.25in 1.25in; margin: 0; }
 
-  html, body { margin: 0; padding: 0; background: #1a1a1a; }
+  html, body { margin: 0; padding: 0; }
 
   /* ── SCREEN PREVIEW (inside overlay iframe) ── */
   @media screen {
     body {
       display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; background: #1a1a1a;
+      min-height: 100vh; background: transparent;
     }
     .label-card { zoom: 3.5; box-shadow: 0 16px 60px rgba(0,0,0,0.85), 0 0 0 1px #2a2a2a; }
   }
@@ -106,27 +106,28 @@ function openLabelWindow(html) {
   overlay.id = 'rt-label-overlay'
   overlay.style.cssText = [
     'position:fixed;inset:0;z-index:9999',
-    'background:rgba(0,0,0,0.97)',
+    'background:var(--scrim-bg)',
+    'backdrop-filter:blur(4px)',
     'display:flex;flex-direction:column',
   ].join(';')
 
   const bar = document.createElement('div')
   bar.style.cssText = [
     'flex-shrink:0;display:flex;align-items:center;justify-content:space-between',
-    'padding:12px 20px;background:#111;border-bottom:1px solid #222',
-    "font-family:Inter,sans-serif;font-size:11px;color:#aaa",
+    'padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border-md)',
+    'font-family:Inter,sans-serif;font-size:11px;color:var(--text-md)',
     'letter-spacing:0.1em;text-transform:uppercase',
   ].join(';')
   bar.innerHTML = `
     <span>DYMO 30334 &middot; 2.25&quot; &times; 1.25&quot; &middot; No Margins &middot; No Scaling</span>
     <div style="display:flex;gap:8px">
-      <button id="rt-lbl-print" style="font-size:10px;font-weight:700;background:#222;color:#ccc;padding:5px 14px;border-radius:3px;border:1px solid #444;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;font-family:Inter,sans-serif">Print</button>
+      <button id="rt-lbl-print" style="font-size:10px;font-weight:700;background:var(--overlay);color:var(--text-hi);padding:5px 14px;border-radius:3px;border:1px solid var(--border-md);cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;font-family:Inter,sans-serif">Print</button>
       <button id="rt-lbl-close" style="font-size:10px;font-weight:700;background:#c42b21;color:#fff;padding:5px 14px;border-radius:3px;border:none;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;font-family:Inter,sans-serif">&#x2715; Close</button>
     </div>
   `
 
   const iframe = document.createElement('iframe')
-  iframe.style.cssText = 'flex:1;border:none;background:#1a1a1a'
+  iframe.style.cssText = 'flex:1;border:none;background:var(--bg)'
   iframe.srcdoc = html
 
   overlay.appendChild(bar)
