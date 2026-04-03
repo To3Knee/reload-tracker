@@ -43,13 +43,6 @@ export function PurchaseCard({ purchase: p, highlightId, canEdit, onEdit, onDele
         depleted ? 'opacity-50 grayscale' : 'hover:border-[var(--border-md)]'
       } ${isHighlighted ? 'ring-1 ring-[var(--red)]/40 shadow-lg' : ''}`}
     >
-      {/* Thumbnail */}
-      {p.imageUrl && (
-        <div className="w-12 flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg)] overflow-hidden rounded-none">
-          <img src={p.imageUrl} alt="Lot" className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition" />
-        </div>
-      )}
-
       {/* Main content */}
       <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 p-3 min-w-0">
 
